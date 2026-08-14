@@ -1,289 +1,248 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { GeneratePanel } from "@/components/art/panels";
-import { BrowserFrame, PhoneFrame } from "@/components/art/frames";
-import { GuidePreview } from "@/components/art/GuidePreview";
-import { LeafMotif } from "@/components/art/Leaf";
-import { CTAButton } from "@/components/ui/CTAButton";
+import { DeliveryProof } from "@/components/demos/DeliveryProof";
+import { FeatureShowcase } from "@/components/demos/FeatureShowcase";
+import { GuideBuilder } from "@/components/demos/GuideBuilder";
+import { LogoMarquee } from "@/components/demos/LogoMarquee";
+import { CTAButton, TextLink } from "@/components/ui/CTAButton";
+import { SpotlightCard } from "@/components/ui/Spotlight";
 import { StatBand } from "@/components/ui/Stat";
+import { Words, wordCount } from "@/components/ui/Words";
 import {
-  Card,
   Container,
   DrawnRule,
   Eyebrow,
   Section,
   SectionHeading,
-  SourceNote,
-  StatusPill,
-  TextLink,
   stagger,
 } from "@/components/ui/primitives";
-import { LogoWall, Testimonial, TrustStrip } from "@/components/proof/proof";
-import { HOME_STATS, QUOTE_BROKER } from "@/lib/content";
-import { WORKFLOWS } from "@/lib/workflows";
+import {
+  ADVISOR,
+  CLOSING,
+  HERO,
+  QUOTE,
+  RESOURCES,
+  RESULTS,
+  WORKFORCE,
+} from "@/lib/content";
 
 export const metadata: Metadata = {
-  description:
-    "TruHu Advisor builds the client-facing work your brokerage already produces. TruHu Workforce gets it to every employee, including the ones with no email.",
+  description: HERO.lede,
   alternates: { canonical: "/" },
 };
 
 export default function HomePage() {
   return (
     <>
-      {/* Hero ----------------------------------------------------------- */}
-      <Section tone="navy" size="none" className="pt-16 pb-20 lg:pt-24 lg:pb-28">
-        <LeafMotif className="-top-40 -right-32 h-[760px] w-[420px]" opacity={0.09} />
+      {/* Hero ------------------------------------------------------------ */}
+      <Section tone="dark" ambient size="none" className="pt-20 pb-24 lg:pt-28 lg:pb-32">
         <Container>
-          <div className="grid items-center gap-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
-            <div className="hero-seq">
-              <h1 className="t-display text-white">
-                The work your best accounts get.{" "}
-                <span className="text-green-500">For your whole book.</span>
-              </h1>
-              <p className="t-lede measure mt-7 text-muted-300">
-                Advisor builds the guides, microsites and campaigns your team
-                already produces. Workforce gets them to every employee,
-                including the ones with no email.
-              </p>
-              <div className="mt-9 flex flex-wrap items-center gap-3">
-                <CTAButton href="/contact" size="lg">
-                  Book a demo
-                </CTAButton>
-                <CTAButton href="#the-work" variant="onNavySecondary" size="lg">
-                  See a guide
-                </CTAButton>
-              </div>
-              <p className="t-caption mt-7 text-white/45">
-                Two products. One platform. Bought separately.
-              </p>
-            </div>
+          <div className="mx-auto max-w-4xl text-center">
+            <p
+              className="t-eyebrow inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-blue-400 backdrop-blur-sm"
+              style={{ animation: "hero-in 700ms var(--ease-out-expo) both" }}
+            >
+              <span className="size-1.5 rounded-full bg-green-400 anim-pulse" />
+              {HERO.eyebrow}
+            </p>
 
-            <div className="hero-media relative min-w-0">
-              <BrowserFrame label="app.truhu.ai / ridgeline / 2026-oe">
-                <GeneratePanel />
-              </BrowserFrame>
-              <div
-                className="pointer-events-none absolute -right-6 -bottom-14 hidden origin-bottom-right scale-[0.74] xl:block"
-                aria-hidden
-              >
-                <PhoneFrame>
-                  <div className="h-[290px] overflow-hidden">
-                    <div className="bg-[#2b3a55] px-5 pt-3 pb-4 text-white">
-                      <p className="text-[9px] font-bold tracking-[0.12em]">
-                        RIDGELINE MANUFACTURING
-                      </p>
-                      <p className="mt-2 text-[1.0625rem] leading-tight font-bold">
-                        Your 2026 benefits
-                      </p>
-                    </div>
-                    <div className="space-y-2.5 p-4">
-                      <div className="card-shape-sm border border-border-200 p-3">
-                        <p className="text-[0.8125rem] font-bold text-ink-900">
-                          PPO 1500
-                        </p>
-                        <p className="mt-1 text-[11px] text-grey-500">
-                          Deductible{" "}
-                          <span className="font-bold text-ink-900">$1,500</span>
-                        </p>
-                      </div>
-                      <div className="card-shape-sm border border-border-200 p-3">
-                        <p className="text-[0.8125rem] font-bold text-ink-900">
-                          HDHP 3200
-                        </p>
-                        <p className="mt-1 text-[11px] text-grey-500">
-                          Employer HSA{" "}
-                          <span className="font-bold text-ink-900">$750</span>
-                        </p>
-                      </div>
-                      <span className="block rounded-full bg-[#8c2f39] py-2 text-center text-[0.8125rem] font-semibold text-white">
-                        Start my enrollment
-                      </span>
-                    </div>
-                  </div>
-                </PhoneFrame>
+            <h1 className="t-display mt-7 text-white">
+              <Words text={HERO.titleLead} />{" "}
+              <span className="t-gradient">
+                <Words text={HERO.titleAccent} start={wordCount(HERO.titleLead)} />
+              </span>
+            </h1>
+
+            <div className="hero-seq">
+              <p className="t-lede mx-auto mt-7 max-w-2xl text-slate-300">
+                {HERO.lede}
+              </p>
+              <div className="mt-9 flex flex-wrap justify-center gap-3">
+                <CTAButton href={HERO.primaryCta.href} size="lg">
+                  {HERO.primaryCta.label}
+                </CTAButton>
+                <CTAButton href={HERO.secondaryCta.href} variant="onDark" size="lg">
+                  {HERO.secondaryCta.label}
+                </CTAButton>
               </div>
+              <p className="t-caption mt-7 text-white/45">{HERO.note}</p>
             </div>
+          </div>
+
+          {/* The product does the talking, at full width, tipping into place. */}
+          <div className="demo-in mt-16 lg:mt-20">
+            <GuideBuilder />
           </div>
         </Container>
       </Section>
 
-      {/* Logo wall ------------------------------------------------------- */}
-      <Section tone="white" size="tight">
+      {/* Trust rail ------------------------------------------------------ */}
+      <Section tone="white" size="tight" labelledBy="trust-heading">
         <Container>
-          <LogoWall />
+          <h2
+            id="trust-heading"
+            className="t-eyebrow mb-8 text-center text-slate-400"
+          >
+            Trusted by leading organizations
+          </h2>
+        </Container>
+        <LogoMarquee />
+      </Section>
+
+      {/* Advisor --------------------------------------------------------- */}
+      <Section tone="paper" id="advisor" ambient labelledBy="advisor-heading">
+        <Container>
+          <div className="reveal flex flex-wrap items-end justify-between gap-6">
+            <SectionHeading
+              id="advisor-heading"
+              eyebrow={ADVISOR.eyebrow}
+              title={ADVISOR.title}
+              lede={ADVISOR.lede}
+            />
+            <TextLink href={ADVISOR.cta.href}>{ADVISOR.cta.label}</TextLink>
+          </div>
+
+          <div className="reveal-wipe mt-14">
+            <FeatureShowcase />
+          </div>
         </Container>
       </Section>
 
-      {/* Two products ---------------------------------------------------- */}
-      <Section tone="section" labelledBy="products-heading">
+      {/* Results --------------------------------------------------------- */}
+      <Section tone="dark" id="results" ambient labelledBy="results-heading">
         <Container>
           <SectionHeading
-            id="products-heading"
-            eyebrow="Two products"
-            title="One Buyer, Two Reasons to Buy"
+            id="results-heading"
+            eyebrow={RESULTS.eyebrow}
+            tone="light"
+            align="center"
+            title={
+              <>
+                {RESULTS.titleLead}{" "}
+                <span className="t-gradient">{RESULTS.titleAccent}</span>
+              </>
+            }
+            lede={RESULTS.lede}
           />
 
-          <div className="stagger mt-12 grid gap-5 lg:grid-cols-2">
-            <Card style={stagger(0)} className="flex flex-col p-7 sm:p-9">
-              <Eyebrow>Your production line</Eyebrow>
-              <h3 className="t-h2 mt-3">TruHu Advisor</h3>
-              <p className="mt-4 flex-1 text-[1.0625rem] leading-relaxed text-grey-700">
-                Guides, microsites and enrollment campaigns, generated from each
-                client&rsquo;s own plan documents. Across the whole book, not
-                just the top twenty.
-              </p>
-              <p className="mt-7">
-                <TextLink href="/advisor">Explore Advisor</TextLink>
-              </p>
-            </Card>
-
-            <Card style={stagger(1)} className="flex flex-col p-7 sm:p-9">
-              <Eyebrow>Your retention line</Eyebrow>
-              <h3 className="t-h2 mt-3">TruHu Workforce</h3>
-              <p className="mt-4 flex-1 text-[1.0625rem] leading-relaxed text-grey-700">
-                Reaches every employee on the roster with no app, no login and
-                no work email. Then records who actually got it.
-              </p>
-              <p className="mt-7">
-                <TextLink href="/workforce">Explore Workforce</TextLink>
-              </p>
-            </Card>
-          </div>
-        </Container>
-      </Section>
-
-      {/* Stats ------------------------------------------------------------ */}
-      <Section tone="white">
-        <Container>
-          <StatBand facts={HOME_STATS} />
-        </Container>
-      </Section>
-
-      {/* Workflow strip ---------------------------------------------------- */}
-      <Section tone="section" labelledBy="workflows-heading">
-        <Container>
-          <div className="flex flex-wrap items-end justify-between gap-6">
-            <SectionHeading
-              id="workflows-heading"
-              eyebrow="The roadmap, in public"
-              title="Every Deliverable a Brokerage Produces, One at a Time"
-              className="max-w-2xl"
-            />
-            <TextLink href="/advisor/workflows">The workflow map</TextLink>
+          <div className="reveal mt-16 lg:mt-20">
+            <StatBand stats={RESULTS.stats} />
           </div>
 
-          <ul className="stagger mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {WORKFLOWS.map((workflow, i) => {
-              const href = workflow.slug
-                ? `/advisor/${workflow.slug}`
-                : "/advisor/workflows";
-              return (
-                <Card
-                  as="li"
-                  key={workflow.name}
-                  interactive
-                  style={stagger(i)}
-                  className="relative flex flex-col"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="t-h4 pr-2">
-                      <Link href={href}>
-                        <span className="absolute inset-0" aria-hidden />
-                        {workflow.short}
-                      </Link>
-                    </h3>
-                    <StatusPill
-                      status={workflow.status}
-                      label={workflow.statusLabel}
-                    />
-                  </div>
-                  <p className="mt-3 text-[0.9375rem] leading-relaxed text-grey-700">
-                    {workflow.tagline}
-                  </p>
-                </Card>
-              );
-            })}
+          <DrawnRule tone="light" className="mt-16" />
+
+          <ul className="stagger mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {RESULTS.facts.map((fact, i) => (
+              <li key={fact.label} style={stagger(i)}>
+                <p className="t-h1 text-green-400">{fact.value}</p>
+                <p className="t-caption mt-2 text-slate-300">{fact.label}</p>
+              </li>
+            ))}
           </ul>
         </Container>
       </Section>
 
-      {/* Testimonial and trust --------------------------------------------- */}
-      <Section tone="navy">
-        <LeafMotif
-          className="-bottom-56 -left-32 h-[700px] w-[380px]"
-          opacity={0.07}
-          flip
-        />
+      {/* Testimonial ----------------------------------------------------- */}
+      <Section tone="white">
         <Container>
-          <div className="reveal">
-            <Testimonial quote={QUOTE_BROKER} tone="light" />
-          </div>
-          <DrawnRule tone="light" className="my-12" />
-          <TrustStrip tone="light" />
+          <figure className="reveal mx-auto max-w-3xl text-center">
+            <span
+              aria-hidden
+              className="t-display block leading-none text-blue-100 select-none"
+            >
+              &ldquo;
+            </span>
+            <blockquote className="t-h2 -mt-6">{QUOTE.text}</blockquote>
+            <figcaption className="mt-8 text-[0.9375rem] text-slate-600">
+              <span className="font-bold text-ink">{QUOTE.name}</span>
+              <span className="mx-2 text-slate-400">·</span>
+              {QUOTE.role}
+            </figcaption>
+          </figure>
         </Container>
       </Section>
 
-      {/* See the work ------------------------------------------------------ */}
-      <Section tone="white" id="the-work" labelledBy="the-work-heading">
+      {/* Workforce ------------------------------------------------------- */}
+      <Section tone="paper" id="workforce" labelledBy="workforce-heading">
         <Container>
-          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
+          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-20">
             <div className="reveal">
               <SectionHeading
-                id="the-work-heading"
-                eyebrow="The deliverable, not the dashboard"
-                title="This Is What the Employee Opens"
+                id="workforce-heading"
+                eyebrow={WORKFORCE.eyebrow}
+                title={WORKFORCE.title}
+                lede={WORKFORCE.lede}
               />
-              <ul className="mt-8 space-y-3">
-                {[
-                  "No app, no login, no work email.",
-                  "Branded to your client, not to us.",
-                  "Every plan value traceable to its source page.",
-                  "36 languages, translated at generation.",
-                ].map((line) => (
-                  <li
-                    key={line}
-                    className="flex gap-3 text-[1.0625rem] text-grey-700"
-                  >
+              <ul className="stagger mt-10 space-y-5">
+                {WORKFORCE.points.map((point, i) => (
+                  <li key={point.name} style={stagger(i)} className="flex gap-4">
                     <span
-                      className="mt-2.5 size-1.5 shrink-0 rounded-full bg-green-500"
                       aria-hidden
+                      className="mt-2 size-2 shrink-0 rounded-full bg-green-500"
                     />
-                    {line}
+                    <span>
+                      <span className="t-h4 block">{point.name}</span>
+                      <span className="mt-1 block text-[0.9375rem] leading-relaxed text-slate-600">
+                        {point.blurb}
+                      </span>
+                    </span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-8">
-                <TextLink href="/advisor/guides">How guides get built</TextLink>
+              <p className="mt-10">
+                <TextLink href={WORKFORCE.cta.href}>{WORKFORCE.cta.label}</TextLink>
               </p>
             </div>
 
-            <div className="reveal-media justify-self-center">
-              <GuidePreview />
+            <div className="reveal-tilt min-w-0">
+              <DeliveryProof />
             </div>
           </div>
-          <SourceNote className="mt-10">
-            A sample guide. Publishing a real one is gated on customer
-            permission.
-          </SourceNote>
         </Container>
       </Section>
 
-      {/* Close -------------------------------------------------------------- */}
-      <Section tone="navy" size="loose">
-        <LeafMotif className="-top-32 -right-32 h-[680px] w-[380px]" opacity={0.08} />
+      {/* Resources ------------------------------------------------------- */}
+      <Section tone="white" id="resources" labelledBy="resources-heading">
+        <Container>
+          <SectionHeading
+            id="resources-heading"
+            eyebrow={RESOURCES.eyebrow}
+            title={RESOURCES.title}
+            className="reveal"
+          />
+
+          <ul className="stagger mt-12 grid gap-5 md:grid-cols-3">
+            {RESOURCES.items.map((item, i) => (
+              <SpotlightCard
+                key={item.title}
+                as="li"
+                style={stagger(i)}
+                className="flex flex-col"
+              >
+                <Eyebrow>{item.kind}</Eyebrow>
+                <h3 className="t-h3 mt-4">{item.title}</h3>
+                <p className="mt-3 flex-1 text-[0.9375rem] leading-relaxed text-slate-600">
+                  {item.blurb}
+                </p>
+              </SpotlightCard>
+            ))}
+          </ul>
+        </Container>
+      </Section>
+
+      {/* Close ----------------------------------------------------------- */}
+      <Section tone="dark" ambient size="loose">
         <Container>
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="t-h1 text-white">
-              Every client should get what your{" "}
-              <span className="text-green-500">best ten accounts get.</span>
+              {CLOSING.titleLead}{" "}
+              <span className="t-gradient">{CLOSING.titleAccent}</span>
             </h2>
+            <p className="t-lede measure mx-auto mt-7 text-slate-300">
+              {CLOSING.lede}
+            </p>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
-              <CTAButton href="/contact" size="lg">
-                Book a demo
-              </CTAButton>
-              <CTAButton href="/fit-test" variant="onNavySecondary" size="lg">
-                Take the Fit Test
+              <CTAButton href={CLOSING.primaryCta.href} size="lg">
+                {CLOSING.primaryCta.label}
               </CTAButton>
             </div>
           </div>

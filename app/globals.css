@@ -1,47 +1,73 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   TruHu web design system
+   TruHu design system
 
-   Source of truth: the `truhu-deck` skill's assets/truhu-brand.json.
-   The web system extends that brand; it does not reinvent it. Tokens are
-   defined once, here. Never hardcode a hex in a component.
+   One palette, one motion language. Tokens are defined once, here; components
+   never hardcode a hex. The brand duo is blue #0582DC and green #38B000 — the
+   rest of the scale exists so those two stay sharp against everything else.
 --------------------------------------------------------------------------- */
 
 @theme {
-  /* --- Canonical brand (truhu-brand.json) ------------------------------- */
-  --color-blue-500: #0582dc; /* brand blue. Links, eyebrows, "tru"          */
-  --color-green-500: #38b000; /* the pop. CTA, stat numerals, "hu", leaf    */
-  --color-navy-900: #0f2a44; /* deep navy. Hero + closing surfaces          */
-  --color-navy-700: #17406d; /* card navy                                   */
-  --color-leaf-400: #5fc15e; /* leaf motif, low opacity only                */
-  --color-ink-900: #0f172a; /* body copy on light                           */
-  --color-grey-500: #7d8597; /* secondary text, dividers                    */
-  --color-section: #f2f3f4; /* light section segmentation                   */
-  --color-lightblue-100: #cde6f8; /* hover tints, subtle fills              */
-  --color-tint-100: #eaf1f9; /* navy tint. Neutral callout / card bg        */
-  --color-green-100: #eaf7e0; /* green tint. Icon circle, success bg        */
-  --color-blue-100: #e6f2fc; /* blue tint. Data callout bg                  */
-  --color-red-600: #c62828; /* critical only                               */
+  /* --- Dark foundation. Cool, near-black navy so accents read as light. --- */
+  --color-ink-950: #050e1a; /* deepest surface. Hero, footer               */
+  --color-ink-900: #08192b; /* navy surface                                */
+  --color-ink-800: #0d2740; /* raised navy, card fills on dark             */
+  --color-ink-700: #16395c; /* navy hairlines, chart tracks                */
 
-  /* --- Web extensions. These four, and nothing else. -------------------- */
-  --color-border-200: #dfe7ef; /* hairline. Card borders, dividers          */
-  --color-grey-700: #4a5568; /* body copy on tinted surfaces               */
-  --color-green-600: #2e8f00; /* green that carries text on white           */
-  --color-muted-300: #afc2d6; /* secondary text on navy                     */
-  --color-amber-500: #b26b00; /* early-access pill. The only added hue      */
+  /* --- Light surfaces ----------------------------------------------------- */
+  --color-paper: #f4f7fb; /* cool paper, section segmentation              */
+  --color-line: #e2e9f1; /* hairline. Card borders, dividers               */
 
-  /* RETIRED, never use: navy #254A79 · blue #1798C1 · green #8CC63E /
-     #70AD47 · Helvetica Neue · Calibri. Remapping these is the rebrand.    */
+  /* --- Text --------------------------------------------------------------- */
+  --color-ink: #0a1826; /* headings + body on light                        */
+  --color-slate-600: #46586c; /* body copy on light                        */
+  --color-slate-400: #7b8da1; /* secondary, captions                       */
+  --color-slate-300: #9db2c7; /* secondary on navy                         */
 
-  /* --- Type ------------------------------------------------------------- */
+  /* --- Brand blue --------------------------------------------------------- */
+  --color-blue-700: #0463a8; /* blue that carries text on white            */
+  --color-blue-500: #0582dc; /* canonical brand blue                       */
+  --color-blue-400: #38b6ff; /* blue on dark surfaces                      */
+  --color-blue-100: #e8f3fd; /* tint fills                                 */
+
+  /* --- Brand green -------------------------------------------------------- */
+  --color-green-700: #2a8c00; /* green that carries text on white          */
+  --color-green-500: #38b000; /* canonical brand green. CTA, signal        */
+  --color-green-400: #57d95e; /* green on dark surfaces                    */
+  --color-green-100: #e9f7e4; /* tint fills                                */
+
+  /* --- Support ------------------------------------------------------------ */
+  --color-teal-400: #21cfc0; /* gradient mid-stop only, never a solid      */
+  --color-amber-500: #b26b00; /* early-access pill                         */
+  --color-red-600: #c62828; /* errors only                                 */
+
+  /* --- Type --------------------------------------------------------------- */
   --font-display: var(--font-dm-sans), "DM Sans", ui-sans-serif, system-ui,
     sans-serif;
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* --- Motion ----------------------------------------------------------- */
-  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  /* --- Motion ------------------------------------------------------------- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.4, 0.64, 1);
   --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* The one gradient. Blue through teal to green — used for the aurora, for a
+   single accent word per page, and for meters. Never for body text. */
+:root {
+  --grad-brand: linear-gradient(
+    100deg,
+    var(--color-blue-500) 0%,
+    var(--color-teal-400) 52%,
+    var(--color-green-500) 100%
+  );
+  --grad-brand-bright: linear-gradient(
+    100deg,
+    #4fc3ff 0%,
+    #39e2cf 50%,
+    #6fe05a 100%
+  );
 }
 
 /* ---------------------------------------------------------------------------
@@ -53,10 +79,11 @@
     color-scheme: light;
     interpolate-size: allow-keywords;
     scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
   }
 
   * {
-    border-color: var(--color-border-200);
+    border-color: var(--color-line);
   }
 
   html {
@@ -65,12 +92,13 @@
 
   body {
     background: #ffffff;
-    color: var(--color-ink-900);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 1.0625rem;
     line-height: 1.6;
     text-wrap: pretty;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   h1,
@@ -79,13 +107,13 @@
   h4 {
     font-family: var(--font-display);
     font-weight: 700;
-    color: var(--color-ink-900);
+    color: var(--color-ink);
     text-wrap: balance;
   }
 
   ::selection {
     background: var(--color-green-100);
-    color: var(--color-navy-900);
+    color: var(--color-ink-900);
   }
 
   :focus-visible {
@@ -94,40 +122,37 @@
     border-radius: 2px;
   }
 
-  .on-navy :focus-visible {
+  .on-dark :focus-visible {
     outline-color: #ffffff;
   }
 }
 
 /* ---------------------------------------------------------------------------
-   The signature element. Three rounded corners, one sharp, bottom-right.
-   The only card shape on the site. It never mirrors and never rotates.
-   Buttons, inputs and pills use plain radii: the signature belongs to cards.
+   The signature shape. Three rounded corners, one sharp, bottom-right.
+   Cards only — putting it on buttons and pills destroys it.
 --------------------------------------------------------------------------- */
 
 @utility card-shape {
   border-radius: 16px 16px 0 16px;
 }
-
 @utility card-shape-sm {
   border-radius: 10px 10px 0 10px;
 }
-
 @utility card-shape-lg {
   border-radius: 24px 24px 0 24px;
 }
 
 /* ---------------------------------------------------------------------------
-   Typography. Fluid clamp() scale off the brand's deck scale.
+   Typography
 --------------------------------------------------------------------------- */
 
 @layer components {
   .t-display {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(2.75rem, 1.6rem + 3.8vw, 4.75rem);
+    font-size: clamp(2.6rem, 1.4rem + 4vw, 5rem);
     line-height: 1.02;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
     text-wrap: balance;
   }
 
@@ -136,16 +161,16 @@
     font-weight: 700;
     font-size: clamp(2.125rem, 1.5rem + 2.4vw, 3.5rem);
     line-height: 1.06;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.028em;
     text-wrap: balance;
   }
 
   .t-h2 {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(1.75rem, 1.35rem + 1.6vw, 2.5rem);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.75rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
     text-wrap: balance;
   }
 
@@ -168,9 +193,9 @@
   .t-stat {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(3.5rem, 2rem + 4.6vw, 6.5rem);
-    line-height: 0.9;
-    letter-spacing: -0.04em;
+    font-size: clamp(3.25rem, 2rem + 4.2vw, 5.5rem);
+    line-height: 0.88;
+    letter-spacing: -0.045em;
     font-variant-numeric: tabular-nums;
   }
 
@@ -179,7 +204,7 @@
     font-weight: 600;
     font-size: 0.75rem;
     line-height: 1.2;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
@@ -195,39 +220,201 @@
   }
 
   .measure {
-    max-width: 58ch;
+    max-width: 56ch;
   }
 
   .tabular {
     font-variant-numeric: tabular-nums;
   }
 
-  .prose-truhu p {
-    margin-bottom: 1em;
-    color: var(--color-grey-700);
+  /* The single accent treatment. One phrase per section, never a paragraph. */
+  .t-gradient {
+    background: var(--grad-brand-bright);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
-  .prose-truhu p:last-child {
-    margin-bottom: 0;
+  .t-gradient-dark {
+    background: var(--grad-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
-  .prose-truhu strong {
-    color: var(--color-ink-900);
-    font-weight: 600;
+
+  /* Transparent text with no clipped background would be invisible text. */
+  @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+    .t-gradient {
+      background: none;
+      color: var(--color-green-400);
+    }
+    .t-gradient-dark {
+      background: none;
+      color: var(--color-green-700);
+    }
   }
 }
 
 /* ===========================================================================
-   MOTION
-   Scroll-linked, not time-linked. Everything below runs on the compositor
-   through CSS scroll-driven animations, so the whole system costs zero
-   JavaScript and degrades to "already visible" wherever it is unsupported.
-   Every block is gated on both @supports and prefers-reduced-motion.
+   AMBIENT SURFACES
+   The hero and closing panels are lit, not flat. Three blurred colour fields
+   drift on a slow loop behind a fine grid. All compositor-only.
+   =========================================================================== */
+
+.aurora {
+  position: absolute;
+  inset: -30% -10%;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.aurora span {
+  position: absolute;
+  display: block;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+.aurora span:nth-child(1) {
+  inset: 6% auto auto -6%;
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle, #0582dc 0%, transparent 68%);
+  animation: drift-a 26s var(--ease-in-out-soft) infinite alternate;
+}
+.aurora span:nth-child(2) {
+  inset: auto -8% -18% auto;
+  width: 42vw;
+  height: 42vw;
+  background: radial-gradient(circle, #38b000 0%, transparent 68%);
+  opacity: 0.38;
+  animation: drift-b 32s var(--ease-in-out-soft) infinite alternate;
+}
+.aurora span:nth-child(3) {
+  inset: 28% 20% auto auto;
+  width: 32vw;
+  height: 32vw;
+  background: radial-gradient(circle, #21cfc0 0%, transparent 70%);
+  opacity: 0.24;
+  animation: drift-c 22s var(--ease-in-out-soft) infinite alternate;
+}
+
+/* On white and paper the same fields would read as a stain, so they drop to a
+   tint that only registers as the surface not being flat. */
+.aurora-soft span {
+  filter: blur(120px);
+  opacity: 0.16;
+}
+.aurora-soft span:nth-child(2) {
+  opacity: 0.13;
+}
+.aurora-soft span:nth-child(3) {
+  opacity: 0.1;
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(14%, 10%, 0) scale(1.18);
+  }
+}
+@keyframes drift-b {
+  to {
+    transform: translate3d(-16%, -12%, 0) scale(1.12);
+  }
+}
+@keyframes drift-c {
+  to {
+    transform: translate3d(-10%, 16%, 0) scale(0.86);
+  }
+}
+
+/* A surveyor's grid over the dark surfaces. Masked so it never reaches an edge
+   as a hard line. */
+.grid-field {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 68px 68px;
+  mask-image: radial-gradient(
+    ellipse 90% 70% at 50% 30%,
+    #000 0%,
+    transparent 78%
+  );
+}
+
+/* A hairline that travels down the grid, once, on a long loop. */
+.grid-field::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(56, 182, 255, 0.55),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grid-field::after {
+    animation: scan-down 9s linear infinite;
+  }
+}
+
+@keyframes scan-down {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* Light sections get the same treatment at a whisper. */
+.grid-field-light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(10, 24, 38, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(10, 24, 38, 0.045) 1px, transparent 1px);
+  background-size: 68px 68px;
+  mask-image: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    #000 0%,
+    transparent 75%
+  );
+}
+
+/* ===========================================================================
+   SCROLL-DRIVEN MOTION
+   Scroll-linked, not time-linked, so the cascade tracks the scrollbar exactly
+   in both directions and costs zero JavaScript. Gated on @supports and on
+   prefers-reduced-motion; without either, content is simply already visible.
    =========================================================================== */
 
 @keyframes reveal-rise {
   from {
     opacity: 0;
-    transform: translate3d(0, 24px, 0);
-    filter: blur(6px);
+    transform: translate3d(0, 28px, 0);
+    filter: blur(8px);
   }
   to {
     opacity: 1;
@@ -236,12 +423,32 @@
   }
 }
 
-@keyframes reveal-fade {
+/* A wipe, not a fade: the block is uncovered from the bottom edge up. */
+@keyframes reveal-wipe {
   from {
     opacity: 0;
+    clip-path: inset(0 0 82% 0);
+    transform: translate3d(0, 22px, 0);
   }
   to {
     opacity: 1;
+    clip-path: inset(0 0 -12% 0);
+    transform: none;
+  }
+}
+
+/* Product mocks arrive with real depth: tipped back, then settling flat. */
+@keyframes reveal-tilt {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(14deg) translate3d(0, 60px, -120px)
+      scale(0.94);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0deg) translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
   }
 }
 
@@ -254,83 +461,86 @@
   }
 }
 
-@keyframes leaf-drift {
+@keyframes drift-up {
   from {
-    transform: translate3d(0, 12%, 0) scale(1.12);
+    transform: translate3d(0, 8%, 0);
   }
   to {
-    transform: translate3d(0, -12%, 0) scale(1);
-  }
-}
-
-@keyframes media-settle {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 40px, 0) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: none;
+    transform: translate3d(0, -8%, 0);
   }
 }
 
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    /* A block rises into place as it enters. */
     .reveal {
       animation: reveal-rise linear both;
       animation-timeline: view();
-      animation-range: entry 4% cover 20%;
+      animation-range: entry 4% cover 22%;
     }
 
-    /* Children stagger off their own scroll position rather than off a timer,
-       so the cascade tracks the scroll exactly, forwards and backwards.
-       Each child carries --i. */
+    .reveal-wipe {
+      animation: reveal-wipe linear both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 26%;
+    }
+
+    /* Media settles in 3D. The heaviest entrance on the site; used sparingly. */
+    .reveal-tilt {
+      transform-origin: 50% 100%;
+      animation: reveal-tilt linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 32%;
+    }
+
+    /* Children cascade off their own scroll position. Each carries --i. */
     .stagger > * {
       animation: reveal-rise linear both;
       animation-timeline: view();
-      animation-range: entry calc(2% + var(--i, 0) * 5%) cover
-        calc(18% + var(--i, 0) * 5%);
+      animation-range: entry calc(2% + var(--i, 0) * 4%) cover
+        calc(20% + var(--i, 0) * 4%);
     }
 
-    /* Product mocks get a longer, heavier settle. */
-    .reveal-media {
-      animation: media-settle linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 28%;
-    }
-
-    /* Section rules draw themselves left to right. */
     .rule-draw {
       transform-origin: 0 50%;
       animation: rule-draw linear both;
       animation-timeline: view();
-      animation-range: entry 20% cover 15%;
+      animation-range: entry 20% cover 18%;
     }
 
-    /* The leaf motif drifts against the scroll. Parallax, but only ever on
-       decoration, never on anything a person has to read. */
-    .leaf-parallax {
-      animation: leaf-drift linear both;
+    /* Parallax, but only ever on decoration — never on anything to be read. */
+    .parallax {
+      animation: drift-up linear both;
       animation-timeline: view();
       animation-range: cover 0% cover 100%;
     }
 
-    /* Reading progress across a whole page. */
     .scroll-progress {
-      transform-origin: 0 50%;
       animation: rule-draw linear both;
       animation-timeline: scroll(root block);
     }
   }
 }
 
-/* Hero content is the one thing that animates on load rather than on scroll. */
+/* ---------------------------------------------------------------------------
+   Load sequence. The hero is the one thing that animates on arrival rather
+   than on scroll: the headline is uncovered word by word behind a mask, then
+   the supporting copy, then the demo.
+--------------------------------------------------------------------------- */
+
+@keyframes word-up {
+  from {
+    transform: translate3d(0, 105%, 0) rotate(2deg);
+  }
+  to {
+    transform: none;
+  }
+}
+
 @keyframes hero-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 14px, 0);
-    filter: blur(4px);
+    transform: translate3d(0, 16px, 0);
+    filter: blur(5px);
   }
   to {
     opacity: 1;
@@ -339,36 +549,187 @@
   }
 }
 
+@keyframes demo-in {
+  from {
+    opacity: 0;
+    transform: perspective(1600px) rotateX(16deg) rotateY(-7deg)
+      translate3d(0, 70px, 0) scale(0.93);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1600px) rotateX(0) rotateY(0) translate3d(0, 0, 0)
+      scale(1);
+  }
+}
+
+/* The mask each word rides up behind. Descenders need the extra box, so the
+   padding is added and then pulled back out of the layout. */
+.word {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+  vertical-align: bottom;
+}
+.word > span {
+  display: inline-block;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .hero-seq > * {
-    animation: hero-in 700ms var(--ease-out-soft) both;
-  }
-  .hero-seq > *:nth-child(1) {
-    animation-delay: 40ms;
-  }
-  .hero-seq > *:nth-child(2) {
-    animation-delay: 100ms;
-  }
-  .hero-seq > *:nth-child(3) {
-    animation-delay: 160ms;
-  }
-  .hero-seq > *:nth-child(4) {
-    animation-delay: 220ms;
-  }
-  .hero-seq > *:nth-child(5) {
-    animation-delay: 280ms;
-  }
-  .hero-media {
-    animation: hero-in 900ms var(--ease-out-soft) both;
-    animation-delay: 260ms;
+  .word > span {
+    animation: word-up 900ms var(--ease-out-expo) both;
+    animation-delay: calc(60ms + var(--i, 0) * 62ms);
   }
 
-  /* Ambience inside product mocks. */
-  .anim-pulse {
-    animation: pulse-soft 2.4s ease-in-out infinite;
+  .hero-seq > * {
+    animation: hero-in 800ms var(--ease-out-expo) both;
   }
-  .anim-fill {
-    animation: fill-bar 3.6s var(--ease-out-soft) infinite alternate;
+  .hero-seq > *:nth-child(1) {
+    animation-delay: 260ms;
+  }
+  .hero-seq > *:nth-child(2) {
+    animation-delay: 340ms;
+  }
+  .hero-seq > *:nth-child(3) {
+    animation-delay: 420ms;
+  }
+  .hero-seq > *:nth-child(4) {
+    animation-delay: 500ms;
+  }
+
+  .demo-in {
+    animation: demo-in 1200ms var(--ease-out-expo) 340ms both;
+  }
+
+  /* A slow sheen across gradient text, so the accent is never quite static. */
+  .t-gradient {
+    animation: sheen 7s ease-in-out infinite;
+  }
+}
+
+@keyframes sheen {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* The reading-progress bar starts empty and is only ever filled by the
+   scrollbar, so a browser without scroll-driven animations shows nothing
+   rather than a permanently complete bar. */
+.scroll-progress {
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+/* ---------------------------------------------------------------------------
+   Interaction
+--------------------------------------------------------------------------- */
+
+/* A light sweep across a button on hover. */
+.sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  translate: -120% 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheen:hover::after,
+  .sheen:focus-visible::after {
+    transition: translate 700ms var(--ease-out-expo);
+    translate: 120% 0;
+  }
+}
+
+/* A card lit from wherever the pointer is. --mx/--my are set by Spotlight. */
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+  background: radial-gradient(
+    360px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklab, var(--color-blue-500) 12%, transparent),
+    transparent 62%
+  );
+  pointer-events: none;
+}
+.spotlight:hover::before {
+  opacity: 1;
+}
+.spotlight-dark::before {
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(56, 182, 255, 0.16),
+    transparent 62%
+  );
+}
+
+/* The dwell indicator on the feature rail, which is also the active marker. */
+@keyframes dwell {
+  from {
+    scale: 1 0;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+
+/* An infinite logo rail. The track holds two identical runs; translating by
+   exactly -50% makes the seam invisible. */
+.marquee {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track {
+    animation: marquee 46s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Ambience inside the product demos. */
+@media (prefers-reduced-motion: no-preference) {
+  .anim-pulse {
+    animation: pulse-soft 2.2s ease-in-out infinite;
+  }
+  .anim-blink {
+    animation: blink 1.05s steps(2, jump-none) infinite;
   }
 }
 
@@ -381,20 +742,15 @@
     opacity: 1;
   }
 }
-
-@keyframes fill-bar {
-  from {
-    width: 8%;
-  }
-  to {
-    width: 100%;
+@keyframes blink {
+  50% {
+    opacity: 0;
   }
 }
 
 /* ---------------------------------------------------------------------------
-   Sticky header. The compressed state is driven by a scroll-state container
-   query, so no scroll listener runs. Chromium today, everywhere later; without
-   support the header simply stays in its resting state.
+   Sticky header. The compressed state comes from a scroll-state container
+   query, so no scroll listener runs.
 --------------------------------------------------------------------------- */
 
 .header-shell {
@@ -404,18 +760,17 @@
 @supports (container-type: scroll-state) {
   @container scroll-state(stuck: top) {
     .header-bar {
-      box-shadow: 0 1px 0 0 var(--color-border-200),
-        0 12px 32px -20px rgba(15, 42, 68, 0.4);
-      background: rgba(255, 255, 255, 0.86);
-    }
-    .header-rule {
-      opacity: 1;
+      box-shadow:
+        0 1px 0 0 var(--color-line),
+        0 16px 40px -28px rgba(5, 14, 26, 0.55);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: saturate(1.7) blur(14px);
     }
   }
 }
 
 /* ---------------------------------------------------------------------------
-   Disclosure. Native <details> height animation, no JavaScript.
+   Native <details> height animation, no JavaScript.
 --------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: no-preference) {
@@ -424,9 +779,9 @@
     overflow: clip;
     opacity: 0;
     transition:
-      block-size 320ms var(--ease-out-soft),
+      block-size 340ms var(--ease-out-expo),
       opacity 240ms ease-out,
-      content-visibility 320ms allow-discrete;
+      content-visibility 340ms allow-discrete;
   }
   details[open]::details-content {
     block-size: auto;
@@ -435,28 +790,8 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Popovers and menus enter from nothing. @starting-style, no library.
---------------------------------------------------------------------------- */
-
-@media (prefers-reduced-motion: no-preference) {
-  .pop-in {
-    transition:
-      opacity 180ms var(--ease-out-soft),
-      translate 180ms var(--ease-out-soft);
-    opacity: 1;
-    translate: 0 0;
-  }
-  @starting-style {
-    .pop-in {
-      opacity: 0;
-      translate: 0 -6px;
-    }
-  }
-}
-
-/* ---------------------------------------------------------------------------
    Cross-page transitions. React's <ViewTransition> activates them; the CSS
-   below decides what they look like. The header is anchored so it does not
+   here decides what they look like. The header is anchored so it does not
    travel with the page.
 --------------------------------------------------------------------------- */
 
@@ -475,22 +810,26 @@
   animation: none;
 }
 
-@keyframes vt-fade {
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    filter: blur(4px);
+    transform: scale(0.985);
+  }
+}
+@keyframes vt-in {
   from {
     opacity: 0;
-    filter: blur(3px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
+    filter: blur(6px);
+    transform: translate3d(0, 14px, 0);
   }
 }
 
 ::view-transition-old(root) {
-  animation: 130ms ease-in both vt-fade reverse;
+  animation: 160ms ease-in both vt-out;
 }
 ::view-transition-new(root) {
-  animation: 280ms var(--ease-out-soft) 90ms both vt-fade;
+  animation: 420ms var(--ease-out-expo) 100ms both vt-in;
 }
 
 /* ---------------------------------------------------------------------------
@@ -527,7 +866,7 @@
 .skip-link:focus {
   left: 1rem;
   top: 1rem;
-  background: var(--color-navy-900);
+  background: var(--color-ink-950);
   color: #fff;
   padding: 0.75rem 1rem;
   border-radius: 8px;
