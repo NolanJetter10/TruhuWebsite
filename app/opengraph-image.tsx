@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "TruHu, the work your best accounts get, for your whole book";
+  "TruHu, the AI benefits communication platform brokers trust most";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -15,10 +15,36 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0F2A44",
-          padding: "72px",
+          background: "#050E1A",
+          padding: 72,
         }}
       >
+        {/* Stands in for the aurora on the live hero. */}
+        <div
+          style={{
+            position: "absolute",
+            top: -160,
+            left: -120,
+            width: 620,
+            height: 620,
+            borderRadius: 999,
+            background: "radial-gradient(circle, #0582DC 0%, transparent 70%)",
+            opacity: 0.5,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: -140,
+            bottom: -200,
+            width: 560,
+            height: 560,
+            borderRadius: 999,
+            background: "radial-gradient(circle, #38B000 0%, transparent 70%)",
+            opacity: 0.4,
+          }}
+        />
+
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <div
             style={{
@@ -50,31 +76,25 @@ export default async function OpengraphImage() {
             display: "flex",
             flexDirection: "column",
             color: "#FFFFFF",
-            fontSize: 62,
+            fontSize: 64,
             fontWeight: 700,
-            lineHeight: 1.08,
-            letterSpacing: "-0.03em",
+            lineHeight: 1.06,
+            letterSpacing: "-0.035em",
           }}
         >
-          <div>The work your clients see,</div>
-          <div style={{ color: "#5FC15E" }}>produced by your team,</div>
-          <div>at the speed of your whole book.</div>
+          <div>The AI Benefits Communication</div>
+          {/* Satori needs an explicit display on any node with more than one
+              child, so the two-tone line is a flex row rather than a span. */}
+          <div style={{ display: "flex", gap: 18 }}>
+            <div>Platform</div>
+            <div style={{ color: "#57D95E" }}>Brokers Trust Most</div>
+          </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            color: "#EAF1F9",
-            fontSize: 26,
-          }}
-        >
-          <div>TruHu Advisor</div>
-          <div style={{ color: "#38B000" }}>·</div>
-          <div>TruHu Workforce</div>
-          <div style={{ color: "#38B000" }}>·</div>
-          <div>Two products, bought separately</div>
+        <div style={{ display: "flex", gap: 16, color: "#9DB2C7", fontSize: 26 }}>
+          <div>Better guidance.</div>
+          <div>Smarter enrollment.</div>
+          <div style={{ color: "#38B6FF" }}>Cover your whole book.</div>
         </div>
       </div>
     ),

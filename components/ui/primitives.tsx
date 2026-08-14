@@ -1,6 +1,4 @@
-import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import type { WorkflowStatus } from "@/lib/workflows";
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -14,33 +12,24 @@ export const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 export function Container({
   children,
   className,
-  wide,
 }: {
   children: ReactNode;
   className?: string;
-  wide?: boolean;
 }) {
   return (
-    <div
-      className={cx(
-        "mx-auto w-full px-5 sm:px-8",
-        wide ? "max-w-[1440px]" : "max-w-[1200px]",
-        className,
-      )}
-    >
+    <div className={cx("mx-auto w-full max-w-[1180px] px-5 sm:px-8", className)}>
       {children}
     </div>
   );
 }
 
-/* Section rhythm alternates white and deep navy, with the light greys between. */
-type SectionTone = "white" | "section" | "tint" | "navy";
+/** The page alternates white, cool paper, and the lit dark surface. */
+type Tone = "white" | "paper" | "dark";
 
-const SECTION_TONE: Record<SectionTone, string> = {
-  white: "bg-white text-ink-900",
-  section: "bg-section text-ink-900",
-  tint: "bg-tint-100 text-ink-900",
-  navy: "bg-navy-900 text-white on-navy",
+const TONE: Record<Tone, string> = {
+  white: "bg-white text-ink",
+  paper: "bg-paper text-ink",
+  dark: "bg-ink-950 text-white on-dark",
 };
 
 export function Section({
@@ -49,39 +38,51 @@ export function Section({
   className,
   id,
   size = "default",
-  as: Tag = "section",
   labelledBy,
+  /** Lit surfaces get the drifting colour fields and the grid. */
+  ambient,
 }: {
   children: ReactNode;
-  tone?: SectionTone;
+  tone?: Tone;
   className?: string;
   id?: string;
   size?: "default" | "tight" | "loose" | "none";
-  as?: "section" | "div";
   labelledBy?: string;
+  ambient?: boolean;
 }) {
   const pad =
     size === "none"
       ? ""
       : size === "tight"
-        ? "py-10 sm:py-12"
+        ? "py-12 sm:py-14"
         : size === "loose"
-          ? "py-20 sm:py-28 lg:py-36"
-          : "py-16 sm:py-20 lg:py-28";
+          ? "py-24 sm:py-32 lg:py-40"
+          : "py-20 sm:py-24 lg:py-32";
 
   return (
-    <Tag
+    <section
       id={id}
       aria-labelledby={labelledBy}
-      className={cx(
-        "relative isolate overflow-hidden",
-        SECTION_TONE[tone],
-        pad,
-        className,
-      )}
+      className={cx("relative isolate overflow-hidden", TONE[tone], pad, className)}
     >
+      {ambient ? (
+        <>
+          <div
+            className={cx("aurora", tone !== "dark" && "aurora-soft")}
+            aria-hidden
+          >
+            <span />
+            <span />
+            <span />
+          </div>
+          <div
+            className={tone === "dark" ? "grid-field" : "grid-field-light"}
+            aria-hidden
+          />
+        </>
+      ) : null}
       {children}
-    </Tag>
+    </section>
   );
 }
 
@@ -93,28 +94,29 @@ export function Eyebrow({
   className,
 }: {
   children: ReactNode;
-  tone?: "blue" | "light" | "grey";
+  tone?: "blue" | "light";
   className?: string;
 }) {
   return (
     <p
       className={cx(
-        "t-eyebrow",
-        tone === "blue" && "text-blue-500",
-        tone === "light" && "text-leaf-400",
-        tone === "grey" && "text-grey-500",
+        "t-eyebrow inline-flex items-center gap-2",
+        tone === "blue" ? "text-blue-700" : "text-blue-400",
         className,
       )}
     >
+      <span
+        aria-hidden
+        className={cx(
+          "h-px w-6",
+          tone === "blue" ? "bg-blue-500/50" : "bg-blue-400/50",
+        )}
+      />
       {children}
     </p>
   );
 }
 
-/**
- * A heading, and at most one line under it. The brand's deck spec cuts summary
- * bands and lets the evidence stand alone, so `lede` is used sparingly.
- */
 export function SectionHeading({
   eyebrow,
   title,
@@ -123,7 +125,6 @@ export function SectionHeading({
   tone = "dark",
   id,
   className,
-  level = 2,
 }: {
   eyebrow?: string;
   title: ReactNode;
@@ -132,9 +133,7 @@ export function SectionHeading({
   tone?: "dark" | "light";
   id?: string;
   className?: string;
-  level?: 1 | 2;
 }) {
-  const Heading = level === 1 ? "h1" : "h2";
   return (
     <div
       className={cx(
@@ -143,25 +142,22 @@ export function SectionHeading({
       )}
     >
       {eyebrow ? (
-        <Eyebrow tone={tone === "light" ? "light" : "blue"} className="mb-4">
+        <Eyebrow
+          tone={tone === "light" ? "light" : "blue"}
+          className={cx("mb-5", align === "center" && "justify-center")}
+        >
           {eyebrow}
         </Eyebrow>
       ) : null}
-      <Heading
-        id={id}
-        className={cx(
-          level === 1 ? "t-h1" : "t-h2",
-          tone === "light" && "text-white",
-        )}
-      >
+      <h2 id={id} className={cx("t-h2", tone === "light" && "text-white")}>
         {title}
-      </Heading>
+      </h2>
       {lede ? (
         <p
           className={cx(
-            "t-lede mt-5",
-            align === "center" ? "mx-auto measure" : "measure",
-            tone === "light" ? "text-muted-300" : "text-grey-700",
+            "t-lede mt-6",
+            align === "center" ? "measure mx-auto" : "measure",
+            tone === "light" ? "text-slate-300" : "text-slate-600",
           )}
         >
           {lede}
@@ -184,7 +180,7 @@ export function DrawnRule({
       aria-hidden
       className={cx(
         "rule-draw h-px w-full",
-        tone === "light" ? "bg-white/20" : "bg-border-200",
+        tone === "light" ? "bg-white/15" : "bg-line",
         className,
       )}
     />
@@ -197,28 +193,23 @@ export function Card({
   children,
   className,
   tone = "white",
-  interactive,
   as: Tag = "div",
   style,
 }: {
   children: ReactNode;
   className?: string;
-  tone?: "white" | "tint" | "navy" | "green";
-  interactive?: boolean;
-  as?: "div" | "li" | "article";
+  tone?: "white" | "paper" | "dark";
+  as?: "div" | "li" | "article" | "figure";
   style?: CSSProperties;
 }) {
   return (
     <Tag
       style={style}
       className={cx(
-        "card-shape border p-6 sm:p-7",
-        tone === "white" && "border-border-200 bg-white",
-        tone === "tint" && "border-transparent bg-tint-100",
-        tone === "green" && "border-transparent bg-green-100",
-        tone === "navy" && "border-white/12 bg-white/[0.05]",
-        interactive &&
-          "transition-all duration-200 hover:-translate-y-1 hover:border-navy-900/20 hover:shadow-[0_18px_40px_-20px_rgba(15,42,68,0.28)]",
+        "card-shape relative border p-6 sm:p-7",
+        tone === "white" && "border-line bg-white",
+        tone === "paper" && "border-line bg-paper",
+        tone === "dark" && "border-white/10 bg-white/[0.04]",
         className,
       )}
     >
@@ -227,93 +218,22 @@ export function Card({
   );
 }
 
-/** Brand component: 48px circle, green tint, navy glyph. */
-export function IconCircle({
-  children,
-  tone = "green",
-  className,
-}: {
-  children: ReactNode;
-  tone?: "green" | "blue" | "navy" | "onNavy";
-  className?: string;
-}) {
-  return (
-    <span
-      className={cx(
-        "inline-flex size-12 shrink-0 items-center justify-center rounded-full",
-        tone === "green" && "bg-green-100 text-navy-900",
-        tone === "blue" && "bg-blue-100 text-navy-900",
-        tone === "navy" && "bg-navy-900 text-white",
-        tone === "onNavy" && "bg-white/10 text-leaf-400",
-        className,
-      )}
-      aria-hidden
-    >
-      {children}
-    </span>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-export function StatusPill({
-  status,
-  label,
-  className,
-  onNavy,
-}: {
-  status: WorkflowStatus;
-  label: string;
-  className?: string;
-  onNavy?: boolean;
-}) {
-  const dot =
-    status === "live"
-      ? "bg-green-500"
-      : status === "early-access"
-        ? "bg-amber-500"
-        : "bg-grey-500";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase",
-        onNavy
-          ? "border-white/18 bg-white/8 text-white/85"
-          : status === "live"
-            ? "border-transparent bg-green-100 text-green-600"
-            : status === "early-access"
-              ? "border-amber-500/25 bg-amber-500/8 text-amber-500"
-              : "border-border-200 bg-section text-grey-700",
-        className,
-      )}
-    >
-      <span className={cx("size-1.5 rounded-full", dot)} aria-hidden />
-      {label}
-    </span>
-  );
-}
-
-/**
- * A neutral label. Kept apart from StatusPill on purpose: the status colours
- * mean live, early access or roadmap and nothing else.
- */
-export function Chip({
+export function Pill({
   children,
   tone = "quiet",
   className,
 }: {
   children: ReactNode;
-  tone?: "quiet" | "accent" | "light";
+  tone?: "quiet" | "green" | "light";
   className?: string;
 }) {
   return (
     <span
       className={cx(
-        "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase",
-        tone === "quiet" && "bg-section text-grey-700",
-        tone === "accent" && "bg-tint-100 text-navy-700",
-        tone === "light" && "bg-white/10 text-white/85",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase",
+        tone === "quiet" && "bg-paper text-slate-600",
+        tone === "green" && "bg-green-100 text-green-700",
+        tone === "light" && "bg-white/10 text-white/80",
         className,
       )}
     >
@@ -322,88 +242,27 @@ export function Chip({
   );
 }
 
-/** Required under any statistic. A Stat cannot render without one. */
-export function SourceNote({
-  children,
-  tone = "dark",
+/** Anything showing illustrative data must say so. */
+export function SampleTag({
   className,
+  tone = "light",
+  children = "Sample data",
 }: {
-  children: ReactNode;
-  tone?: "dark" | "light";
   className?: string;
+  tone?: "light" | "dark";
+  children?: ReactNode;
 }) {
   return (
-    <p
+    <span
       className={cx(
-        "t-caption",
-        tone === "light" ? "text-white/50" : "text-grey-500",
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase",
+        tone === "light"
+          ? "border-line bg-white/90 text-slate-400"
+          : "border-white/20 bg-ink-950/70 text-white/60",
         className,
       )}
     >
       {children}
-    </p>
-  );
-}
-
-export function IconBullet({
-  icon,
-  children,
-  tone = "dark",
-}: {
-  icon: ReactNode;
-  children: ReactNode;
-  tone?: "dark" | "light";
-}) {
-  return (
-    <li className="flex gap-3">
-      <span
-        className={cx(
-          "mt-0.5 shrink-0",
-          tone === "light" ? "text-leaf-400" : "text-blue-500",
-        )}
-        aria-hidden
-      >
-        {icon}
-      </span>
-      <span
-        className={cx(
-          "text-[0.9375rem] leading-relaxed",
-          tone === "light" ? "text-muted-300" : "text-grey-700",
-        )}
-      >
-        {children}
-      </span>
-    </li>
-  );
-}
-
-export function TextLink({
-  href,
-  children,
-  tone = "dark",
-  className,
-}: {
-  href: string;
-  children: ReactNode;
-  tone?: "dark" | "light";
-  className?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cx(
-        "group inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline",
-        tone === "light" ? "text-leaf-400" : "text-blue-500",
-        className,
-      )}
-    >
-      {children}
-      <span
-        aria-hidden
-        className="transition-transform duration-200 group-hover:translate-x-1"
-      >
-        &rarr;
-      </span>
-    </Link>
+    </span>
   );
 }

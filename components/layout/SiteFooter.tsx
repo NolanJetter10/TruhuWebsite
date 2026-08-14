@@ -1,69 +1,53 @@
 import Link from "next/link";
-import { ShieldCheck } from "@phosphor-icons/react/ssr";
-import { FOOTER_NAV, SITE } from "@/lib/site";
 import { Logo } from "@/components/art/Logo";
-import { Container } from "@/components/ui/primitives";
+import { Container, Pill } from "@/components/ui/primitives";
+import { FOOTER_NAV, SITE } from "@/lib/site";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border-200 bg-section">
-      <Container className="py-12 sm:py-14">
-        <div className="grid gap-10 lg:grid-cols-[260px_1fr] lg:gap-16">
+    <footer className="on-dark relative isolate overflow-hidden bg-ink-950 text-white">
+      <div className="grid-field opacity-60" aria-hidden />
+      <Container className="relative py-16">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]">
           <div>
-            <Logo />
-            <p className="mt-4 max-w-[34ch] text-[0.9375rem] leading-relaxed text-grey-700">
-              Two products for benefits brokers. Sold separately.
+            <Logo tone="light" className="h-7" />
+            <p className="measure mt-5 text-[0.9375rem] leading-relaxed text-slate-300">
+              Responsible AI built for the employee benefits industry.
             </p>
-            <p className="t-caption mt-5 flex items-center gap-2 text-grey-500">
-              <ShieldCheck weight="fill" className="size-4 text-green-600" aria-hidden />
-              SOC 2 Type II
-            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Pill tone="light">SOC 2 Type II</Pill>
+              <Pill tone="light">AICPA Certified</Pill>
+              <Pill tone="light">Security &amp; Availability</Pill>
+            </div>
           </div>
 
-          <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-            {FOOTER_NAV.map((column) => (
-              <div key={column.heading}>
-                <p className="t-caption font-semibold text-ink-900 uppercase">
-                  {column.heading}
-                </p>
-                <ul className="mt-4 space-y-2.5">
-                  {column.links.map((link) => (
-                    <li key={link.href + link.label}>
-                      <Link
-                        href={link.href}
-                        className="text-[0.8125rem] leading-snug text-grey-700 underline-offset-4 hover:text-navy-900 hover:underline"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </nav>
+          {FOOTER_NAV.map((group) => (
+            <div key={group.heading}>
+              <h2 className="t-eyebrow text-white/45">{group.heading}</h2>
+              <ul className="mt-4 space-y-2.5">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-[0.9375rem] text-slate-300 transition-colors duration-200 hover:text-white"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-4 border-t border-border-200 pt-7 sm:flex-row sm:items-center sm:justify-between">
-          <p className="t-caption text-grey-500">
-            © 2026 {SITE.legalName}
+        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
+          <p className="t-caption text-white/40">
+            © {new Date().getFullYear()} {SITE.legalName}
           </p>
-          <ul className="flex flex-wrap gap-x-6 gap-y-2">
-            {[
-              { href: "/security", label: "Privacy" },
-              { href: "/security", label: "Terms" },
-              { href: "/security#subprocessors", label: "Subprocessors" },
-              { href: "/security#responsible-ai", label: "Responsible AI" },
-            ].map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  className="t-caption text-grey-500 underline-offset-4 hover:text-navy-900 hover:underline"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <p className="t-caption flex gap-6 text-white/40">
+            <span>Terms of Use</span>
+            <span>Privacy Policy</span>
+          </p>
         </div>
       </Container>
     </footer>

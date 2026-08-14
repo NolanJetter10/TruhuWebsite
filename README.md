@@ -1,51 +1,55 @@
 # truhu.ai
 
-A Next.js marketing site built to two sources of truth: the research in
-`website thematic research/` for structure and claims, and the **`truhu-deck`
-skill** (`assets/truhu-brand.json`) for the brand.
+The marketing site, rebuilt as a deliberately small base: **one landing page and
+a contact page**, carrying the copy that is live on truhu.ai today. Everything
+else was removed so that new sections get added on purpose rather than
+inherited.
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm run build    # 32 static routes
-npx eslint .
+npm run build
+npm run lint
 ```
 
-Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4 ·
-Phosphor icons.
+Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4.
 
 ---
 
+## Where things live
+
+| Concern | File |
+|---|---|
+| Every string on the site | `lib/content.ts` |
+| Nav, footer, org metadata | `lib/site.ts` |
+| Palette, type scale, motion | `app/globals.css` |
+| Page assembly | `app/page.tsx` |
+| Running product demos | `components/demos/` |
+
+`lib/content.ts` is the only place copy is written. Page components are purely
+layout and motion, so a copy change never means touching a component.
+
 ## Brand
 
-Everything below comes from `truhu-brand.json` and is wired as tokens in
-`app/globals.css`. No component contains a hex value.
+Tokens are defined once, in `app/globals.css`. No component contains a hex
+value, with one exception: the demos use a deliberately non-TruHu colour
+(`#0E5A63` and friends) because the guide being generated carries the
+**client's** brand, not ours. That contrast is the point of the demo.
 
-- **Palette.** Blue `#0582DC`, green `#38B000`, deep navy `#0F2A44`, card navy
-  `#17406D`, leaf `#5FC15E`, ink `#0F172A`, grey `#7D8597`, section grey
-  `#F2F3F4`, and the three tints. Retired values (`#254A79`, `#1798C1`,
-  `#8CC63E`, Helvetica, Calibri) appear nowhere.
-- **Logo.** The real artwork, `public/brand/truhu-logo.png`, lowercase `truhu`
-  with the blue/green split. It is never redrawn or recoloured; the
-  reverse-white variant is a knockout, the same way the deck kit makes it.
-- **Leaf.** The actual angular path from `truhu-leaf.svg`, low opacity, bleeding
-  off a corner, one per section. Not a generic blob.
-- **Card.** Three rounded corners and one sharp, bottom-right, as the
-  `card-shape` utility. The only card shape on the site.
-- **Buttons.** Green pill primary, navy outline secondary, radius 9999.
-- **Green pop.** Headlines are white or ink with exactly one phrase in green.
-- **Voice.** No em or en dashes anywhere (there is a sweep for this), none of
-  the banned marketing vocabulary, no price figures, no roadmap ship dates, no
-  only-platform superlatives.
-- **Proof.** Numbers come from the brand proof bank: 61% click rate, 3.7M
-  messages, 2,500+ groups, 246K employees, 36 languages, 5-day SLA, 8 hours to
-  30 minutes. Logo wall is the approved partner list only, headed "six of the
-  ten largest US brokerages".
+- **Palette.** Brand blue `#0582DC` and brand green `#38B000` sit on a cool,
+  near-black navy foundation (`#050E1A` → `#16395C`) with cool paper
+  (`#F4F7FB`) between. Teal `#21CFC0` exists only as the middle stop of the one
+  brand gradient; it is never used as a solid.
+- **The gradient.** `--grad-brand` (and its brighter variant for dark surfaces)
+  appears in exactly four places: the aurora, one accent phrase per section, the
+  reading-progress bar, and meters. Never on body text.
+- **Card shape.** Three rounded corners and one sharp, bottom-right, as the
+  `card-shape` utility. Cards only — putting it on buttons destroys it.
+- **Green pop.** Headlines are white or ink with exactly one gradient phrase.
 
-**One documented deviation.** The brand file specifies a white label on the
-green CTA. White on `#38B000` measures 2.9:1 and fails WCAG AA, so the label is
-navy `#0F2A44` (5.1:1). Both colours stay canonical. Change it back only if the
-accessibility claims on `/security` and `/about` come off the site too.
+**One documented deviation.** White on `#38B000` measures 2.9:1 and fails WCAG
+AA, so the primary CTA label is `#050E1A` (about 5:1). Both colours stay
+canonical.
 
 ## Motion
 
@@ -55,51 +59,58 @@ JavaScript.
 
 | Effect | Mechanism |
 |---|---|
-| Section reveals | `animation-timeline: view()` with an `entry`/`cover` range |
+| Hero headline | Per-word mask, each word riding up behind its own clip box on a `--i` delay |
+| Section reveals | `animation-timeline: view()` over an `entry`/`cover` range |
 | Staggered grids | Per-child `--i` shifting each child's `animation-range`, so the cascade tracks scroll in both directions |
-| Product mocks | A longer `media-settle` on its own view timeline |
-| Rules that draw in | `scaleX` on a view timeline |
-| Leaf parallax | `leaf-drift` across the full `cover` range, decoration only |
+| Product mocks | `reveal-tilt`, a 3D settle from tipped-back to flat |
+| Lit surfaces | Three blurred colour fields on long, offset drift loops, behind a masked grid with a travelling scan line |
 | Reading progress | `animation-timeline: scroll(root block)` |
 | Header compress | `@container scroll-state(stuck: top)`, no scroll listener |
-| Page transitions | React `<ViewTransition>` with the header anchored via `view-transition-name` |
-| FAQ open/close | Native `::details-content` height transition with `interpolate-size` |
-| Menu entrance | `@starting-style` |
+| Page transitions | React `<ViewTransition>`, header anchored via `view-transition-name` |
+| Buttons | A light sweep (`.sheen`) crossing once on hover |
+| Cards | Pointer-tracked spotlight; the handler writes two custom properties and nothing re-renders |
 
-Every block is gated on `@supports` and on `prefers-reduced-motion`, and reduced
-motion disables all of it including the view transitions. Where scroll-driven
-animation is unsupported the content is simply already visible; scroll-state
-queries are Chromium-only today and degrade to the resting header.
+Every block is gated on `@supports` and on `prefers-reduced-motion`. Where
+scroll-driven animation is unsupported the content is simply already visible;
+scroll-state queries degrade to the resting header.
 
-## Claims discipline in code
+### The demos
 
-- `<Stat>` cannot render without a `source`. The type requires it.
-- Workflow status comes from **one file**, `lib/workflows.ts`, so a pill cannot
-  say Live in the nav and Roadmap on a page. No ship dates, per brand voice.
-- `Testimonial` has no photo slot. It renders initials, on purpose.
-- Illustrative UI carries a `SampleDataTag`.
-- Integrations carry a `verified` flag and unverified entries are not rendered.
-  Employee Navigator sits in the data with `verified: false`.
-- Roadmap workflow pages show a "planned capability" banner and no product
-  imagery at all.
+The four running demos in `components/demos/` are the argument, not decoration.
+Each is a small state machine rather than one long keyframe, so a single beat
+can drive several unrelated things at once.
 
----
+- **`GuideBuilder`** — a plan document is read, values are lifted into a guide,
+  the client's brand replaces the placeholder grey, and the guide is translated
+  and delivered. This is the hero.
+- **`FeatureShowcase`** — the four Advisor capabilities, each with its own
+  panel: a language stack, a year-long campaign timeline, a microsite whose
+  branding swaps between clients, and plan comparison resolving to a
+  recommendation. The rail advances itself; a click resets the dwell timer.
+- **`DeliveryProof`** — a message arriving on a personal phone, and the same
+  message resolving to per-employee receipts.
+- **`LogoMarquee`** — two identical runs in one track, translated -50% for a
+  seamless loop, paused on hover.
+
+Demos only run while on screen, and under reduced motion they settle on their
+final step rather than looping.
+
+## Claims discipline
+
+- Every number on the page is one truhu.ai publishes today. `lib/content.ts`
+  cites nothing that is not on the live site.
+- Illustrative UI carries a `SampleTag`.
+- Statistics render their **final** value on the server, so a stat is never
+  briefly wrong for a visitor with JavaScript disabled or one who lands
+  mid-page.
 
 ## Before this goes to production
 
-1. **Testimonials are drafted.** `QUOTE_BROKER`, `QUOTE_HR`, `QUOTE_OPS` carry
-   `approval: "draft"`. The names come from the register; the wording has not
-   been signed off by the people quoted. Get sign-off or replace them.
-2. **Logo wall.** Only approved partners appear, but "six of the ten largest"
-   and each individual relationship still need an internal owner who can
-   describe them. Swap the wordmarks for real SVGs once cleared.
-3. **Employee Navigator** is blocked pending partner corroboration.
-4. **Implementation timelines** are labelled as targets confirmed in scoping.
-   CS needs to own them.
-5. **Product video.** The blueprint asks for self-hosted loops; this build ships
-   CSS and SVG product panels instead. When the clips exist,
-   `components/art/panels.tsx` is where they go, behind a `VideoLoop` with a
-   poster and a reduced-motion fallback.
-6. **Forms** validate, rate-limit and honeypot correctly, then call `deliver()`
+1. **Logo wall.** Wordmarks stand in for logo files. Swap for real SVGs once
+   cleared, and confirm each relationship has an internal owner.
+2. **Testimonial.** The Emily F. quote is taken from the live site; confirm it
+   is still approved for use.
+3. **Forms** validate, rate-limit and honeypot correctly, then call `deliver()`
    in `app/actions.ts`, which logs server-side. Point it at the CRM.
-7. **Analytics.** Nothing loads. Anything added must load post-consent.
+4. **Login** links to `app.truhu.ai`; confirm that is the real destination.
+5. **Analytics.** Nothing loads. Anything added must load post-consent.

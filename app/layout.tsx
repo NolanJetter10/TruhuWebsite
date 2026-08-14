@@ -22,11 +22,16 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
-    default: "TruHu, the work your best accounts get, for your whole book",
+    default: "TruHu, the AI benefits communication platform brokers trust most",
     template: "%s · TruHu",
   },
   description: SITE.tagline,
-  openGraph: { type: "website", siteName: SITE.name, locale: "en_US", url: SITE.url },
+  openGraph: {
+    type: "website",
+    siteName: SITE.name,
+    locale: "en_US",
+    url: SITE.url,
+  },
   twitter: { card: "summary_large_image" },
   robots: { index: true, follow: true },
   alternates: { canonical: "/" },
@@ -38,6 +43,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      // Opts back into Next's scroll-behaviour override during navigation, so
+      // the global `scroll-behavior: smooth` only applies to in-page anchors.
       data-scroll-behavior="smooth"
       className={`${dmSans.variable} ${inter.variable}`}
     >
@@ -47,10 +54,10 @@ export default function RootLayout({
         </a>
         <SiteHeader />
         {/*
-          React's <ViewTransition> turns every route change into a real
-          document transition. The CSS in globals.css decides what it looks
-          like: a short crossfade, with the header anchored so it does not
-          travel with the page.
+          Route changes become real document transitions. The CSS in globals.css
+          decides what that looks like: the outgoing page falls back and blurs
+          out, the incoming one rises into place, and the header is anchored so
+          it does not travel with the content.
         */}
         <ViewTransition>
           <main id="main">{children}</main>
