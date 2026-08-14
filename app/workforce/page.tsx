@@ -4,16 +4,14 @@ import { CloseCta } from "@/components/layout/CloseCta";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Words, wordCount } from "@/components/ui/Words";
 import {
-  Card,
   Container,
-  Pill,
   Section,
   SectionHeading,
   stagger,
 } from "@/components/ui/primitives";
 import { WORKFORCE_PAGE } from "@/lib/content";
 
-const { hero, unreached, erisa, gets, hr, close } = WORKFORCE_PAGE;
+const { hero, what, reaches, gets, why, close } = WORKFORCE_PAGE;
 
 export const metadata: Metadata = {
   title: "TruHu Workforce",
@@ -62,47 +60,35 @@ export default function WorkforcePage() {
         </Container>
       </Section>
 
-      {/* Who gets missed --------------------------------------------------- */}
-      <Section tone="paper" labelledBy="unreached-heading">
+      {/* What it is -------------------------------------------------------- */}
+      <Section tone="paper" labelledBy="what-heading">
         <Container>
           <div className="reveal mx-auto max-w-3xl">
             <SectionHeading
-              id="unreached-heading"
-              eyebrow={unreached.eyebrow}
-              title={unreached.title}
+              id="what-heading"
+              eyebrow={what.eyebrow}
+              title={what.title}
             />
             <p className="measure mt-6 text-[1.0625rem] leading-relaxed text-slate-600">
-              {unreached.body}
+              {what.body}
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* The rule most people have not read -------------------------------- */}
-      <Section tone="dark" ambient labelledBy="erisa-heading">
+      {/* Who it reaches ---------------------------------------------------- */}
+      <Section tone="dark" ambient labelledBy="reaches-heading">
         <Container>
           <div className="reveal mx-auto max-w-3xl">
             <SectionHeading
-              id="erisa-heading"
-              eyebrow={erisa.eyebrow}
+              id="reaches-heading"
+              eyebrow={reaches.eyebrow}
               tone="light"
-              title={erisa.title}
+              title={reaches.title}
             />
-            {erisa.body.map((paragraph) => (
-              <p
-                key={paragraph}
-                className="measure mt-6 text-[1.0625rem] leading-relaxed text-slate-300"
-              >
-                {paragraph}
-              </p>
-            ))}
-
-            <Card tone="dark" className="mt-10">
-              <Pill tone="light">{erisa.proposal.label}</Pill>
-              <p className="mt-4 text-[0.9375rem] leading-relaxed text-slate-300">
-                {erisa.proposal.body}
-              </p>
-            </Card>
+            <p className="measure mt-6 text-[1.0625rem] leading-relaxed text-slate-300">
+              {reaches.body}
+            </p>
           </div>
         </Container>
       </Section>
@@ -130,13 +116,17 @@ export default function WorkforcePage() {
         </Container>
       </Section>
 
-      {/* HR runs it too ---------------------------------------------------- */}
-      <Section tone="paper" labelledBy="hr-heading">
+      {/* Why you offer it -------------------------------------------------- */}
+      <Section tone="paper" labelledBy="why-heading">
         <Container>
           <div className="reveal mx-auto max-w-3xl">
-            <SectionHeading id="hr-heading" eyebrow={hr.eyebrow} title={hr.title} />
+            <SectionHeading
+              id="why-heading"
+              eyebrow={why.eyebrow}
+              title={why.title}
+            />
             <p className="measure mt-6 text-[1.0625rem] leading-relaxed text-slate-600">
-              {hr.body}
+              {why.body}
             </p>
           </div>
         </Container>

@@ -11,9 +11,8 @@
 
 export const HERO = {
   eyebrow: "Built for benefits brokers",
-  /** Split for the word-by-word mask reveal in the hero. */
-  titleLead: "Your plan documents. Your client's guide.",
-  titleAccent: "Hours, not weeks.",
+  /** Rendered as one line; the word-by-word mask reveal splits it internally. */
+  title: "The agentic production line for a broker's book",
   lede: "TruHu turns the documents you already have into a personalized enrollment guide and benefits site for every client in your book — and reaches the employees who never log in to anything.",
   primaryCta: { href: "/demo", label: "Book a demo" },
   secondaryCta: { href: "/advisor", label: "See a sample guide" },
@@ -176,6 +175,39 @@ export const RESOURCES = {
   ],
 } as const;
 
+/* ------------------------------------------------------------- /resources */
+
+/** Page chrome only. The library entries themselves live in `lib/resources.ts`. */
+export const RESOURCES_PAGE = {
+  eyebrow: "Resources",
+  /** One hero per route. Plain lines, matching the home hero. */
+  kinds: {
+    blog: {
+      title: "What we have learned building a book's worth of guides.",
+      lede: "Writing on open enrollment, compliance, and reaching a workforce that does not sit at a desk.",
+    },
+    case: {
+      title: "The production line, seen from inside a brokerage.",
+      lede: "How teams moved a whole book onto one build process — and what the employees on the other end actually did.",
+    },
+  },
+  downloads: {
+    eyebrow: "Working documents",
+    title: "Templates and checklists you can put to work this renewal season.",
+    lede: "Practical documents from the same production line. No form to fill in.",
+  },
+  close: {
+    titleLead: "See it on",
+    titleAccent: "one of your own clients.",
+    lede: "Bring the plan documents for a group you are renewing. We will build the guide on the call.",
+    cta: { href: "/demo", label: "Book a demo" },
+  },
+  article: {
+    backLabel: "All resources",
+    relatedTitle: "Keep reading",
+  },
+} as const;
+
 export const CLOSING = {
   titleLead: "See it on",
   titleAccent: "one of your own clients.",
@@ -289,28 +321,21 @@ export const ADVISOR_PAGE = {
 export const WORKFORCE_PAGE = {
   hero: {
     eyebrow: "TruHu Workforce",
-    titleLead: "The employees hardest to reach are",
-    titleAccent: "the ones the plan is for.",
-    lede: "TruHu Workforce reaches employees on a phone number, with no app and no login, and keeps a per-person record of what was sent and who received it, across every client in your book.",
+    titleLead: "A direct line to every employee,",
+    titleAccent: "at every client.",
+    lede: "TruHu Workforce is a communication platform you offer your employer clients. Their HR team runs it to reach their own people by text — no app, no login, no work email needed — and you run the offering across your whole book from one console.",
     primaryCta: { href: "/demo", label: "Book a demo" },
     note: "Sold separately from Advisor. One employee record underneath both.",
   },
-  unreached: {
-    eyebrow: "Who gets missed",
-    title: "Email and the portal stop at the front office.",
-    body: "The warehouse worker, the driver, the restaurant crew, the second-shift line — they have no work email address and they do not log in to the enrollment portal. The materials get sent to HR, HR forwards them or prints them, and what happens after that is nobody's record.",
+  what: {
+    eyebrow: "What it is",
+    title: "HR runs it as their own rail.",
+    body: "The client's roster goes in from a spreadsheet. HR sends what the day requires — a closure, a schedule change, a safety notice, a policy update — to everyone, or to one site or one shift. Employees get a text on the phone they already carry. Nothing to install, nothing to sign up for.",
   },
-  erisa: {
-    eyebrow: "The rule most people have not read",
-    title: "ERISA does not accept “we posted it.”",
-    body: [
-      "The standard is delivery “reasonably calculated to ensure actual receipt” — 29 CFR 2520.104b-1(b)(1). The 2002 electronic-delivery safe harbor at 2520.104b-1(c) covers employees whose job puts them at a computer. It reaches everyone else only with their affirmative, documented consent, which is the thing nobody collects.",
-      "And a federal court has held that the existence of a document is not evidence the document was sent.",
-    ],
-    proposal: {
-      label: "A proposal, not a rule",
-      body: "A July 2026 DOL proposal would let group health plans post documents to a website and send a notice of availability to an electronic address the plan holds for each person — an email address or an internet-connected mobile number — with monitoring for bad addresses.",
-    },
+  reaches: {
+    eyebrow: "Who it reaches",
+    title: "Built for the people email never finds.",
+    body: "The warehouse crew, the drivers, the restaurant staff, the second shift — most of them have no work email and will never log in to a portal. Their employer's messages stop at the front office. A text does not.",
   },
   gets: {
     eyebrow: "What you get",
@@ -318,31 +343,31 @@ export const WORKFORCE_PAGE = {
     items: [
       {
         name: "Reach on a phone number.",
-        body: "No app to install and no account to create.",
+        body: "No app to install and no account to create, for anyone.",
       },
       {
-        name: "A per-employee record.",
-        body: "Who was sent what, and who received it, by name. Not a campaign-level percentage.",
+        name: "A per-person record.",
+        body: "Who was sent what and who received it, by name — not a campaign-level percentage.",
       },
       {
-        name: "Every employee on the roster.",
-        body: "Not only the ones with a good number on file. If we can't reach her, you see her name.",
+        name: "Segments from the roster.",
+        body: "By site, by shift, or by anything else the spreadsheet carries.",
       },
       {
         name: "One console for the whole book.",
-        body: "Every employer client in one place, run by you.",
+        body: "Every client that runs Workforce, in one place, run by you.",
       },
     ],
   },
-  hr: {
-    eyebrow: "Why it stays",
-    title: "HR runs it too.",
-    body: "HR runs Workforce as their own rail for reaching their own workforce — the roster they built, the phone numbers they collected from people with no work email, the segments by site and shift, the message history. That is why the client notices when it is gone.",
+  why: {
+    eyebrow: "Why you offer it",
+    title: "The tool is theirs. The relationship is yours.",
+    body: "Most of what you do for a client shows up once a year. Workforce shows up every time their HR team uses it — and it arrived because of you. The roster they built, the phone numbers they collected, the segments they set up, the message history they rely on: none of it moves to whoever pitches the account next. Replacing you means taking something away from their own people, over a decision they didn't make.",
   },
   close: {
     titleLead: "Start with one client",
-    titleAccent: "and one roster.",
-    lede: "A spreadsheet is enough. No benefits data required to begin.",
+    titleAccent: "and one spreadsheet.",
+    lede: "A roster import is all it takes. No integration, no IT project at the employer, no app rollout, no benefits data required.",
     primaryCta: { href: "/demo", label: "Book a demo" },
   },
 } as const;

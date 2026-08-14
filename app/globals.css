@@ -227,31 +227,13 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* The single accent treatment. One phrase per section, never a paragraph. */
-  .t-gradient {
-    background: var(--grad-brand-bright);
-    background-size: 200% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
+  /* Titles are plain text. The gradient accent is gone: clipping a background
+     to text left the phrase invisible, so the accent spans now simply inherit
+     the colour of the title they sit in. */
+  .t-gradient,
   .t-gradient-dark {
-    background: var(--grad-brand);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  /* Transparent text with no clipped background would be invisible text. */
-  @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
-    .t-gradient {
-      background: none;
-      color: var(--color-green-400);
-    }
-    .t-gradient-dark {
-      background: none;
-      color: var(--color-green-700);
-    }
+    background: none;
+    color: inherit;
   }
 }
 
@@ -674,10 +656,6 @@
     animation: demo-in 1200ms var(--ease-out-expo) 340ms both;
   }
 
-  /* A slow sheen across gradient text, so the accent is never quite static. */
-  .t-gradient {
-    animation: sheen 7s ease-in-out infinite;
-  }
 }
 
 @keyframes sheen {

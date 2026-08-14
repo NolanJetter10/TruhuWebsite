@@ -6,10 +6,10 @@ import { CAMPAIGN } from "@/lib/content";
 import { useCountUp, useInView, useSequence } from "./hooks";
 
 /**
- * Workforce's claim is a delivery record against the eligible roster, not the
- * send log — so the demo has to show both halves: a message arriving on a
- * personal phone, and a per-employee record where the person with no number
- * on file shows up by name instead of disappearing from a send report.
+ * Workforce's claim is a delivery record against the roster, not the send log —
+ * so the demo has to show both halves: a message arriving on a personal phone,
+ * and a per-employee record where the person with no number on file shows up by
+ * name instead of disappearing from a send report.
  *
  * The meters fill on entry; the roster advances one status per beat, which is
  * what makes the cascade read as delivery happening rather than as a chart.
@@ -49,15 +49,15 @@ export function DeliveryProof() {
             }}
           >
             <p className="text-[11px] leading-snug text-ink">
-              Open enrollment closes Friday. Your 2027 benefits guide is ready —
-              no login needed.
+              Oak St facility opens at 10 AM tomorrow after overnight storm
+              cleanup. Day shift, check the updated schedule:
             </p>
             <div className="mt-2 overflow-hidden rounded-lg border border-line">
               <div className="bg-[#0E5A63] px-2 py-1.5 text-[8px] font-bold tracking-wide text-white">
                 RIDGELINE MANUFACTURING
               </div>
               <p className="px-2 py-1.5 text-[9px] font-semibold text-blue-700">
-                truhu.link/ridgeline-2027
+                truhu.link/ridgeline-0117
               </p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export function DeliveryProof() {
             className="mt-1.5 pr-1 text-right text-[8px] font-semibold text-green-700 transition-opacity duration-700 delay-700"
             style={{ opacity: inView ? 1 : 0 }}
           >
-            ✓✓ Delivered 9:42 AM
+            ✓✓ Delivered
           </p>
         </div>
       </PhoneFrame>
@@ -74,7 +74,7 @@ export function DeliveryProof() {
       {/* The record ------------------------------------------------------- */}
       <div className="card-shape w-full border border-line bg-white p-5 shadow-[0_30px_70px_-40px_rgba(5,14,26,0.5)]">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="t-h4">Open enrollment reminder</p>
+          <p className="t-h4">Schedule update</p>
           <p className="tabular text-[11px] font-semibold text-slate-400">
             {CAMPAIGN.roster} on the roster
           </p>
@@ -101,7 +101,7 @@ export function DeliveryProof() {
         <p className="mt-4 flex items-center gap-2 rounded-lg bg-amber-100/60 px-3 py-2 text-[11px] leading-snug text-amber-800">
           <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
           {CAMPAIGN.noNumber} on the roster have no mobile number — listed by
-          name, not lost in a send report.
+          name.
         </p>
 
         <div className="mt-5 border-t border-line pt-4">
@@ -171,9 +171,7 @@ function Meter({
     <div>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[12px] font-semibold text-ink">{label}</span>
-        <span className="tabular text-[12px] text-slate-600">
-          <span className="font-bold text-ink">{shown}</span> · {pct}%
-        </span>
+        <span className="tabular text-[12px] font-bold text-ink">{shown}</span>
       </div>
       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper">
         <div

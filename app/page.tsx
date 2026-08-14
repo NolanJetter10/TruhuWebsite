@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DeliveryProof } from "@/components/demos/DeliveryProof";
 import { FeatureShowcase } from "@/components/demos/FeatureShowcase";
 import { GuideBuilder } from "@/components/demos/GuideBuilder";
@@ -6,7 +7,7 @@ import { LogoMarquee } from "@/components/demos/LogoMarquee";
 import { CloseCta } from "@/components/layout/CloseCta";
 import { CTAButton, TextLink } from "@/components/ui/CTAButton";
 import { SpotlightCard } from "@/components/ui/Spotlight";
-import { Words, wordCount } from "@/components/ui/Words";
+import { Words } from "@/components/ui/Words";
 import {
   Card,
   Container,
@@ -26,6 +27,12 @@ import {
   STACK,
   WORKFORCE,
 } from "@/lib/content";
+import { RESOURCES_LIBRARY } from "@/lib/resources";
+
+/** The three newest entries, whatever kind they are. */
+const LATEST_RESOURCES = [...RESOURCES_LIBRARY]
+  .sort((a, b) => b.date.localeCompare(a.date))
+  .slice(0, 3);
 
 export const metadata: Metadata = {
   description: HERO.lede,
@@ -58,13 +65,7 @@ export default function HomePage() {
               </p>
 
               <h1 className="t-h1 mt-6 text-white">
-                <Words text={HERO.titleLead} />{" "}
-                <span className="t-gradient">
-                  <Words
-                    text={HERO.titleAccent}
-                    start={wordCount(HERO.titleLead)}
-                  />
-                </span>
+                <Words text={HERO.title} />
               </h1>
 
               <div className="hero-seq">
@@ -255,22 +256,35 @@ export default function HomePage() {
             className="reveal"
           />
 
+          {/* Driven by the library itself, so the home page cannot drift from
+              what /resources actually publishes. */}
           <ul className="stagger mt-12 grid gap-5 md:grid-cols-3">
-            {RESOURCES.items.map((item, i) => (
+            {LATEST_RESOURCES.map((item, i) => (
               <SpotlightCard
-                key={item.title}
+                key={item.slug}
                 as="li"
                 style={stagger(i)}
                 className="flex flex-col"
               >
-                <Eyebrow>{item.kind}</Eyebrow>
-                <h3 className="t-h3 mt-4">{item.title}</h3>
+                <Eyebrow>{item.kind === "case" ? "Case study" : "Blog"}</Eyebrow>
+                <h3 className="t-h3 mt-4">
+                  <Link
+                    href={`/resources/${item.slug}`}
+                    className="after:absolute after:inset-0"
+                  >
+                    {item.title}
+                  </Link>
+                </h3>
                 <p className="mt-3 flex-1 text-[0.9375rem] leading-relaxed text-slate-600">
-                  {item.blurb}
+                  {item.dek}
                 </p>
               </SpotlightCard>
             ))}
           </ul>
+
+          <div className="mt-10">
+            <TextLink href="/resources">See all resources</TextLink>
+          </div>
         </Container>
       </Section>
 
