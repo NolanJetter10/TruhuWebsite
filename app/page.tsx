@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DeliveryProof } from "@/components/demos/DeliveryProof";
 import { FeatureShowcase } from "@/components/demos/FeatureShowcase";
 import { GuideBuilder } from "@/components/demos/GuideBuilder";
 import { LogoMarquee } from "@/components/demos/LogoMarquee";
+import { CloseCta } from "@/components/layout/CloseCta";
 import { CTAButton, TextLink } from "@/components/ui/CTAButton";
 import { SpotlightCard } from "@/components/ui/Spotlight";
-import { StatBand } from "@/components/ui/Stat";
-import { Words, wordCount } from "@/components/ui/Words";
+import { Words } from "@/components/ui/Words";
 import {
+  Card,
   Container,
   DrawnRule,
   Eyebrow,
@@ -17,13 +19,20 @@ import {
 } from "@/components/ui/primitives";
 import {
   ADVISOR,
+  CALENDAR,
   CLOSING,
   HERO,
   QUOTE,
   RESOURCES,
-  RESULTS,
+  STACK,
   WORKFORCE,
 } from "@/lib/content";
+import { RESOURCES_LIBRARY } from "@/lib/resources";
+
+/** The three newest entries, whatever kind they are. */
+const LATEST_RESOURCES = [...RESOURCES_LIBRARY]
+  .sort((a, b) => b.date.localeCompare(a.date))
+  .slice(0, 3);
 
 export const metadata: Metadata = {
   description: HERO.lede,
@@ -56,13 +65,7 @@ export default function HomePage() {
               </p>
 
               <h1 className="t-h1 mt-6 text-white">
-                <Words text={HERO.titleLead} />{" "}
-                <span className="t-gradient">
-                  <Words
-                    text={HERO.titleAccent}
-                    start={wordCount(HERO.titleLead)}
-                  />
-                </span>
+                <Words text={HERO.title} />
               </h1>
 
               <div className="hero-seq">
@@ -122,37 +125,38 @@ export default function HomePage() {
         </Container>
       </Section>
 
-      {/* Results --------------------------------------------------------- */}
-      <Section tone="dark" id="results" ambient labelledBy="results-heading">
+      {/* The renewal calendar -------------------------------------------- */}
+      <Section tone="dark" id="calendar" ambient labelledBy="calendar-heading">
         <Container>
           <SectionHeading
-            id="results-heading"
-            eyebrow={RESULTS.eyebrow}
+            id="calendar-heading"
+            eyebrow={CALENDAR.eyebrow}
             tone="light"
             align="center"
             title={
               <>
-                {RESULTS.titleLead}{" "}
-                <span className="t-gradient">{RESULTS.titleAccent}</span>
+                {CALENDAR.titleLead}{" "}
+                <span className="t-gradient">{CALENDAR.titleAccent}</span>
               </>
             }
-            lede={RESULTS.lede}
+            lede={CALENDAR.lede}
           />
-
-          <div className="reveal mt-16 lg:mt-20">
-            <StatBand stats={RESULTS.stats} />
-          </div>
 
           <DrawnRule tone="light" className="mt-16" />
 
           <ul className="stagger mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {RESULTS.facts.map((fact, i) => (
-              <li key={fact.label} style={stagger(i)}>
-                <p className="t-h1 text-green-400">{fact.value}</p>
-                <p className="t-caption mt-2 text-slate-300">{fact.label}</p>
+            {CALENDAR.steps.map((step, i) => (
+              <li key={step.label} style={stagger(i)}>
+                <p className="t-h1 text-green-400">{step.value}</p>
+                <p className="t-caption mt-2 text-slate-300">{step.label}</p>
               </li>
             ))}
           </ul>
+
+          <p className="reveal t-h3 mx-auto mt-16 max-w-3xl text-center text-white">
+            {CALENDAR.noteLead}{" "}
+            <span className="t-gradient">{CALENDAR.noteAccent}</span>
+          </p>
         </Container>
       </Section>
 
@@ -206,6 +210,7 @@ export default function HomePage() {
               <p className="mt-10">
                 <TextLink href={WORKFORCE.cta.href}>{WORKFORCE.cta.label}</TextLink>
               </p>
+              <p className="t-caption mt-5 text-slate-400">{WORKFORCE.footnote}</p>
             </div>
 
             <div className="reveal-tilt min-w-0">
@@ -215,8 +220,34 @@ export default function HomePage() {
         </Container>
       </Section>
 
+      {/* Where TruHu sits ------------------------------------------------ */}
+      <Section tone="white" id="stack" labelledBy="stack-heading">
+        <Container>
+          <SectionHeading
+            id="stack-heading"
+            eyebrow={STACK.eyebrow}
+            align="center"
+            title={STACK.title}
+            lede={STACK.lede}
+            className="reveal"
+          />
+
+          <ul className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {STACK.starts.map((item, i) => (
+              <Card as="li" key={item} tone="paper" style={stagger(i)} className="text-center">
+                <p className="t-h4">{item}</p>
+              </Card>
+            ))}
+          </ul>
+
+          <p className="reveal t-caption mt-8 text-center text-slate-500">
+            {STACK.caption}
+          </p>
+        </Container>
+      </Section>
+
       {/* Resources ------------------------------------------------------- */}
-      <Section tone="white" id="resources" labelledBy="resources-heading">
+      <Section tone="paper" id="resources" labelledBy="resources-heading">
         <Container>
           <SectionHeading
             id="resources-heading"
@@ -225,44 +256,45 @@ export default function HomePage() {
             className="reveal"
           />
 
+          {/* Driven by the library itself, so the home page cannot drift from
+              what /resources actually publishes. */}
           <ul className="stagger mt-12 grid gap-5 md:grid-cols-3">
-            {RESOURCES.items.map((item, i) => (
+            {LATEST_RESOURCES.map((item, i) => (
               <SpotlightCard
-                key={item.title}
+                key={item.slug}
                 as="li"
                 style={stagger(i)}
                 className="flex flex-col"
               >
-                <Eyebrow>{item.kind}</Eyebrow>
-                <h3 className="t-h3 mt-4">{item.title}</h3>
+                <Eyebrow>{item.kind === "case" ? "Case study" : "Blog"}</Eyebrow>
+                <h3 className="t-h3 mt-4">
+                  <Link
+                    href={`/resources/${item.slug}`}
+                    className="after:absolute after:inset-0"
+                  >
+                    {item.title}
+                  </Link>
+                </h3>
                 <p className="mt-3 flex-1 text-[0.9375rem] leading-relaxed text-slate-600">
-                  {item.blurb}
+                  {item.dek}
                 </p>
               </SpotlightCard>
             ))}
           </ul>
+
+          <div className="mt-10">
+            <TextLink href="/resources">See all resources</TextLink>
+          </div>
         </Container>
       </Section>
 
       {/* Close ----------------------------------------------------------- */}
-      <Section tone="dark" ambient pointer size="loose">
-        <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="t-h1 text-white">
-              {CLOSING.titleLead}{" "}
-              <span className="t-gradient">{CLOSING.titleAccent}</span>
-            </h2>
-            <p className="t-lede measure mx-auto mt-7 text-slate-300">
-              {CLOSING.lede}
-            </p>
-            <div className="mt-10 flex flex-wrap justify-center gap-3">
-              <CTAButton href={CLOSING.primaryCta.href} size="lg">
-                {CLOSING.primaryCta.label}
-              </CTAButton>
-            </div>
-          </div>
-        </Container>
-      </Section>
+      <CloseCta
+        titleLead={CLOSING.titleLead}
+        titleAccent={CLOSING.titleAccent}
+        lede={CLOSING.lede}
+        cta={CLOSING.primaryCta}
+      />
     </>
   );
 }

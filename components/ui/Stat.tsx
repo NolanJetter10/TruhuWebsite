@@ -12,7 +12,13 @@ import { cx } from "./primitives";
 export function StatBand({
   stats,
 }: {
-  stats: readonly { value: number; suffix?: string; label: string; note?: string }[];
+  stats: readonly {
+    value: number;
+    prefix?: string;
+    suffix?: string;
+    label: string;
+    note?: string;
+  }[];
 }) {
   const [ref, inView] = useInView<HTMLDListElement>(0.35);
 
@@ -24,6 +30,7 @@ export function StatBand({
       {stats.map((stat, i) => (
         <div key={stat.label} className={cx("text-center", i > 0 && "sm:pl-8")}>
           <dd className="t-stat t-gradient">
+            {stat.prefix}
             <Counted value={stat.value} active={inView} delayMs={i * 140} />
             {stat.suffix}
           </dd>
@@ -47,5 +54,6 @@ function Counted({
   delayMs: number;
 }) {
   const shown = useCountUp(value, active, 1300 + delayMs);
-  return <span className="tabular">{shown}</span>;
+  // Grouped digits, so $228,321 reads as a dollar figure rather than an ID.
+  return <span className="tabular">{shown.toLocaleString("en-US")}</span>;
 }

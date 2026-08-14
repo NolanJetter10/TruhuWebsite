@@ -13,12 +13,20 @@ export function SpotlightCard({
   tone = "white",
   as: Tag = "div",
   style,
+  /**
+   * `none` is for cards that run their own content to the edge. It is a prop
+   * rather than a `p-0` in `className` because Tailwind resolves conflicting
+   * utilities by stylesheet order, where `p-0` is emitted before `p-6` and
+   * would lose.
+   */
+  padding = "default",
 }: {
   children: ReactNode;
   className?: string;
   tone?: "white" | "paper" | "dark";
   as?: "div" | "li" | "article";
   style?: CSSProperties;
+  padding?: "default" | "none";
 }) {
   function track(event: PointerEvent<HTMLElement>) {
     const el = event.currentTarget;
@@ -32,7 +40,8 @@ export function SpotlightCard({
       onPointerMove={track}
       style={style}
       className={cx(
-        "spotlight card-shape relative overflow-hidden border p-6 transition-[transform,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1 sm:p-7",
+        "spotlight card-shape relative overflow-hidden border transition-[transform,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1",
+        padding === "default" && "p-6 sm:p-7",
         tone === "white" &&
           "border-line bg-white hover:border-blue-500/30 hover:shadow-[0_24px_50px_-28px_rgba(5,14,26,0.4)]",
         tone === "paper" &&

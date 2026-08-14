@@ -8,7 +8,15 @@ import { cx } from "@/components/ui/primitives";
 
 const EMPTY: FormState = { ok: false };
 
-export function DemoForm() {
+const GROUP_BANDS = ["Under 25", "25–100", "100–500", "500+"] as const;
+const INTERESTS = ["TruHu Advisor", "TruHu Workforce", "Both"] as const;
+
+/**
+ * One form, two intents. The demo variant asks for what the call needs — a
+ * phone number and, ideally, one client's plan documents. The pricing variant
+ * is the qualification form: book size and products, nothing else.
+ */
+export function DemoForm({ variant = "demo" }: { variant?: "demo" | "pricing" }) {
   const [state, action] = useActionState(submitDemoRequest, EMPTY);
 
   if (state.ok) {
@@ -34,17 +42,57 @@ export function DemoForm() {
           autoComplete="email"
         />
       </div>
-      <div className="mt-5">
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
         <Field
           name="org"
-          label="Brokerage or employer"
+          label="Brokerage"
           error={state.errors?.org}
           autoComplete="organization"
         />
+        {variant === "demo" ? (
+          <Field name="phone" label="Phone" type="tel" optional autoComplete="tel" />
+        ) : null}
+        <Field
+          name="groups"
+          label="Employer groups you serve"
+          as="select"
+          options={GROUP_BANDS}
+        />
+        <Field
+          name="interest"
+          label="What you want to see"
+          as="select"
+          options={INTERESTS}
+        />
       </div>
-      <div className="mt-5">
-        <Field name="note" label="Anything we should know?" as="textarea" optional />
-      </div>
+
+      {variant === "demo" ? (
+        <>
+          <div className="mt-5">
+            <label
+              htmlFor="plan_docs"
+              className="text-[0.8125rem] font-semibold text-ink"
+            >
+              Plan documents
+              <span className="ml-1.5 font-normal text-slate-400">optional</span>
+            </label>
+            <input
+              id="plan_docs"
+              name="plan_docs"
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx"
+              className="mt-2 w-full rounded-xl border border-line bg-white px-4 py-3 text-[0.9375rem] text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-paper file:px-4 file:py-1.5 file:text-[0.8125rem] file:font-semibold file:text-slate-600"
+            />
+            <p className="t-caption mt-1.5 text-slate-400">
+              One client&apos;s SBCs and rate sheets are enough to build the guide live.
+            </p>
+          </div>
+          <div className="mt-5">
+            <Field name="note" label="Anything we should know?" as="textarea" optional />
+          </div>
+        </>
+      ) : null}
 
       {/* Honeypot. Hidden from people, irresistible to naive bots. */}
       <div aria-hidden className="absolute -left-[9999px]">
@@ -57,7 +105,7 @@ export function DemoForm() {
       ) : null}
 
       <div className="mt-7 flex flex-wrap items-center gap-4">
-        <Submit />
+        <Submit label={variant === "pricing" ? "Get pricing" : "Book a demo"} />
         <p className="t-caption text-slate-400">
           One business day. No sequence, no drip.
         </p>
@@ -66,11 +114,11 @@ export function DemoForm() {
   );
 }
 
-function Submit() {
+function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <SubmitButton pending={pending}>
-      {pending ? "Sending…" : "Request a demo"}
+      {pending ? "Sending…" : label}
     </SubmitButton>
   );
 }
@@ -81,6 +129,7 @@ function Field({
   type = "text",
   error,
   as,
+  options,
   optional,
   autoComplete,
 }: {
@@ -88,7 +137,8 @@ function Field({
   label: string;
   type?: string;
   error?: string;
-  as?: "textarea";
+  as?: "textarea" | "select";
+  options?: readonly string[];
   optional?: boolean;
   autoComplete?: string;
 }) {
@@ -107,6 +157,17 @@ function Field({
       </label>
       {as === "textarea" ? (
         <textarea id={name} name={name} rows={3} className={shared} />
+      ) : as === "select" ? (
+        <select id={name} name={name} defaultValue="" className={cx(shared, "appearance-none")}>
+          <option value="" disabled>
+            Select…
+          </option>
+          {options?.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
       ) : (
         <input
           id={name}
