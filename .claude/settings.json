@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx eslint *)",
+      "Bash(python -)",
+
+      "Bash(curl -s http://localhost:3000/*)",
+      "Bash(curl -s -o /dev/null -w * http://localhost:3000/*)",
+      "Bash(curl -s --max-time * http://localhost:3000/*)",
+
+      "Read(//tmp/**)",
+      "Read(//c/Users/nolan/**)",
+
+      "WebSearch"
+    ]
+  }
+}
