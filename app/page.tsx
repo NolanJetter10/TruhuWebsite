@@ -33,44 +33,59 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
-      {/* Hero ------------------------------------------------------------ */}
-      <Section tone="dark" ambient size="none" className="pt-20 pb-24 lg:pt-28 lg:pb-32">
+      {/* Hero -------------------------------------------------------------
+          One screen: the argument on the left, the product running on the
+          right. The height is capped to the viewport below the header so the
+          fold lands exactly at the section edge. */}
+      <Section
+        tone="dark"
+        ambient
+        pointer
+        size="none"
+        className="flex min-h-[calc(100svh-4rem)] items-center py-14 lg:py-10"
+      >
         <Container>
-          <div className="mx-auto max-w-4xl text-center">
-            <p
-              className="t-eyebrow inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-blue-400 backdrop-blur-sm"
-              style={{ animation: "hero-in 700ms var(--ease-out-expo) both" }}
-            >
-              <span className="size-1.5 rounded-full bg-green-400 anim-pulse" />
-              {HERO.eyebrow}
-            </p>
-
-            <h1 className="t-display mt-7 text-white">
-              <Words text={HERO.titleLead} />{" "}
-              <span className="t-gradient">
-                <Words text={HERO.titleAccent} start={wordCount(HERO.titleLead)} />
-              </span>
-            </h1>
-
-            <div className="hero-seq">
-              <p className="t-lede mx-auto mt-7 max-w-2xl text-slate-300">
-                {HERO.lede}
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-14">
+            <div>
+              <p
+                className="t-eyebrow inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-blue-400 backdrop-blur-sm"
+                style={{ animation: "hero-in 700ms var(--ease-out-expo) both" }}
+              >
+                <span className="size-1.5 rounded-full bg-green-400 anim-pulse" />
+                {HERO.eyebrow}
               </p>
-              <div className="mt-9 flex flex-wrap justify-center gap-3">
-                <CTAButton href={HERO.primaryCta.href} size="lg">
-                  {HERO.primaryCta.label}
-                </CTAButton>
-                <CTAButton href={HERO.secondaryCta.href} variant="onDark" size="lg">
-                  {HERO.secondaryCta.label}
-                </CTAButton>
-              </div>
-              <p className="t-caption mt-7 text-white/45">{HERO.note}</p>
-            </div>
-          </div>
 
-          {/* The product does the talking, at full width, tipping into place. */}
-          <div className="demo-in mt-16 lg:mt-20">
-            <GuideBuilder />
+              <h1 className="t-h1 mt-6 text-white">
+                <Words text={HERO.titleLead} />{" "}
+                <span className="t-gradient">
+                  <Words
+                    text={HERO.titleAccent}
+                    start={wordCount(HERO.titleLead)}
+                  />
+                </span>
+              </h1>
+
+              <div className="hero-seq">
+                <p className="t-lede measure mt-6 text-slate-300">{HERO.lede}</p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <CTAButton href={HERO.primaryCta.href} size="lg">
+                    {HERO.primaryCta.label}
+                  </CTAButton>
+                  <CTAButton
+                    href={HERO.secondaryCta.href}
+                    variant="onDark"
+                    size="lg"
+                  >
+                    {HERO.secondaryCta.label}
+                  </CTAButton>
+                </div>
+                <p className="t-caption mt-6 text-white/45">{HERO.note}</p>
+              </div>
+            </div>
+
+            <div className="demo-in min-w-0">
+              <GuideBuilder compact />
+            </div>
           </div>
         </Container>
       </Section>
@@ -230,7 +245,7 @@ export default function HomePage() {
       </Section>
 
       {/* Close ----------------------------------------------------------- */}
-      <Section tone="dark" ambient size="loose">
+      <Section tone="dark" ambient pointer size="loose">
         <Container>
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="t-h1 text-white">

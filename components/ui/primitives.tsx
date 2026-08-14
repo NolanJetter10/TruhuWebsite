@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { PointerGlow } from "./PointerGlow";
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -41,6 +42,8 @@ export function Section({
   labelledBy,
   /** Lit surfaces get the drifting colour fields and the grid. */
   ambient,
+  /** Adds brand light that follows the cursor. Ambient surfaces only. */
+  pointer,
 }: {
   children: ReactNode;
   tone?: Tone;
@@ -49,6 +52,7 @@ export function Section({
   size?: "default" | "tight" | "loose" | "none";
   labelledBy?: string;
   ambient?: boolean;
+  pointer?: boolean;
 }) {
   const pad =
     size === "none"
@@ -75,6 +79,8 @@ export function Section({
             <span />
             <span />
           </div>
+          {/* Rendered as a direct child: PointerGlow tracks its parent. */}
+          {pointer ? <PointerGlow /> : null}
           <div
             className={tone === "dark" ? "grid-field" : "grid-field-light"}
             aria-hidden

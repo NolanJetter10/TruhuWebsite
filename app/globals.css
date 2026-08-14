@@ -269,6 +269,79 @@
   overflow: hidden;
 }
 
+/* ---------------------------------------------------------------------------
+   Brand light that follows the cursor. Sits above the drifting aurora and
+   below the grid, so the grid reads as a surface the light passes behind.
+
+   The three fields share one pointer position and ease toward it at different
+   speeds. That separation is the whole effect: a single field tracking exactly
+   would just look like an oversized cursor. Margins are half of each field's
+   own size, so `translate` is the pointer position with no further maths.
+--------------------------------------------------------------------------- */
+
+.pointer-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pointer-glow span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  border-radius: 9999px;
+  opacity: 0;
+  translate: var(--px, 50%) var(--py, 40%);
+  transition:
+    translate 900ms var(--ease-out-expo),
+    opacity 600ms ease-out;
+  will-change: translate;
+}
+
+.pointer-glow[data-active="true"] span {
+  opacity: 1;
+}
+
+/* The core. Small, sharp, and quick enough to feel attached to the cursor. */
+.pointer-glow span:nth-child(1) {
+  width: 190px;
+  height: 190px;
+  margin: -95px 0 0 -95px;
+  filter: blur(44px);
+  background: radial-gradient(circle, rgba(33, 207, 192, 0.5) 0%, transparent 70%);
+  transition-duration: 480ms, 600ms;
+}
+
+/* The body of the light. */
+.pointer-glow span:nth-child(2) {
+  width: 560px;
+  height: 560px;
+  margin: -280px 0 0 -280px;
+  filter: blur(80px);
+  background: radial-gradient(circle, rgba(56, 182, 255, 0.4) 0%, transparent 66%);
+}
+
+/* The tail, which arrives last and gives the light its weight. */
+.pointer-glow span:nth-child(3) {
+  width: 340px;
+  height: 340px;
+  margin: -170px 0 0 -170px;
+  filter: blur(72px);
+  background: radial-gradient(circle, rgba(87, 217, 94, 0.34) 0%, transparent 68%);
+  transition-duration: 1400ms, 600ms;
+}
+
+/* Pointer-driven, but still motion. The drifting aurora underneath carries the
+   colour on its own. */
+@media (prefers-reduced-motion: reduce) {
+  .pointer-glow {
+    display: none;
+  }
+}
+
 .aurora span {
   position: absolute;
   display: block;

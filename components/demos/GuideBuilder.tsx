@@ -27,6 +27,16 @@ const ROWS = [
 
 const LANGUAGES = ["English", "Español", "Tiếng Việt", "简体中文"];
 
+/**
+ * Body lines in the source document. The compact run drops to six so the whole
+ * demo clears the fold when it sits beside the hero copy rather than under it.
+ * Every third line is one the extractor lifts a value from.
+ */
+const DOC_LINES = {
+  full: ["88%", "72%", "94%", "61%", "83%", "77%", "90%", "58%", "86%", "70%"],
+  compact: ["88%", "94%", "61%", "83%", "58%", "76%"],
+};
+
 export function GuideBuilder({ compact = false }: { compact?: boolean }) {
   const [ref, inView] = useInView<HTMLElement>(0.25);
   const [stage] = useSequence(STAGES.length, 2400, inView);
@@ -35,11 +45,24 @@ export function GuideBuilder({ compact = false }: { compact?: boolean }) {
   const branded = stage >= 2;
   const delivered = stage >= 3;
 
+  const lines = compact ? DOC_LINES.compact : DOC_LINES.full;
+  const pad = compact ? "p-3" : "p-4";
+
   return (
     <figure ref={ref} className="relative">
-      <BrowserFrame label="app.truhu.ai / ridgeline-manufacturing / 2026-oe">
+      <BrowserFrame
+        label={
+          compact
+            ? "app.truhu.ai / ridgeline"
+            : "app.truhu.ai / ridgeline-manufacturing / 2026-oe"
+        }
+      >
         {/* Stage rail ------------------------------------------------------ */}
-        <div className="relative border-b border-line bg-white px-4 py-3">
+        <div
+          className={`relative border-b border-line bg-white ${
+            compact ? "px-3 py-2.5" : "px-4 py-3"
+          }`}
+        >
           <div className="flex items-center justify-between gap-2">
             {STAGES.map((name, i) => (
               <div key={name} className="flex items-center gap-1.5">
@@ -75,27 +98,23 @@ export function GuideBuilder({ compact = false }: { compact?: boolean }) {
           </div>
         </div>
 
-        <div
-          className={`grid gap-px bg-line sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] ${
-            compact ? "text-[11px]" : "text-xs"
-          }`}
-        >
+        <div className="grid gap-px bg-line text-xs sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           {/* Source document --------------------------------------------- */}
-          <div className="relative overflow-hidden bg-paper p-4">
-            <p className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
-              <span className="inline-block size-1.5 rounded-full bg-blue-500" />
+          <div className={`relative overflow-hidden bg-paper ${pad}`}>
+            <p className="flex items-center gap-1.5 truncate font-mono text-[10px] text-slate-400">
+              <span className="inline-block size-1.5 shrink-0 rounded-full bg-blue-500" />
               Ridgeline_2026_SBC.pdf
             </p>
 
-            <div className="relative mt-3 overflow-hidden rounded-md border border-line bg-white p-3 shadow-sm">
+            <div
+              className={`relative mt-2.5 overflow-hidden rounded-md border border-line bg-white shadow-sm ${
+                compact ? "p-2.5" : "p-3"
+              }`}
+            >
               <div className="h-1.5 w-2/5 rounded-full bg-ink/25" />
-              <div className="mt-3 space-y-1.5" aria-hidden>
-                {[
-                  "88%", "72%", "94%", "61%", "83%", "77%",
-                  "90%", "58%", "86%", "70%",
-                ].map((w, i) => {
-                  // Three lines are the ones the extractor lifts values from.
-                  const isField = i === 2 || i === 5 || i === 8;
+              <div className="mt-2.5 space-y-1.5" aria-hidden>
+                {lines.map((w, i) => {
+                  const isField = i % 3 === 2;
                   return (
                     <div
                       key={i}
@@ -123,15 +142,17 @@ export function GuideBuilder({ compact = false }: { compact?: boolean }) {
               ) : null}
             </div>
 
-            <p className="mt-3 text-[10px] leading-relaxed text-slate-400">
+            <p className="mt-2.5 text-[10px] leading-relaxed text-slate-400">
               {stage === 0
                 ? "Reading 24 pages…"
-                : `${ROWS.length * 4} values found · each traceable to its source page`}
+                : compact
+                  ? `${ROWS.length * 4} values found`
+                  : `${ROWS.length * 4} values found · each traceable to its source page`}
             </p>
           </div>
 
           {/* Generated guide ---------------------------------------------- */}
-          <div className="bg-white p-4">
+          <div className={`bg-white ${pad}`}>
             <div
               className="card-shape-sm overflow-hidden border border-line"
               style={{
@@ -154,7 +175,7 @@ export function GuideBuilder({ compact = false }: { compact?: boolean }) {
                 >
                   R
                 </span>
-                <span className="text-[10px] font-bold tracking-wide text-white">
+                <span className="truncate text-[10px] font-bold tracking-wide text-white">
                   {branded ? "RIDGELINE MANUFACTURING" : "CLIENT BRANDING"}
                 </span>
               </div>
@@ -207,14 +228,16 @@ export function GuideBuilder({ compact = false }: { compact?: boolean }) {
               </div>
             </div>
 
-            <p className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-400">
+            <p className="mt-2.5 flex items-center gap-1.5 text-[10px] text-slate-400">
               <span
-                className={`size-1.5 rounded-full ${
+                className={`size-1.5 shrink-0 rounded-full ${
                   delivered ? "bg-green-500" : "bg-blue-500 anim-pulse"
                 }`}
               />
               {delivered
-                ? "Delivered by text and email. No login required."
+                ? compact
+                  ? "Delivered by text and email."
+                  : "Delivered by text and email. No login required."
                 : "Building guide from source document…"}
             </p>
           </div>
