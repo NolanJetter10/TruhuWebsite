@@ -12,9 +12,9 @@
 export const HERO = {
   eyebrow: "Built for benefits brokers",
   /** Split for the word-by-word mask reveal in the hero. */
-  titleLead: "The client-facing work still gets built by hand",
-  titleAccent: "at eleven at night.",
-  lede: "TruHu builds your open-enrollment guides, benefits sites, notice packets and flyers from the plan documents you already have — and reaches the employees who never log in to anything.",
+  titleLead: "Your plan documents. Your client's guide.",
+  titleAccent: "Hours, not weeks.",
+  lede: "TruHu turns the documents you already have into a personalized enrollment guide and benefits site for every client in your book — and reaches the employees who never log in to anything.",
   primaryCta: { href: "/demo", label: "Book a demo" },
   secondaryCta: { href: "/advisor", label: "See a sample guide" },
   note: "No integrations required to start. Upload one client's plan documents and see the guide.",
@@ -37,7 +37,7 @@ export const BROKERS = [
 export const ADVISOR = {
   eyebrow: "TruHu Advisor",
   title: "Treat every client like your best client.",
-  lede: "Tailor-made guides, benefits sites, notice packets and flyers for every group in your book, built from the documents you already have — in hours, not weeks.",
+  lede: "Personalized, tailor-made guides and benefits sites for every group in your book, built by AI from the documents you already have and finished by you in the designer.",
   cta: { href: "/advisor", label: "See TruHu Advisor" },
 } as const;
 
@@ -50,9 +50,9 @@ export const FEATURES: {
 }[] = [
   {
     key: "materials",
-    name: "Four materials, one engine",
+    name: "One build, every format",
     blurb:
-      "The open-enrollment guide, the benefits website, the notice packet and the flyer — one build, one designer, one publish path.",
+      "The guide and the benefits website come off one build. Publish the site, download the PDF, or send a link that opens on any phone.",
   },
   {
     key: "pipeline",
@@ -140,7 +140,7 @@ export const CAMPAIGN = {
 export const STACK = {
   eyebrow: "Where TruHu sits",
   title: "Neither system you own builds the guide.",
-  lede: "Your AMS holds the book. Your ben-admin platform holds the enrollment record. Neither one produces the guide, the notice packet or the flyer — and neither one reaches the employee who has never logged in. That is the work TruHu does.",
+  lede: "Your AMS holds the book. Your ben-admin platform holds the enrollment record. Neither one produces the guide or the benefits site — and neither one reaches the employee who has never logged in. That is the work TruHu does.",
   starts: [
     "No AMS integration",
     "No carrier feed",
@@ -190,7 +190,7 @@ export const ADVISOR_PAGE = {
     eyebrow: "TruHu Advisor",
     titleLead: "Every guide you build starts from",
     titleAccent: "documents you already have.",
-    lede: "SBCs, rate sheets, carrier plan documents. Upload them and TruHu produces the open-enrollment guide, the benefits website, the notice packet and the flyer — in your client's brand, ready for you to edit.",
+    lede: "SBCs, rate sheets, carrier plan documents. Upload them and TruHu produces the open-enrollment guide and the benefits website — personalized, in your client's brand, ready for you to edit.",
     primaryCta: { href: "/demo", label: "Book a demo" },
     secondaryCta: { href: "#materials", label: "See a sample guide" },
     note: "No AMS, carrier or ben-admin connection required to start.",
@@ -224,26 +224,22 @@ export const ADVISOR_PAGE = {
   },
   materials: {
     eyebrow: "What it produces",
-    title: "Four materials from one build.",
+    title: "One build, shipped three ways.",
     items: [
       {
-        name: "Open-enrollment guide",
-        blurb: "Built from this year's confirmed plans, ready to edit.",
-      },
-      {
         name: "Benefits website",
-        blurb: "The guide as a site, in the client's brand, no login to read.",
+        blurb: "Published under the client's brand. No login to read.",
       },
       {
-        name: "Notice packet",
-        blurb: "Annual notices with versioned, effective-dated compliance language.",
+        name: "PDF guide",
+        blurb: "The download for print, email and the enrollment meeting.",
       },
       {
-        name: "Benefit flyer",
-        blurb: "A one-page summary in the client's brand.",
+        name: "Share link",
+        blurb: "Opens on any phone and hosts the ask-a-question chat.",
       },
     ],
-    caption: "Four material types, one engine, one designer, one publish path.",
+    caption: "One engine, one designer, one publish path.",
   },
   trust: {
     eyebrow: "Why the output holds up",

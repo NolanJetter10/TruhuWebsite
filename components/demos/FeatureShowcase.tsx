@@ -135,20 +135,20 @@ const MATERIALS = [
     cta: "ridgeline.truhu.site",
   },
   {
-    kind: "Notice packet",
-    title: "2027 Annual Notices",
-    rows: ["CHIP notice", "Medicare Part D", "HIPAA privacy"],
-    cta: "Delivery logged",
+    kind: "PDF guide",
+    title: "Your 2027 Benefits",
+    rows: ["Print-ready", "Email-ready", "Meeting handout"],
+    cta: "Download PDF",
   },
   {
-    kind: "Benefit flyer",
-    title: "Enroll Nov 3–14",
-    rows: ["Key dates", "What is changing", "How to enroll"],
-    cta: "One page, their brand",
+    kind: "Share link",
+    title: "truhu.link/ridgeline",
+    rows: ["Opens on any phone", "No login", "Ask a question"],
+    cta: "Ask about your benefits",
   },
 ];
 
-/** The four material types off one engine, cycling to the front. */
+/** One build shipping in every format, cycling to the front. */
 function MaterialStack() {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
   const [front] = useSequence(MATERIALS.length, 2300, inView);
@@ -206,7 +206,7 @@ const BUILD_STEPS = [
   { when: "Read", what: "Every page classified and labeled", who: "Prior-year guides left out" },
   { when: "Structure", what: "The numbers become fields", who: "Side-by-side per benefit type" },
   { when: "Confirm", what: "You review the plan list", who: "The one human step" },
-  { when: "Build", what: "Guide, site, notices, flyer", who: "Ready to edit before anyone sees it" },
+  { when: "Build", what: "The guide and the benefits site", who: "Ready to edit before anyone sees it" },
 ];
 
 /** The build pipeline filling in, one step at a time. */

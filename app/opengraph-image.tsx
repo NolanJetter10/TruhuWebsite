@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "TruHu — client-ready benefits materials from your plan documents";
+  "TruHu — your plan documents become your client's guide, in hours";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -82,18 +82,18 @@ export default async function OpengraphImage() {
             letterSpacing: "-0.035em",
           }}
         >
-          <div>The client-facing work still</div>
+          <div>Your plan documents.</div>
           {/* Satori needs an explicit display on any node with more than one
               child, so the two-tone line is a flex row rather than a span. */}
           <div style={{ display: "flex", gap: 18 }}>
-            <div>gets built</div>
-            <div style={{ color: "#57D95E" }}>by hand at eleven at night.</div>
+            <div>Your client&apos;s guide.</div>
+            <div style={{ color: "#57D95E" }}>Hours, not weeks.</div>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 16, color: "#9DB2C7", fontSize: 26 }}>
-          <div>Guides · benefits sites · notice packets · flyers.</div>
-          <div style={{ color: "#38B6FF" }}>From your plan documents.</div>
+          <div>Personalized enrollment guides and benefits sites.</div>
+          <div style={{ color: "#38B6FF" }}>For every client in the book.</div>
         </div>
       </div>
     ),

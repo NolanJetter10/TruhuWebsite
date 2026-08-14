@@ -3,7 +3,7 @@ export const SITE = {
   legalName: "Truly Human Technologies, Inc.",
   url: "https://truhu.ai",
   tagline:
-    "TruHu builds open-enrollment guides, benefits sites, notice packets and flyers from the plan documents brokers already have — and reaches the employees who never log in to anything.",
+    "TruHu turns the plan documents brokers already have into personalized enrollment guides and benefits sites — and reaches the employees who never log in to anything.",
 } as const;
 
 /** The nav follows the content spec: both products, the mechanics, the buyer pages. */

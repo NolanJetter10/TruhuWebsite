@@ -12,8 +12,8 @@ export function SiteFooter() {
           <div>
             <Logo tone="light" className="h-7" />
             <p className="measure mt-5 text-[0.9375rem] leading-relaxed text-slate-300">
-              The client-facing work, built from the plan documents you already
-              have.
+              Personalized benefits guides and sites, built from the plan
+              documents you already have.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Pill tone="light">Built from your plan documents</Pill>

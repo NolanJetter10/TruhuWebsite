@@ -108,7 +108,7 @@ export default function AdvisorPage() {
             className="reveal"
           />
 
-          <ul className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="stagger mt-12 grid gap-5 md:grid-cols-3">
             {materials.items.map((item, i) => (
               <SpotlightCard key={item.name} as="li" style={stagger(i)}>
                 <h3 className="t-h4">{item.name}</h3>
