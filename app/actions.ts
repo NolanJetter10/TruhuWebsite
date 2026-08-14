@@ -51,12 +51,22 @@ export async function submitDemoRequest(
   const email = text(formData.get("email"));
   const org = text(formData.get("org"));
   const note = text(formData.get("note"));
+  const phone = text(formData.get("phone"));
+  const groups = text(formData.get("groups"));
+  const interest = text(formData.get("interest"));
+
+  // Plan documents ride along by name only; nothing is stored in this build.
+  const files = formData
+    .getAll("plan_docs")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .map((f) => f.name)
+    .join(", ");
 
   const errors: Record<string, string> = {};
   if (!name) errors.name = "Please tell us your name.";
   if (!email) errors.email = "We need an email address to reply to.";
   else if (!EMAIL.test(email)) errors.email = "That does not look like an email address.";
-  if (!org) errors.org = "Which brokerage or employer are you with?";
+  if (!org) errors.org = "Which brokerage are you with?";
 
   if (Object.keys(errors).length) return { ok: false, errors };
 
@@ -67,7 +77,7 @@ export async function submitDemoRequest(
     };
   }
 
-  await deliver({ name, email, org, note });
+  await deliver({ name, email, org, note, phone, groups, interest, files });
 
   return {
     ok: true,

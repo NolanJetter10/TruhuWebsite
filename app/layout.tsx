@@ -22,7 +22,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
-    default: "TruHu, the AI benefits communication platform brokers trust most",
+    default: "TruHu — client-ready benefits materials from your plan documents",
     template: "%s · TruHu",
   },
   description: SITE.tagline,

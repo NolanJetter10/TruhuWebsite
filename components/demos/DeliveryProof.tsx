@@ -1,43 +1,36 @@
 "use client";
 
 import { PhoneFrame } from "@/components/art/frames";
-import { SampleTag } from "@/components/ui/primitives";
+import { SampleTag, cx } from "@/components/ui/primitives";
 import { CAMPAIGN } from "@/lib/content";
 import { useCountUp, useInView, useSequence } from "./hooks";
 
 /**
- * Workforce's claim is that "unread isn't uninformed, it's exposure", so the
- * demo has to show proof rather than a send button: a message arriving on a
- * personal phone, and the same message resolving to a per-employee receipt.
+ * Workforce's claim is a delivery record against the eligible roster, not the
+ * send log — so the demo has to show both halves: a message arriving on a
+ * personal phone, and a per-employee record where the person with no number
+ * on file shows up by name instead of disappearing from a send report.
  *
  * The meters fill on entry; the roster advances one status per beat, which is
  * what makes the cascade read as delivery happening rather than as a chart.
  */
 
-const STATUSES = [
-  { label: "Sent", className: "bg-paper text-slate-400" },
-  { label: "Delivered", className: "bg-blue-100 text-blue-700" },
-  { label: "Opened", className: "bg-green-100 text-green-700" },
-  { label: "Clicked", className: "bg-green-500 text-ink-950" },
-] as const;
-
 const ROSTER = [
-  { name: "Maria S.", segment: "Night crew" },
-  { name: "Devon P.", segment: "Warehouse" },
-  { name: "Aisha K.", segment: "Day shift" },
-  { name: "Tomás R.", segment: "Corporate" },
+  { name: "Maria S.", segment: "Night crew", reachable: true },
+  { name: "Devon P.", segment: "Warehouse", reachable: true },
+  { name: "Rosa M.", segment: "Second shift", reachable: false },
+  { name: "Tomás R.", segment: "Corporate", reachable: true },
 ];
 
 const METERS = [
-  { label: "Delivered", count: CAMPAIGN.delivered, tone: "#0582dc" },
-  { label: "Opened", count: CAMPAIGN.opened, tone: "#21cfc0" },
-  { label: "Clicked", count: CAMPAIGN.clicked, tone: "#38b000" },
+  { label: "Sent", count: CAMPAIGN.sent, tone: "#0582dc" },
+  { label: "Delivered", count: CAMPAIGN.delivered, tone: "#38b000" },
 ];
 
 export function DeliveryProof() {
   const [ref, inView] = useInView<HTMLDivElement>(0.25);
-  // One beat per status, plus the lead-in the last row needs to finish.
-  const [beat] = useSequence(ROSTER.length + STATUSES.length, 1100, inView);
+  // One beat per row, plus the lead-in the last row needs to finish.
+  const [beat] = useSequence(ROSTER.length + 2, 1100, inView);
 
   return (
     <div ref={ref} className="relative flex flex-col items-center gap-7 sm:flex-row sm:items-stretch">
@@ -56,7 +49,7 @@ export function DeliveryProof() {
             }}
           >
             <p className="text-[11px] leading-snug text-ink">
-              Open enrollment closes Friday. Your 2026 benefits guide is ready —
+              Open enrollment closes Friday. Your 2027 benefits guide is ready —
               no login needed.
             </p>
             <div className="mt-2 overflow-hidden rounded-lg border border-line">
@@ -64,7 +57,7 @@ export function DeliveryProof() {
                 RIDGELINE MANUFACTURING
               </div>
               <p className="px-2 py-1.5 text-[9px] font-semibold text-blue-700">
-                truhu.link/ridgeline-2026
+                truhu.link/ridgeline-2027
               </p>
             </div>
           </div>
@@ -73,23 +66,23 @@ export function DeliveryProof() {
             className="mt-1.5 pr-1 text-right text-[8px] font-semibold text-green-700 transition-opacity duration-700 delay-700"
             style={{ opacity: inView ? 1 : 0 }}
           >
-            ✓✓ Read 9:42 AM
+            ✓✓ Delivered 9:42 AM
           </p>
         </div>
       </PhoneFrame>
 
-      {/* The receipts ----------------------------------------------------- */}
+      {/* The record ------------------------------------------------------- */}
       <div className="card-shape w-full border border-line bg-white p-5 shadow-[0_30px_70px_-40px_rgba(5,14,26,0.5)]">
         <div className="flex items-baseline justify-between gap-3">
           <p className="t-h4">Open enrollment reminder</p>
           <p className="tabular text-[11px] font-semibold text-slate-400">
-            {CAMPAIGN.audience} employees
+            {CAMPAIGN.roster} on the roster
           </p>
         </div>
 
         <div className="mt-5 space-y-4">
           {METERS.map((meter, i) => {
-            const pct = Math.round((meter.count / CAMPAIGN.audience) * 100);
+            const pct = Math.round((meter.count / CAMPAIGN.roster) * 100);
             return (
               <Meter
                 key={meter.label}
@@ -104,14 +97,18 @@ export function DeliveryProof() {
           })}
         </div>
 
+        {/* Counted against the roster, so the misses have names. */}
+        <p className="mt-4 flex items-center gap-2 rounded-lg bg-amber-100/60 px-3 py-2 text-[11px] leading-snug text-amber-800">
+          <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+          {CAMPAIGN.noNumber} on the roster have no mobile number — listed by
+          name, not lost in a send report.
+        </p>
+
         <div className="mt-5 border-t border-line pt-4">
-          <p className="t-eyebrow mb-3 text-slate-400">Per-employee receipts</p>
+          <p className="t-eyebrow mb-3 text-slate-400">Per-employee record</p>
           <ul className="space-y-1.5">
             {ROSTER.map((person, i) => {
-              const status =
-                STATUSES[
-                  Math.min(Math.max(beat - i, 0), STATUSES.length - 1)
-                ]!;
+              const delivered = person.reachable && beat > i;
               return (
                 <li
                   key={person.name}
@@ -126,9 +123,20 @@ export function DeliveryProof() {
                     </span>
                   </span>
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide uppercase transition-colors duration-500 ${status.className}`}
+                    className={cx(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide uppercase transition-colors duration-500",
+                      !person.reachable
+                        ? "bg-amber-100 text-amber-700"
+                        : delivered
+                          ? "bg-green-100 text-green-700"
+                          : "bg-paper text-slate-400",
+                    )}
                   >
-                    {status.label}
+                    {!person.reachable
+                      ? "No number on file"
+                      : delivered
+                        ? "Delivered"
+                        : "Sent"}
                   </span>
                 </li>
               );

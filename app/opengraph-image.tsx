@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "TruHu, the AI benefits communication platform brokers trust most";
+  "TruHu — client-ready benefits materials from your plan documents";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -76,25 +76,24 @@ export default async function OpengraphImage() {
             display: "flex",
             flexDirection: "column",
             color: "#FFFFFF",
-            fontSize: 64,
+            fontSize: 62,
             fontWeight: 700,
             lineHeight: 1.06,
             letterSpacing: "-0.035em",
           }}
         >
-          <div>The AI Benefits Communication</div>
+          <div>The client-facing work still</div>
           {/* Satori needs an explicit display on any node with more than one
               child, so the two-tone line is a flex row rather than a span. */}
           <div style={{ display: "flex", gap: 18 }}>
-            <div>Platform</div>
-            <div style={{ color: "#57D95E" }}>Brokers Trust Most</div>
+            <div>gets built</div>
+            <div style={{ color: "#57D95E" }}>by hand at eleven at night.</div>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 16, color: "#9DB2C7", fontSize: 26 }}>
-          <div>Better guidance.</div>
-          <div>Smarter enrollment.</div>
-          <div style={{ color: "#38B6FF" }}>Cover your whole book.</div>
+          <div>Guides · benefits sites · notice packets · flyers.</div>
+          <div style={{ color: "#38B6FF" }}>From your plan documents.</div>
         </div>
       </div>
     ),

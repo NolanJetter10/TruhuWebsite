@@ -108,10 +108,10 @@ export function FeatureShowcase() {
       >
         {/* Keyed so each panel replays its own entrance. */}
         <div key={feature.key} className="demo-in">
-          {feature.key === "guides" ? <GuideStack /> : null}
-          {feature.key === "comms" ? <CampaignTimeline /> : null}
-          {feature.key === "microsites" ? <MicrositeSwap /> : null}
-          {feature.key === "decision" ? <DecisionSupport /> : null}
+          {feature.key === "materials" ? <MaterialStack /> : null}
+          {feature.key === "pipeline" ? <BuildTimeline /> : null}
+          {feature.key === "brand" ? <MicrositeSwap /> : null}
+          {feature.key === "answers" ? <QAChat /> : null}
         </div>
         <SampleTag className="absolute -top-3 right-4 shadow-sm" />
       </div>
@@ -121,31 +121,51 @@ export function FeatureShowcase() {
 
 /* -------------------------------------------------------------------------- */
 
-const GUIDES = [
-  { lang: "English", title: "Your 2026 Benefits", cta: "Start my enrollment" },
-  { lang: "Español", title: "Sus beneficios 2026", cta: "Comenzar inscripción" },
-  { lang: "Tiếng Việt", title: "Phúc lợi 2026", cta: "Bắt đầu đăng ký" },
-  { lang: "简体中文", title: "您的 2026 年福利", cta: "开始参保" },
+const MATERIALS = [
+  {
+    kind: "OE guide",
+    title: "Your 2027 Benefits",
+    rows: ["PPO 1500", "HDHP 3200", "Dental + Vision"],
+    cta: "Start my enrollment",
+  },
+  {
+    kind: "Benefits website",
+    title: "Ridgeline Benefits Hub",
+    rows: ["Medical", "Dental & vision", "Enrollment steps"],
+    cta: "ridgeline.truhu.site",
+  },
+  {
+    kind: "Notice packet",
+    title: "2027 Annual Notices",
+    rows: ["CHIP notice", "Medicare Part D", "HIPAA privacy"],
+    cta: "Delivery logged",
+  },
+  {
+    kind: "Benefit flyer",
+    title: "Enroll Nov 3–14",
+    rows: ["Key dates", "What is changing", "How to enroll"],
+    cta: "One page, their brand",
+  },
 ];
 
-/** The same guide, one card per language, cycling to the front. */
-function GuideStack() {
+/** The four material types off one engine, cycling to the front. */
+function MaterialStack() {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  const [front] = useSequence(GUIDES.length, 2300, inView);
+  const [front] = useSequence(MATERIALS.length, 2300, inView);
 
   return (
     <div ref={ref} className="flex min-h-[330px] items-center justify-center py-6">
       <div className="relative h-[268px] w-[210px]">
-        {GUIDES.map((guide, i) => {
-          const offset = (i - front + GUIDES.length) % GUIDES.length;
+        {MATERIALS.map((material, i) => {
+          const offset = (i - front + MATERIALS.length) % MATERIALS.length;
           return (
             <div
-              key={guide.lang}
+              key={material.kind}
               className="card-shape absolute inset-0 overflow-hidden border border-line bg-white transition-all duration-[700ms] ease-out"
               style={{
                 transform: `translate3d(${offset * 16}px, ${offset * -10}px, 0) scale(${1 - offset * 0.05})`,
                 opacity: offset > 2 ? 0 : 1 - offset * 0.22,
-                zIndex: GUIDES.length - offset,
+                zIndex: MATERIALS.length - offset,
                 boxShadow: "0 24px 50px -30px rgba(5,14,26,0.6)",
               }}
             >
@@ -154,22 +174,22 @@ function GuideStack() {
                   RIDGELINE MANUFACTURING
                 </p>
                 <p className="mt-1 text-[13px] leading-tight font-bold text-white">
-                  {guide.title}
+                  {material.title}
                 </p>
               </div>
               <div className="space-y-1.5 p-3">
-                {["PPO 1500", "HDHP 3200", "Dental + Vision"].map((plan) => (
-                  <div key={plan} className="rounded-md border border-line px-2 py-1.5">
-                    <p className="text-[10px] font-bold text-ink">{plan}</p>
+                {material.rows.map((row) => (
+                  <div key={row} className="rounded-md border border-line px-2 py-1.5">
+                    <p className="text-[10px] font-bold text-ink">{row}</p>
                     <div className="mt-1 h-1 w-2/3 rounded-full bg-line" />
                   </div>
                 ))}
                 <p className="rounded-full bg-[#0E5A63] py-1.5 text-center text-[10px] font-semibold text-white">
-                  {guide.cta}
+                  {material.cta}
                 </p>
               </div>
               <p className="absolute right-2 bottom-2 rounded-full bg-blue-100 px-1.5 py-0.5 text-[8px] font-bold text-blue-700">
-                {guide.lang}
+                {material.kind}
               </p>
             </div>
           );
@@ -181,18 +201,18 @@ function GuideStack() {
 
 /* -------------------------------------------------------------------------- */
 
-const CAMPAIGN_STEPS = [
-  { when: "Sep 15", what: "Open enrollment announcement", who: "All employees" },
-  { when: "Oct 1", what: "Benefit guide delivered", who: "1,204 sent" },
-  { when: "Oct 8", what: "Reminder to non-openers", who: "Automatic re-send" },
-  { when: "Oct 18", what: "48 hours left to enroll", who: "Still-pending only" },
-  { when: "Jan 6", what: "New hire onboarding", who: "Runs all year" },
+const BUILD_STEPS = [
+  { when: "Upload", what: "SBCs, rate sheets, plan documents", who: "Parsing starts on upload" },
+  { when: "Read", what: "Every page classified and labeled", who: "Prior-year guides left out" },
+  { when: "Structure", what: "The numbers become fields", who: "Side-by-side per benefit type" },
+  { when: "Confirm", what: "You review the plan list", who: "The one human step" },
+  { when: "Build", what: "Guide, site, notices, flyer", who: "Ready to edit before anyone sees it" },
 ];
 
-/** A year of sends filling in, one node at a time. */
-function CampaignTimeline() {
+/** The build pipeline filling in, one step at a time. */
+function BuildTimeline() {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  const [beat] = useSequence(CAMPAIGN_STEPS.length + 1, 1300, inView);
+  const [beat] = useSequence(BUILD_STEPS.length + 1, 1300, inView);
 
   return (
     <div ref={ref} className="card-shape border border-line bg-white p-6 shadow-[0_30px_70px_-40px_rgba(5,14,26,0.5)]">
@@ -203,13 +223,13 @@ function CampaignTimeline() {
           aria-hidden
           className="absolute top-2 left-[7px] w-px origin-top transition-[height] duration-[1200ms] ease-out"
           style={{
-            height: `${(Math.min(beat, CAMPAIGN_STEPS.length - 1) / (CAMPAIGN_STEPS.length - 1)) * 100}%`,
+            height: `${(Math.min(beat, BUILD_STEPS.length - 1) / (BUILD_STEPS.length - 1)) * 100}%`,
             bottom: "auto",
             background: "var(--grad-brand)",
           }}
         />
         <ul className="space-y-5">
-          {CAMPAIGN_STEPS.map((step, i) => {
+          {BUILD_STEPS.map((step, i) => {
             const done = beat > i;
             return (
               <li key={step.when} className="relative">
@@ -278,7 +298,7 @@ function MicrositeSwap() {
                   {client.name}
                 </p>
                 <p className="text-[9px] tracking-wider text-white/65 uppercase">
-                  2026 Benefits Hub
+                  2027 Benefits Hub
                 </p>
               </div>
             </div>
@@ -318,95 +338,67 @@ function MicrositeSwap() {
 
 /* -------------------------------------------------------------------------- */
 
-const PROFILES = [
+const EXCHANGES = [
   {
-    who: "Single · low usage · no prescriptions",
-    pick: 1,
-    reason: "Lower premium, and the HSA match covers the higher deductible.",
+    q: "Is urgent care covered on the PPO?",
+    a: "Yes — a $40 copay in network on PPO 1500. The ER copay is $250, waived if you are admitted.",
   },
   {
-    who: "Family of four · ongoing prescriptions",
-    pick: 0,
-    reason: "Predictable copays beat the deductible at this level of usage.",
+    q: "When does open enrollment close?",
+    a: "Friday, November 14. Your elections carry into the new plan year on January 1.",
   },
 ];
 
-const PLANS = [
-  { name: "PPO 1500", premium: "$182/mo", deductible: "$1,500", extra: "Copays from $25" },
-  { name: "HDHP 3200", premium: "$96/mo", deductible: "$3,200", extra: "Employer HSA $750" },
-];
-
-/** An employee's own situation resolving to a plan they can explain. */
-function DecisionSupport() {
+/** The share link hosts a chat that answers from this client's plan facts. */
+function QAChat() {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  // Two beats per profile: one thinking, one resolved.
-  const [beat] = useSequence(PROFILES.length * 2, 1900, inView);
-  const profile = PROFILES[Math.floor(beat / 2) % PROFILES.length]!;
-  const resolved = beat % 2 === 1;
+  // Two beats per exchange: the question lands, then the answer resolves.
+  const [beat] = useSequence(EXCHANGES.length * 2, 2100, inView);
+  const exchange = EXCHANGES[Math.floor(beat / 2) % EXCHANGES.length]!;
+  const answered = beat % 2 === 1;
 
   return (
     <div
       ref={ref}
       className="card-shape border border-line bg-white p-6 shadow-[0_30px_70px_-40px_rgba(5,14,26,0.5)]"
     >
-      <p className="t-eyebrow text-slate-400">Your situation</p>
-      <p key={profile.who} className="mt-2 text-[14px] font-semibold text-ink" style={{ animation: "hero-in 450ms var(--ease-out-expo) both" }}>
-        {profile.who}
+      <p className="t-eyebrow text-slate-400">Ask about your benefits</p>
+      <p className="mt-1 text-[11px] text-slate-400">
+        Answers come from this client&apos;s own plan documents.
       </p>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        {PLANS.map((plan, i) => {
-          const chosen = resolved && profile.pick === i;
-          return (
-            <div
-              key={plan.name}
-              className={cx(
-                "card-shape-sm relative border p-4 transition-all duration-[600ms] ease-out",
-                chosen
-                  ? "-translate-y-1 border-green-500 bg-green-100/50 shadow-[0_18px_40px_-24px_rgba(56,176,0,0.8)]"
-                  : "border-line",
-              )}
-              style={{ opacity: resolved && !chosen ? 0.55 : 1 }}
-            >
-              <p className="t-h4">{plan.name}</p>
-              <p className="tabular mt-2 text-[1.375rem] leading-none font-bold text-ink">
-                {plan.premium}
-              </p>
-              <dl className="mt-3 space-y-1 text-[11px] text-slate-600">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-400">Deductible</dt>
-                  <dd className="tabular font-semibold">{plan.deductible}</dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-400">Also</dt>
-                  <dd className="font-semibold">{plan.extra}</dd>
-                </div>
-              </dl>
-              <span
-                className="absolute -top-2.5 left-4 rounded-full bg-green-500 px-2 py-0.5 text-[9px] font-bold tracking-wide text-ink-950 uppercase transition-all duration-500"
-                style={{
-                  opacity: chosen ? 1 : 0,
-                  transform: chosen ? "none" : "translateY(6px) scale(0.9)",
-                }}
-              >
-                Best match
-              </span>
-            </div>
-          );
-        })}
+      <div className="mt-5 flex min-h-[220px] flex-col gap-3">
+        <p
+          key={exchange.q}
+          className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-blue-100 px-4 py-2.5 text-[13px] leading-snug text-ink"
+          style={{ animation: "hero-in 450ms var(--ease-out-expo) both" }}
+        >
+          {exchange.q}
+        </p>
+
+        {answered ? (
+          <div
+            key={exchange.a}
+            className="max-w-[85%] self-start rounded-2xl rounded-bl-md bg-paper px-4 py-2.5"
+            style={{ animation: "hero-in 450ms var(--ease-out-expo) both" }}
+          >
+            <p className="text-[13px] leading-snug text-slate-600">{exchange.a}</p>
+            <p className="mt-1.5 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+              From: PPO 1500 plan summary
+            </p>
+          </div>
+        ) : (
+          <span className="flex gap-1 self-start rounded-2xl rounded-bl-md bg-paper px-4 py-3">
+            <span className="size-1.5 rounded-full bg-slate-400 anim-pulse" />
+            <span className="size-1.5 rounded-full bg-slate-400 anim-pulse" style={{ animationDelay: "150ms" }} />
+            <span className="size-1.5 rounded-full bg-slate-400 anim-pulse" style={{ animationDelay: "300ms" }} />
+          </span>
+        )}
       </div>
 
-      <p
-        className="mt-4 flex min-h-[2.5rem] items-center gap-2 rounded-lg bg-paper px-3 py-2 text-[12px] leading-snug text-slate-600 transition-opacity duration-500"
-        style={{ opacity: resolved ? 1 : 0.4 }}
-      >
-        <span
-          className={cx(
-            "size-1.5 shrink-0 rounded-full",
-            resolved ? "bg-green-500" : "bg-blue-500 anim-pulse",
-          )}
-        />
-        {resolved ? profile.reason : "Comparing plans against your situation…"}
+      <p className="mt-4 flex items-center gap-2 border-t border-line pt-3 text-[11px] text-slate-400">
+        <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
+        No app, no login — employees open a link.
       </p>
     </div>
   );

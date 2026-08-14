@@ -12,12 +12,12 @@ export function SiteFooter() {
           <div>
             <Logo tone="light" className="h-7" />
             <p className="measure mt-5 text-[0.9375rem] leading-relaxed text-slate-300">
-              Responsible AI built for the employee benefits industry.
+              The client-facing work, built from the plan documents you already
+              have.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <Pill tone="light">SOC 2 Type II</Pill>
-              <Pill tone="light">AICPA Certified</Pill>
-              <Pill tone="light">Security &amp; Availability</Pill>
+              <Pill tone="light">Built from your plan documents</Pill>
+              <Pill tone="light">No app, no login</Pill>
             </div>
           </div>
 
