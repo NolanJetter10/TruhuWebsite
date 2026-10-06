@@ -227,13 +227,36 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Titles are plain text. The gradient accent is gone: clipping a background
-     to text left the phrase invisible, so the accent spans now simply inherit
-     the colour of the title they sit in. */
-  .t-gradient,
+  /* The brand sweep on an accent phrase. `background-clip: text` paints only
+     where the element carries its own text run — wrapping the span around
+     child elements instead of words is what left the old accent invisible, so
+     the phrase must sit directly inside. Word-split headlines use `.grad-word`,
+     which puts the sweep on each word and slices it to stay continuous. */
+  .t-gradient {
+    background-image: linear-gradient(
+      95deg,
+      var(--color-green-400) 0%,
+      var(--color-teal-400) 50%,
+      var(--color-blue-400) 100%
+    );
+  }
+
+  /* The same sweep at the weights that stay readable on white. */
   .t-gradient-dark {
-    background: none;
-    color: inherit;
+    background-image: linear-gradient(
+      95deg,
+      var(--color-green-700) 0%,
+      var(--color-blue-700) 100%
+    );
+  }
+
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .t-gradient,
+    .t-gradient-dark {
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
   }
 }
 
@@ -249,79 +272,6 @@
   z-index: -2;
   pointer-events: none;
   overflow: hidden;
-}
-
-/* ---------------------------------------------------------------------------
-   Brand light that follows the cursor. Sits above the drifting aurora and
-   below the grid, so the grid reads as a surface the light passes behind.
-
-   The three fields share one pointer position and ease toward it at different
-   speeds. That separation is the whole effect: a single field tracking exactly
-   would just look like an oversized cursor. Margins are half of each field's
-   own size, so `translate` is the pointer position with no further maths.
---------------------------------------------------------------------------- */
-
-.pointer-glow {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.pointer-glow span {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  border-radius: 9999px;
-  opacity: 0;
-  translate: var(--px, 50%) var(--py, 40%);
-  transition:
-    translate 900ms var(--ease-out-expo),
-    opacity 600ms ease-out;
-  will-change: translate;
-}
-
-.pointer-glow[data-active="true"] span {
-  opacity: 1;
-}
-
-/* The core. Small, sharp, and quick enough to feel attached to the cursor. */
-.pointer-glow span:nth-child(1) {
-  width: 190px;
-  height: 190px;
-  margin: -95px 0 0 -95px;
-  filter: blur(44px);
-  background: radial-gradient(circle, rgba(33, 207, 192, 0.5) 0%, transparent 70%);
-  transition-duration: 480ms, 600ms;
-}
-
-/* The body of the light. */
-.pointer-glow span:nth-child(2) {
-  width: 560px;
-  height: 560px;
-  margin: -280px 0 0 -280px;
-  filter: blur(80px);
-  background: radial-gradient(circle, rgba(56, 182, 255, 0.4) 0%, transparent 66%);
-}
-
-/* The tail, which arrives last and gives the light its weight. */
-.pointer-glow span:nth-child(3) {
-  width: 340px;
-  height: 340px;
-  margin: -170px 0 0 -170px;
-  filter: blur(72px);
-  background: radial-gradient(circle, rgba(87, 217, 94, 0.34) 0%, transparent 68%);
-  transition-duration: 1400ms, 600ms;
-}
-
-/* Pointer-driven, but still motion. The drifting aurora underneath carries the
-   colour on its own. */
-@media (prefers-reduced-motion: reduce) {
-  .pointer-glow {
-    display: none;
-  }
 }
 
 .aurora span {
@@ -389,14 +339,16 @@
 /* A surveyor's grid over the dark surfaces. Masked so it never reaches an edge
    as a hard line. */
 .grid-field {
+  --grid-cell: 68px;
+  --grid-line: rgba(255, 255, 255, 0.055);
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
-  background-size: 68px 68px;
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-cell) var(--grid-cell);
   mask-image: radial-gradient(
     ellipse 90% 70% at 50% 30%,
     #000 0%,
@@ -443,19 +395,63 @@
 
 /* Light sections get the same treatment at a whisper. */
 .grid-field-light {
+  --grid-cell: 68px;
+  --grid-line: rgba(10, 24, 38, 0.045);
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(10, 24, 38, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(10, 24, 38, 0.045) 1px, transparent 1px);
-  background-size: 68px 68px;
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-cell) var(--grid-cell);
   mask-image: radial-gradient(
     ellipse 80% 60% at 50% 50%,
     #000 0%,
     transparent 75%
   );
+}
+
+/* The pointer-reactive surfaces. Four times the lines, each a touch fainter,
+   so the mesh reads as texture rather than a heavier grid. Set on both the
+   grid and the tile layer above it, so the two share one cell size. */
+.grid-dense {
+  --grid-cell: 17px;
+}
+.grid-field.grid-dense {
+  --grid-line: rgba(255, 255, 255, 0.045);
+}
+.grid-field-light.grid-dense {
+  --grid-line: rgba(10, 24, 38, 0.035);
+}
+
+/* The tiles the cursor turns over, on their own layer above the grid. Left
+   unmasked on purpose: the grid fades out toward the edges, and tiles inside
+   that fade barely registered over the lower edge and the green field. The
+   front face is the back shown at the `--tile-front` opacity. */
+.flip-field,
+.flip-field-light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.flip-field {
+  --tile-back: rgba(56, 182, 255, 0.15);
+  --tile-front: 0.2;
+}
+.flip-field-light {
+  --tile-back: rgba(5, 130, 220, 0.11);
+  --tile-front: 0.2;
+}
+
+/* One cell turning over under the cursor. FlipGrid places and animates it;
+   it is inset a pixel so the hairlines stay drawn along its edges. */
+.flip-tile {
+  position: absolute;
+  width: calc(var(--grid-cell) - 1px);
+  height: calc(var(--grid-cell) - 1px);
+  background: var(--tile-back);
 }
 
 /* ===========================================================================
@@ -527,6 +523,23 @@
 
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
+    /* view() follows the nearest scroll container, and `overflow: hidden`
+       makes one. A reveal inside it never sees the page scroll and freezes
+       part-way, blurred and faded. Clipping hides overflow just the same
+       without becoming a scroller, so any hidden-overflow wrapper around
+       scroll-driven motion clips instead. */
+    .overflow-hidden:has(
+        .reveal,
+        .reveal-wipe,
+        .reveal-tilt,
+        .stagger > *,
+        .rule-draw,
+        .parallax
+      ),
+    .stagger.overflow-hidden {
+      overflow: clip;
+    }
+
     .reveal {
       animation: reveal-rise linear both;
       animation-timeline: view();
@@ -577,6 +590,149 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Drop-in. Time-linked on purpose: a fall scrubbed by the scrollbar reads as a
+   slide. DropIn lifts each off-screen card out of its slot, then lets it go
+   when it arrives: it accelerates down, overshoots a touch as it lands, and
+   settles. The shadow is the height it falls from, shrinking to nothing.
+--------------------------------------------------------------------------- */
+
+@keyframes card-drop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -72px, 0) rotate(var(--drop-tilt, -1.2deg));
+    box-shadow: 0 34px 44px -26px rgba(10, 24, 38, 0.3);
+    animation-timing-function: cubic-bezier(0.42, 0, 0.78, 0.5);
+  }
+  30% {
+    opacity: 1;
+  }
+  62% {
+    transform: translate3d(0, 5px, 0) rotate(0deg);
+    box-shadow: 0 2px 4px -2px rgba(10, 24, 38, 0.12);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  80% {
+    transform: translate3d(0, -2px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 0 rgba(10, 24, 38, 0);
+  }
+}
+
+[data-drop="up"] {
+  opacity: 0;
+  transform: translate3d(0, -72px, 0);
+}
+
+[data-drop="down"] {
+  animation: card-drop 1300ms both;
+  animation-delay: var(--drop-delay, 0ms);
+}
+
+/* ---------------------------------------------------------------------------
+   Slide-in. SlideIn hides each card below the fold, then sends it in sideways
+   from whichever edge its row travels from, easing to a stop in its slot. The
+   section clips, so a card starting past the page edge never adds a scrollbar.
+--------------------------------------------------------------------------- */
+
+@keyframes card-slide {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--slide-x, -96px), 0, 0);
+    filter: blur(4px);
+  }
+  55% {
+    filter: none;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+[data-slide="out"] {
+  opacity: 0;
+}
+
+[data-slide="in"] {
+  animation: card-slide 1100ms var(--ease-out-expo) both;
+  animation-delay: var(--slide-delay, 0ms);
+}
+
+/* ---------------------------------------------------------------------------
+   Fall-in. The vertical sibling of the slide: FallIn hides each card below the
+   fold and lets it go as the scroll reaches it, from a good way above its slot
+   and out from under the card before it, easing to a stop.
+--------------------------------------------------------------------------- */
+
+@keyframes card-fall {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -240px, 0);
+    filter: blur(4px);
+  }
+  35% {
+    opacity: 1;
+  }
+  55% {
+    filter: none;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+[data-fall="out"] {
+  opacity: 0;
+}
+
+[data-fall="in"] {
+  animation: card-fall 1400ms var(--ease-out-expo) both;
+  animation-delay: var(--fall-delay, 0ms);
+}
+
+/* ---------------------------------------------------------------------------
+   Fill-in. FillIn lowers each card into its slot the way FallIn does, then
+   lets its pieces land on it one at a time, in shuffled order: each one
+   slapped down a size too big, squashing a touch as it settles square. The
+   landing animates `scale` and `translate` rather than `transform`.
+--------------------------------------------------------------------------- */
+
+@keyframes piece-land {
+  from {
+    opacity: 0;
+    scale: 1.35;
+    translate: 0 -10px;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+[data-fill="out"] {
+  opacity: 0;
+}
+
+[data-fill="in"] {
+  animation: card-fall 1100ms var(--ease-out-expo) both;
+  animation-delay: var(--fill-delay, 0ms);
+}
+
+/* A piece on a card FillIn has taken over waits unseen until its turn. */
+[data-fill] [data-piece]:not([data-land]) {
+  opacity: 0;
+}
+
+[data-land="in"] {
+  animation: piece-land 560ms var(--ease-out-back) both;
+}
+
+/* ---------------------------------------------------------------------------
    Load sequence. The hero is the one thing that animates on arrival rather
    than on scroll: the headline is uncovered word by word behind a mask, then
    the supporting copy, then the demo.
@@ -604,6 +760,18 @@
   }
 }
 
+/* The dwell timer on a testimonial, drawn into the active carousel dot. The
+   carousel advances off this animation ending, so pausing the fill pauses the
+   rotation at exactly the point the eye left it. */
+@keyframes dot-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 @keyframes demo-in {
   from {
     opacity: 0;
@@ -628,6 +796,19 @@
 }
 .word > span {
   display: inline-block;
+}
+
+/* The brand line in the hero. `background-clip: text` paints only where the
+   element carries a text run of its own, so the sweep lives on the word spans;
+   Words slices it per word so the line still reads as one gradient. Guarded so
+   an engine without text clipping keeps the inherited colour instead of
+   rendering transparent text. */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .grad-word {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -735,16 +916,6 @@
   );
 }
 
-/* The dwell indicator on the feature rail, which is also the active marker. */
-@keyframes dwell {
-  from {
-    scale: 1 0;
-  }
-  to {
-    scale: 1 1;
-  }
-}
-
 /* An infinite logo rail. The track holds two identical runs; translating by
    exactly -50% makes the seam invisible. */
 .marquee {
@@ -784,6 +955,200 @@
   }
 }
 
+/* The home hero walkthrough. Screens change by fading, never by sliding: the
+   cursor is aimed from layout offsets, so anything moving under it would pull
+   the target out from under the tip. Scale is fine; offsets ignore it. */
+@keyframes demo-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes demo-modal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.97);
+  }
+}
+@keyframes demo-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+}
+@keyframes demo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes demo-ripple {
+  from {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes demo-sweep {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(160%);
+  }
+}
+@keyframes demo-caption {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+    filter: blur(4px);
+  }
+}
+/* The Advisor pipeline: work handed from one stage to the next, along the
+   connector between them. */
+@keyframes pipe-packet {
+  from {
+    left: 0%;
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+  to {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+/* The home page's flow (DocumentFlow). Files are tossed in and land at their
+   own tilt, which is set on the element, so the drop animates `translate` and
+   `rotate` rather than `transform`. */
+@keyframes flow-drop {
+  from {
+    opacity: 0;
+    translate: 0 -28px;
+    rotate: 0deg;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes flow-slide {
+  from {
+    opacity: 0;
+    translate: -14px 0;
+  }
+}
+@keyframes flow-out {
+  to {
+    opacity: 0;
+  }
+}
+/* The read across the SBC: a band half the card wide, clear of both ends. */
+@keyframes flow-sweep {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 200% 0;
+  }
+}
+/* The ring round the step playing, drawn on a `pathLength` of 100. */
+@keyframes flow-ring {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The Technology page's factory (PlatformFactory). The conveyor's slats run
+   across the belt and only move while the packets on it do. The belt runs
+   down the side of a narrow diagram and under the stages of a wide one, so
+   the slats turn with it, at the same container width the layout turns at. */
+.belt {
+  --belt-to: 0 12px;
+  background-color: rgb(10 24 38 / 0.08);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgb(10 24 38 / 0.16) 0 2px,
+    transparent 2px 12px
+  );
+}
+@container (min-width: 28rem) {
+  .belt {
+    --belt-to: 12px 0;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgb(10 24 38 / 0.16) 0 2px,
+      transparent 2px 12px
+    );
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .belt-moving {
+    animation: belt 110ms linear infinite;
+  }
+}
+@keyframes belt {
+  to {
+    background-position: var(--belt-to);
+  }
+}
+/* Inputs converging on the worker, each from its own box. */
+@keyframes feed-in {
+  from {
+    left: var(--x0);
+    top: 0%;
+    opacity: 0;
+  }
+  20%,
+  80% {
+    opacity: 1;
+  }
+  to {
+    left: var(--x1);
+    top: 100%;
+    opacity: 0;
+  }
+}
+/* A tool call: out to the tools and back. */
+@keyframes tool-call {
+  0%,
+  100% {
+    left: 0%;
+  }
+  50% {
+    left: 100%;
+  }
+}
+/* Work handed down, the vertical sibling of pipe-packet. */
+@keyframes pipe-drop {
+  from {
+    top: 0%;
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+  to {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
 @keyframes pulse-soft {
   0%,
   100% {
@@ -796,6 +1161,140 @@
 @keyframes blink {
   50% {
     opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The Workforce hero: one phone sending to many (PhoneBroadcast).
+
+   The scene is drawn on a fixed canvas and scaled to fit its column.
+   tan(atan2(a, b)) is a / b as a plain number, which is how a length becomes
+   a scale factor without script, so the server's markup is already the right
+   size. Below 440px of column, which is a phone (the narrowest desktop
+   column is about 460px), the three receiving phones move from either side
+   of the sender to a row above it; every placed element carries both
+   positions as custom properties and the container query picks one.
+--------------------------------------------------------------------------- */
+
+.bcast {
+  container-type: inline-size;
+}
+.bcast-frame {
+  position: relative;
+  aspect-ratio: 600 / 590;
+}
+.bcast-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 600px;
+  height: 590px;
+  transform-origin: 0 0;
+  scale: tan(atan2(100cqw, 600px));
+}
+.bcast-at {
+  position: absolute;
+  left: var(--wx);
+  top: var(--wy);
+  rotate: var(--wr);
+}
+.bcast-tall {
+  display: none;
+}
+@container (max-width: 439.98px) {
+  .bcast-frame {
+    aspect-ratio: 420 / 800;
+  }
+  .bcast-canvas {
+    width: 420px;
+    height: 800px;
+    scale: tan(atan2(100cqw, 420px));
+  }
+  .bcast-at {
+    left: var(--tx);
+    top: var(--ty);
+    rotate: var(--tr);
+  }
+  .bcast-wide {
+    display: none;
+  }
+  .bcast-tall {
+    display: block;
+  }
+}
+
+/* Paused, or scrolled away: the ambient motion stops with the clock. */
+.bcast[data-paused] .bcast-canvas * {
+  animation-play-state: paused !important;
+}
+/* The loop's seam: the scene resets under the fade instead of animating back
+   through every state it passed. */
+.bcast-instant * {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bcast-float {
+    animation: bcast-float 4.6s var(--ease-in-out-soft) infinite alternate;
+  }
+}
+@keyframes bcast-float {
+  from {
+    transform: translate3d(0, -4px, 0);
+  }
+  to {
+    transform: translate3d(0, 4px, 0);
+  }
+}
+/* A phone buzzing on a table. */
+@keyframes bcast-buzz {
+  0%,
+  100% {
+    transform: none;
+  }
+  12% {
+    transform: translate3d(-2px, 0, 0) rotate(-2deg);
+  }
+  25% {
+    transform: translate3d(2px, 0, 0) rotate(2deg);
+  }
+  37% {
+    transform: translate3d(-2px, 0, 0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translate3d(2px, 0, 0) rotate(1.5deg);
+  }
+  62% {
+    transform: translate3d(-1px, 0, 0) rotate(-1deg);
+  }
+  75% {
+    transform: translate3d(1px, 0, 0) rotate(0.5deg);
+  }
+}
+@keyframes bcast-sonar {
+  from {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.32, 1.14);
+  }
+}
+@keyframes bcast-burst {
+  from {
+    opacity: 1;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+@keyframes bcast-drop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0) scale(0.94);
   }
 }
 

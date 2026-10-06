@@ -11,11 +11,14 @@ import { cx } from "@/components/ui/primitives";
 export function BrowserFrame({
   children,
   label,
+  aside,
   className,
   tone = "light",
 }: {
   children: ReactNode;
   label?: string;
+  /** Sits at the far end of the toolbar, such as a page counter. */
+  aside?: ReactNode;
   className?: string;
   tone?: "light" | "dark";
 }) {
@@ -52,6 +55,7 @@ export function BrowserFrame({
             {label}
           </span>
         ) : null}
+        {aside ? <span className="ml-auto shrink-0">{aside}</span> : null}
       </div>
       <div className="relative">{children}</div>
     </div>

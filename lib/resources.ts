@@ -3,9 +3,9 @@
  *
  * PLACEHOLDER CONTENT. Every entry here is written to show the shape of the
  * page, not to be published. The house rule in `content.ts` — a figure with no
- * source does not ship — still applies, so nothing here is presented as a
- * sourced result: case-study numbers are labelled illustrative wherever they
- * render, and the download links point nowhere until real files exist.
+ * source does not ship — still applies: case-study numbers render unlabelled,
+ * so they must be replaced with sourced results before launch, and the
+ * download links point nowhere until real files exist.
  */
 
 export type ResourceKind = "blog" | "case";
@@ -22,7 +22,7 @@ export type Resource = {
   author: { name: string; role: string };
   /** One per library; it gets the wide card at the top of its tab. */
   featured?: boolean;
-  /** Case studies only — rendered with an illustrative-data tag. */
+  /** Case studies only. */
   client?: { name: string; detail: string };
   results?: { value: string; label: string }[];
   body: { heading: string; paragraphs: string[] }[];
@@ -173,7 +173,7 @@ export const RESOURCES_LIBRARY: Resource[] = [
   },
   {
     kind: "case",
-    slug: "ridgeline-manufacturing",
+    slug: "sample-company",
     title: "Two hundred groups renewed on one production line",
     dek: "How a mid-market brokerage moved its whole book onto a single build process without adding headcount.",
     topic: "Broker operations",
@@ -181,7 +181,7 @@ export const RESOURCES_LIBRARY: Resource[] = [
     readingMinutes: 7,
     author: { name: "Placeholder Author", role: "TruHu" },
     client: {
-      name: "Ridgeline Benefits",
+      name: "Sample Company",
       detail: "Placeholder client · 200 groups renewed",
     },
     results: [

@@ -87,8 +87,12 @@ can drive several unrelated things at once.
   panel: a language stack, a year-long campaign timeline, a microsite whose
   branding swaps between clients, and plan comparison resolving to a
   recommendation. The rail advances itself; a click resets the dwell timer.
-- **`DeliveryProof`** — a message arriving on a personal phone, and the same
-  message resolving to per-employee receipts.
+- **`PhoneBroadcast`** — the Workforce hero. One phone sends a message to
+  three others, each getting something different (English, Spanish, left
+  unopened); opens fly back to the sender's live record, a resend reaches only
+  the person who missed it, and the sender's phone ends on the report. The
+  scene is a fixed canvas that CSS scales to its column (`.bcast` in
+  `globals.css`).
 - **`LogoMarquee`** — two identical runs in one track, translated -50% for a
   seamless loop, paused on hover.
 
@@ -99,7 +103,6 @@ final step rather than looping.
 
 - Every number on the page is one truhu.ai publishes today. `lib/content.ts`
   cites nothing that is not on the live site.
-- Illustrative UI carries a `SampleTag`.
 - Statistics render their **final** value on the server, so a stat is never
   briefly wrong for a visitor with JavaScript disabled or one who lands
   mid-page.

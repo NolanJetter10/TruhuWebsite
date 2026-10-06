@@ -11,6 +11,7 @@ import { cx } from "./primitives";
  */
 export function StatBand({
   stats,
+  tone = "dark",
 }: {
   stats: readonly {
     value: number;
@@ -19,24 +20,47 @@ export function StatBand({
     label: string;
     note?: string;
   }[];
+  /** The surface the band sits on, not the colour of the band itself. */
+  tone?: "dark" | "light";
 }) {
   const [ref, inView] = useInView<HTMLDListElement>(0.35);
+  const onDark = tone === "dark";
 
   return (
     <dl
       ref={ref}
-      className="grid gap-y-12 sm:grid-cols-3 sm:gap-x-8 sm:divide-x sm:divide-white/10"
+      className={cx(
+        "grid gap-y-12 sm:grid-cols-3 sm:gap-x-8 sm:divide-x",
+        onDark ? "sm:divide-white/10" : "sm:divide-line",
+      )}
     >
       {stats.map((stat, i) => (
         <div key={stat.label} className={cx("text-center", i > 0 && "sm:pl-8")}>
-          <dd className="t-stat t-gradient">
+          {/* The number is kept as direct text of the <dd>: the sweep is
+              clipped to this element's own text, so wrapping the digits in a
+              span of their own would leave them invisible. */}
+          <dd
+            className={cx(
+              "t-stat tabular",
+              onDark ? "t-gradient" : "t-gradient-dark",
+            )}
+          >
             {stat.prefix}
             <Counted value={stat.value} active={inView} delayMs={i * 140} />
             {stat.suffix}
           </dd>
-          <dt className="t-h3 mt-5 text-white">{stat.label}</dt>
+          <dt className={cx("t-h3 mt-5", onDark ? "text-white" : "text-ink")}>
+            {stat.label}
+          </dt>
           {stat.note ? (
-            <p className="t-caption mt-2 text-slate-300">{stat.note}</p>
+            <p
+              className={cx(
+                "t-caption mt-2",
+                onDark ? "text-slate-300" : "text-slate-400",
+              )}
+            >
+              {stat.note}
+            </p>
           ) : null}
         </div>
       ))}
@@ -55,5 +79,5 @@ function Counted({
 }) {
   const shown = useCountUp(value, active, 1300 + delayMs);
   // Grouped digits, so $228,321 reads as a dollar figure rather than an ID.
-  return <span className="tabular">{shown.toLocaleString("en-US")}</span>;
+  return <>{shown.toLocaleString("en-US")}</>;
 }

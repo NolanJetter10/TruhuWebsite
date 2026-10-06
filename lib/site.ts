@@ -4,12 +4,25 @@ export const SITE = {
   url: "https://truhu.ai",
   tagline:
     "TruHu turns the plan documents brokers already have into personalized enrollment guides and benefits sites — and reaches the employees who never log in to anything.",
+  /** The one-line identity under the footer wordmark, as it runs on truhu.ai. */
+  footerTagline: "Responsible AI built for the employee benefits industry.",
+} as const;
+
+/** The footer's closing ask, carried over from the live site's bumper. */
+export const FOOTER_CTA = {
+  title: "Ready to reach every employee?",
+  cta: { href: "/demo", label: "Get Started" },
 } as const;
 
 /**
- * The nav follows the content spec: the two products under one Products menu,
- * then the mechanics, the library, and the buyer pages. An item with `children`
- * renders as a menu rather than a link — see `NavMenu`.
+ * The two products under one Products menu, then how it is built, the library
+ * (with the FAQ inside it), and the pages a buyer checks before a call. An item
+ * with `children` renders as a menu rather than a link — see `NavMenu`.
+ *
+ * /how-it-works is deliberately not here: it is still published and still
+ * linked from the footer and from the Workforce problem section, but it does
+ * not earn a slot in the top nav. /for-brokerages is archived under
+ * `app/_archive/` and no longer routed.
  */
 export type NavLink = {
   href: string;
@@ -34,11 +47,11 @@ export const NAV: readonly NavItem[] = [
         href: "/workforce",
         label: "TruHu Workforce",
         blurb:
-          "Reach the employees who never log in to anything — on the channels they already read.",
+          "Easy communication for hard-to-reach employees, by text and email. No app and no login.",
       },
     ],
   },
-  { href: "/how-it-works", label: "How it works" },
+  { href: "/technology", label: "Technology" },
   {
     label: "Resources",
     children: [
@@ -54,10 +67,16 @@ export const NAV: readonly NavItem[] = [
         blurb:
           "What the production line looks like inside a brokerage and its clients.",
       },
+      {
+        href: "/faq",
+        label: "FAQ",
+        blurb:
+          "Straight answers on pricing, the AI, client data and rollout, for both products.",
+      },
     ],
   },
-  { href: "/for-brokerages", label: "For brokerages" },
   { href: "/security", label: "Security" },
+  { href: "/about", label: "About" },
 ];
 
 export function isNavMenu(
@@ -72,6 +91,7 @@ export const FOOTER_NAV = [
     links: [
       { href: "/advisor", label: "TruHu Advisor" },
       { href: "/workforce", label: "TruHu Workforce" },
+      { href: "/technology", label: "Technology" },
       { href: "/how-it-works", label: "How it works" },
       { href: "/pricing", label: "Pricing" },
     ],
@@ -79,9 +99,10 @@ export const FOOTER_NAV = [
   {
     heading: "Company",
     links: [
-      { href: "/for-brokerages", label: "For brokerages" },
+      { href: "/about", label: "About" },
       { href: "/resources/blog", label: "Blog" },
       { href: "/resources/case-studies", label: "Case studies" },
+      { href: "/faq", label: "FAQ" },
       { href: "/security", label: "Security" },
       { href: "/demo", label: "Book a demo" },
     ],

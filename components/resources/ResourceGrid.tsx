@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useReducedMotion } from "@/components/demos/hooks";
 import { SpotlightCard } from "@/components/ui/Spotlight";
-import { Pill, SampleTag, cx } from "@/components/ui/primitives";
+import { Pill, cx } from "@/components/ui/primitives";
 import {
   RESOURCE_KINDS,
   formatResourceDate,
@@ -153,9 +153,6 @@ function FeaturedCard({
                 : "TruHu Journal"}
             </p>
           </div>
-          <SampleTag tone="dark" className="absolute top-4 right-4">
-            Placeholder art
-          </SampleTag>
         </div>
       </div>
     </SpotlightCard>

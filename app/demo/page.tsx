@@ -16,7 +16,6 @@ export default function DemoPage() {
         <div className="grid gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
           <div className="reveal">
             <SectionHeading
-              eyebrow={DEMO_PAGE.eyebrow}
               title={DEMO_PAGE.title}
               lede={DEMO_PAGE.lede}
             />

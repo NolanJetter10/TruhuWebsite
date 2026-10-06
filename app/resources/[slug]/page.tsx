@@ -7,7 +7,6 @@ import {
   Container,
   DrawnRule,
   Pill,
-  SampleTag,
   Section,
   stagger,
 } from "@/components/ui/primitives";
@@ -106,10 +105,7 @@ export default async function ResourceArticlePage({ params }: Props) {
         <Container>
           <div className="mx-auto max-w-3xl">
             {isCase && resource.client ? (
-              <div className="card-shape relative border border-line bg-paper p-6 sm:p-7">
-                <SampleTag className="absolute top-4 right-4">
-                  Illustrative
-                </SampleTag>
+              <div className="card-shape border border-line bg-paper p-6 sm:p-7">
                 <p className="t-eyebrow text-slate-400">Client</p>
                 <p className="t-h4 mt-2 text-ink">{resource.client.name}</p>
                 <p className="mt-1 text-[0.9375rem] text-slate-600">

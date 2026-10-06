@@ -5,7 +5,6 @@ import { SpotlightCard } from "@/components/ui/Spotlight";
 import { Words } from "@/components/ui/Words";
 import {
   Container,
-  SampleTag,
   Section,
   SectionHeading,
   cx,
@@ -102,12 +101,11 @@ export function LibraryShell({ kind }: { kind: ResourceKind }) {
         <Container>
           <SectionHeading
             id="downloads-heading"
-            eyebrow={downloads.eyebrow}
             title={downloads.title}
             lede={downloads.lede}
           />
 
-          <ul className="stagger mt-12 grid gap-6 sm:grid-cols-2">
+          <ul className="stagger mt-10 grid gap-6 sm:grid-cols-2">
             {DOWNLOADS.map((doc, i) => (
               <SpotlightCard
                 key={doc.title}
@@ -128,12 +126,8 @@ export function LibraryShell({ kind }: { kind: ResourceKind }) {
                   <p className="mt-2 text-[0.9375rem] leading-relaxed text-slate-600">
                     {doc.blurb}
                   </p>
-                  <p className="t-caption mt-4 flex items-center gap-2 text-slate-400">
-                    <span>
-                      {doc.format} · {doc.meta}
-                    </span>
-                    <span aria-hidden>·</span>
-                    <SampleTag>File coming soon</SampleTag>
+                  <p className="t-caption mt-4 text-slate-400">
+                    {doc.format} · {doc.meta}
                   </p>
                 </div>
               </SpotlightCard>

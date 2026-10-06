@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { PointerGlow } from "./PointerGlow";
+import { FlipGrid } from "./FlipGrid";
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -42,7 +42,8 @@ export function Section({
   labelledBy,
   /** Lit surfaces get the drifting colour fields and the grid. */
   ambient,
-  /** Adds brand light that follows the cursor. Ambient surfaces only. */
+  /** Doubles the grid and turns over the cell under the cursor. Ambient
+   * surfaces only. */
   pointer,
 }: {
   children: ReactNode;
@@ -60,14 +61,17 @@ export function Section({
       : size === "tight"
         ? "py-12 sm:py-14"
         : size === "loose"
-          ? "py-24 sm:py-32 lg:py-40"
-          : "py-20 sm:py-24 lg:py-32";
+          ? "py-20 sm:py-28 lg:py-32"
+          : "py-16 sm:py-20 lg:py-24";
 
+  // Clip, never hide: `overflow: hidden` makes the section a scroll container,
+  // and every scroll-driven reveal inside would then track the section, which
+  // never scrolls, instead of the page, and freeze part-way, blurred.
   return (
     <section
       id={id}
       aria-labelledby={labelledBy}
-      className={cx("relative isolate overflow-hidden", TONE[tone], pad, className)}
+      className={cx("relative isolate overflow-clip", TONE[tone], pad, className)}
     >
       {ambient ? (
         <>
@@ -79,12 +83,15 @@ export function Section({
             <span />
             <span />
           </div>
-          {/* Rendered as a direct child: PointerGlow tracks its parent. */}
-          {pointer ? <PointerGlow /> : null}
-          <div
-            className={tone === "dark" ? "grid-field" : "grid-field-light"}
-            aria-hidden
-          />
+          {/* Rendered as a direct child: FlipGrid tracks its parent. */}
+          {pointer ? (
+            <FlipGrid tone={tone === "dark" ? "dark" : "light"} />
+          ) : (
+            <div
+              className={tone === "dark" ? "grid-field" : "grid-field-light"}
+              aria-hidden
+            />
+          )}
         </>
       ) : null}
       {children}
@@ -94,37 +101,7 @@ export function Section({
 
 /* -------------------------------------------------------------------------- */
 
-export function Eyebrow({
-  children,
-  tone = "blue",
-  className,
-}: {
-  children: ReactNode;
-  tone?: "blue" | "light";
-  className?: string;
-}) {
-  return (
-    <p
-      className={cx(
-        "t-eyebrow inline-flex items-center gap-2",
-        tone === "blue" ? "text-blue-700" : "text-blue-400",
-        className,
-      )}
-    >
-      <span
-        aria-hidden
-        className={cx(
-          "h-px w-6",
-          tone === "blue" ? "bg-blue-500/50" : "bg-blue-400/50",
-        )}
-      />
-      {children}
-    </p>
-  );
-}
-
 export function SectionHeading({
-  eyebrow,
   title,
   lede,
   align = "left",
@@ -132,7 +109,6 @@ export function SectionHeading({
   id,
   className,
 }: {
-  eyebrow?: string;
   title: ReactNode;
   lede?: ReactNode;
   align?: "left" | "center";
@@ -147,21 +123,13 @@ export function SectionHeading({
         className,
       )}
     >
-      {eyebrow ? (
-        <Eyebrow
-          tone={tone === "light" ? "light" : "blue"}
-          className={cx("mb-5", align === "center" && "justify-center")}
-        >
-          {eyebrow}
-        </Eyebrow>
-      ) : null}
       <h2 id={id} className={cx("t-h2", tone === "light" && "text-white")}>
         {title}
       </h2>
       {lede ? (
         <p
           className={cx(
-            "t-lede mt-6",
+            "t-lede mt-5",
             align === "center" ? "measure mx-auto" : "measure",
             tone === "light" ? "text-slate-300" : "text-slate-600",
           )}
@@ -240,31 +208,6 @@ export function Pill({
         tone === "quiet" && "bg-paper text-slate-600",
         tone === "green" && "bg-green-100 text-green-700",
         tone === "light" && "bg-white/10 text-white/80",
-        className,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-/** Anything showing illustrative data must say so. */
-export function SampleTag({
-  className,
-  tone = "light",
-  children = "Sample data",
-}: {
-  className?: string;
-  tone?: "light" | "dark";
-  children?: ReactNode;
-}) {
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase",
-        tone === "light"
-          ? "border-line bg-white/90 text-slate-400"
-          : "border-white/20 bg-ink-950/70 text-white/60",
         className,
       )}
     >

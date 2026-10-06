@@ -1,0 +1,12 @@
+# Working material that lives beside the site but is not part of it.
+/research
+/website thematic research
+/.firecrawl
+/.claude
+
+# Local secrets and build output. Vercel skips some of these by default;
+# listed so nothing depends on that.
+.env*
+/.next
+/node_modules
+*.tsbuildinfo

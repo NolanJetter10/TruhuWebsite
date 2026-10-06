@@ -51,7 +51,9 @@ export function SpotlightCard({
         className,
       )}
     >
-      <div className="relative z-[1]">{children}</div>
+      {/* Full height, so a card stretched by its grid row can pin its last
+          line to the bottom. Harmless on a card sized by its content. */}
+      <div className="relative z-[1] h-full">{children}</div>
     </Tag>
   );
 }

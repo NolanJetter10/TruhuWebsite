@@ -51,13 +51,13 @@ export function ProductLockup({
         aria-hidden
         className={cx(
           "h-4 w-px",
-          tone === "light" ? "bg-white/30" : "bg-border-200",
+          tone === "light" ? "bg-white/30" : "bg-line",
         )}
       />
       <span
         className={cx(
           "text-[0.9375rem] leading-none font-bold tracking-[-0.01em]",
-          tone === "light" ? "text-white" : "text-navy-900",
+          tone === "light" ? "text-white" : "text-ink",
         )}
         style={{ fontFamily: "var(--font-display)" }}
       >

@@ -29,9 +29,11 @@ export default function HowItWorksPage() {
 
             <h1 className="t-h1 mt-6 text-white">
               <Words text={hero.titleLead} />{" "}
-              <span className="t-gradient">
-                <Words text={hero.titleAccent} start={wordCount(hero.titleLead)} />
-              </span>
+              <Words
+                text={hero.titleAccent}
+                start={wordCount(hero.titleLead)}
+                gradient
+              />
             </h1>
 
             <div className="hero-seq">

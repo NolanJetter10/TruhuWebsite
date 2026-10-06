@@ -1,41 +1,52 @@
+import { Check } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { DeliveryProof } from "@/components/demos/DeliveryProof";
-import { FeatureShowcase } from "@/components/demos/FeatureShowcase";
-import { GuideBuilder } from "@/components/demos/GuideBuilder";
+import Image from "next/image";
+import { ProductLockup } from "@/components/art/Logo";
+import { GuidePreview, RecordPreview } from "@/components/art/ProductPreviews";
+import { DocumentFlow } from "@/components/demos/DocumentFlow";
 import { LogoMarquee } from "@/components/demos/LogoMarquee";
+import { ProductWalkthrough } from "@/components/demos/ProductWalkthrough";
 import { CloseCta } from "@/components/layout/CloseCta";
 import { CTAButton, TextLink } from "@/components/ui/CTAButton";
+import { FillIn } from "@/components/ui/FillIn";
+import { QuoteCarousel } from "@/components/ui/QuoteCarousel";
 import { SpotlightCard } from "@/components/ui/Spotlight";
-import { Words } from "@/components/ui/Words";
+import { StatBand } from "@/components/ui/Stat";
+import { StoryReel } from "@/components/ui/StoryReel";
+import { Words, wordCount } from "@/components/ui/Words";
 import {
-  Card,
   Container,
-  DrawnRule,
-  Eyebrow,
+  Pill,
   Section,
   SectionHeading,
   stagger,
 } from "@/components/ui/primitives";
 import {
-  ADVISOR,
-  CALENDAR,
   CLOSING,
+  DOCUMENT_FLOW,
   HERO,
-  QUOTE,
-  RESOURCES,
-  STACK,
-  WORKFORCE,
+  PRODUCTS,
+  QUOTES,
+  QUOTES_HEADING,
+  RESPONSIBLE_AI,
+  SOLUTION,
+  STORIES,
+  TRUST_STATS,
+  WORKLOAD,
 } from "@/lib/content";
-import { RESOURCES_LIBRARY } from "@/lib/resources";
+import christine from "@/public/images/advisors/christine.png";
+import emily from "@/public/images/advisors/emily.png";
+import john from "@/public/images/advisors/john.png";
+import socBadge from "@/public/images/soc-badge.svg";
 
-/** The three newest entries, whatever kind they are. */
-const LATEST_RESOURCES = [...RESOURCES_LIBRARY]
-  .sort((a, b) => b.date.localeCompare(a.date))
-  .slice(0, 3);
+/** Artwork for `QUOTES`, keyed by the `face` each entry names. */
+const FACES = { emily, john, christine };
+
+/** What each product card shows above its copy. */
+const PREVIEWS = { Advisor: GuidePreview, Workforce: RecordPreview };
 
 export const metadata: Metadata = {
-  description: HERO.lede,
+  description: HERO.description,
   alternates: { canonical: "/" },
 };
 
@@ -56,45 +67,44 @@ export default function HomePage() {
         <Container>
           <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-14">
             <div>
-              <p
-                className="t-eyebrow inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-blue-400 backdrop-blur-sm"
-                style={{ animation: "hero-in 700ms var(--ease-out-expo) both" }}
-              >
-                <span className="size-1.5 rounded-full bg-green-400 anim-pulse" />
-                {HERO.eyebrow}
-              </p>
-
-              <h1 className="t-h1 mt-6 text-white">
-                <Words text={HERO.title} />
+              <h1 className="t-h1 text-white">
+                <Words text={HERO.titleLead} />{" "}
+                <Words
+                  text={HERO.titleAccent}
+                  start={wordCount(HERO.titleLead)}
+                  gradient
+                />
               </h1>
 
               <div className="hero-seq">
-                <p className="t-lede measure mt-6 text-slate-300">{HERO.lede}</p>
+                <p className="t-lede mt-6 max-w-[40ch] text-slate-300">
+                  {HERO.lede.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <CTAButton href={HERO.primaryCta.href} size="lg">
                     {HERO.primaryCta.label}
                   </CTAButton>
-                  <CTAButton
-                    href={HERO.secondaryCta.href}
-                    variant="onDark"
-                    size="lg"
-                  >
-                    {HERO.secondaryCta.label}
-                  </CTAButton>
                 </div>
-                <p className="t-caption mt-6 text-white/45">{HERO.note}</p>
               </div>
             </div>
 
             <div className="demo-in min-w-0">
-              <GuideBuilder compact />
+              <ProductWalkthrough />
             </div>
           </div>
         </Container>
       </Section>
 
-      {/* Trust rail ------------------------------------------------------ */}
-      <Section tone="white" size="tight" labelledBy="trust-heading">
+      {/* Trust rail ------------------------------------------------------
+          The logos, then customers telling it on video, then the same claim
+          as a number. The band winds up as it
+          arrives; the figures render at their final value on the server, so a
+          visitor who lands mid-page never sees a number that is briefly wrong. */}
+      <Section tone="white" labelledBy="trust-heading">
         <Container>
           <h2
             id="trust-heading"
@@ -103,187 +113,329 @@ export default function HomePage() {
             Trusted by leading organizations
           </h2>
         </Container>
+
         <LogoMarquee />
-      </Section>
 
-      {/* Advisor --------------------------------------------------------- */}
-      <Section tone="paper" id="advisor" ambient labelledBy="advisor-heading">
-        <Container>
-          <div className="reveal flex flex-wrap items-end justify-between gap-6">
-            <SectionHeading
-              id="advisor-heading"
-              eyebrow={ADVISOR.eyebrow}
-              title={ADVISOR.title}
-              lede={ADVISOR.lede}
-            />
-            <TextLink href={ADVISOR.cta.href}>{ADVISOR.cta.label}</TextLink>
-          </div>
+        {/* Customer stories, set as outmarket.ai sets its row: the player,
+            then the title on the left with the lede level with its last line
+            on the right, then the strip that picks what plays. */}
+        <Container className="mt-20 sm:mt-24">
+          <StoryReel
+            stories={STORIES.items}
+            pendingLabel={STORIES.pendingLabel}
+          >
+            <div className="reveal mt-12 grid items-end gap-5 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
+              <div>
+                <h2 id="stories-heading" className="t-h2">
+                  {STORIES.titleLead}{" "}
+                  <span className="t-gradient-dark block">
+                    {STORIES.titleAccent}
+                  </span>
+                </h2>
+              </div>
+              <p className="text-[1.0625rem] leading-relaxed text-slate-600 lg:text-right">
+                {STORIES.lede}
+              </p>
+            </div>
+          </StoryReel>
+        </Container>
 
-          <div className="reveal-wipe mt-14">
-            <FeatureShowcase />
-          </div>
+        <Container className="mt-16">
+          <p className="reveal t-eyebrow mb-10 text-center text-slate-400">
+            {TRUST_STATS.eyebrow}
+          </p>
+          <StatBand tone="light" stats={TRUST_STATS.stats} />
         </Container>
       </Section>
 
-      {/* The renewal calendar -------------------------------------------- */}
-      <Section tone="dark" id="calendar" ambient labelledBy="calendar-heading">
+      {/* Open enrollment -------------------------------------------------
+          The crunch, then the three problems TruHu takes on. */}
+      <Section tone="dark" id="workload" ambient labelledBy="workload-heading">
         <Container>
           <SectionHeading
-            id="calendar-heading"
-            eyebrow={CALENDAR.eyebrow}
+            id="workload-heading"
             tone="light"
             align="center"
             title={
               <>
-                {CALENDAR.titleLead}{" "}
-                <span className="t-gradient">{CALENDAR.titleAccent}</span>
+                {WORKLOAD.titleLead}{" "}
+                <span className="t-gradient">{WORKLOAD.titleAccent}</span>
               </>
             }
-            lede={CALENDAR.lede}
+            lede={WORKLOAD.lede}
           />
 
-          <DrawnRule tone="light" className="mt-16" />
-
-          <ul className="stagger mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {CALENDAR.steps.map((step, i) => (
-              <li key={step.label} style={stagger(i)}>
-                <p className="t-h1 text-green-400">{step.value}</p>
-                <p className="t-caption mt-2 text-slate-300">{step.label}</p>
+          {/* Three problems. Each card comes down into place, then its
+              inputs, chores or casualties land on it in no set order, so the
+              mess reads before a word does. What a
+              client never gets at all is drawn as an empty, dashed slot. */}
+          <FillIn className="mt-12 grid gap-6 lg:grid-cols-3">
+            {WORKLOAD.problems.map((item) => (
+              <li
+                key={item.problem}
+                className="card-shape-lg border border-white/10 bg-white/[0.035] p-7 sm:p-9 lg:p-8"
+              >
+                <p className="t-eyebrow text-slate-400">{WORKLOAD.todayLabel}</p>
+                {/* Two lines held side by side, so a title that fits on one
+                    does not pull its card's copy out of line with the rest. */}
+                <h3 className="t-h3 mt-3 text-white sm:text-[1.875rem] lg:min-h-[2lh]">
+                  {item.problem}
+                </h3>
+                <p className="mt-2 text-[1.0625rem] text-slate-300">
+                  {item.detail}
+                </p>
+                <ul className="mt-7 flex flex-wrap gap-2">
+                  {item.pieces.map((piece) => (
+                    <li
+                      key={piece}
+                      data-piece
+                      className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[0.8125rem] font-semibold text-white/65"
+                    >
+                      {piece}
+                    </li>
+                  ))}
+                  {("missing" in item ? item.missing : []).map((piece) => (
+                    <li
+                      key={piece}
+                      data-piece
+                      className="rounded-lg border border-dashed border-white/20 px-3 py-1.5 text-[0.8125rem] font-semibold text-white/40"
+                    >
+                      {piece}
+                    </li>
+                  ))}
+                </ul>
               </li>
             ))}
-          </ul>
+          </FillIn>
 
-          <p className="reveal t-h3 mx-auto mt-16 max-w-3xl text-center text-white">
-            {CALENDAR.noteLead}{" "}
-            <span className="t-gradient">{CALENDAR.noteAccent}</span>
-          </p>
         </Container>
       </Section>
 
-      {/* Testimonial ----------------------------------------------------- */}
-      <Section tone="white">
+      {/* What TruHu does --------------------------------------------------
+          The answer to the three problems above, card for card in the same
+          layout: each "Today" becomes "With TruHu", and the slots a client
+          never got come back filled. On light, after the dark crunch. The
+          mechanics are one click away on /advisor. */}
+      <Section tone="paper" id="solution" labelledBy="solution-heading">
         <Container>
-          <figure className="reveal mx-auto max-w-3xl text-center">
-            <span
-              aria-hidden
-              className="t-display block leading-none text-blue-100 select-none"
-            >
-              &ldquo;
-            </span>
-            <blockquote className="t-h2 -mt-6">{QUOTE.text}</blockquote>
-            <figcaption className="mt-8 text-[0.9375rem] text-slate-600">
-              <span className="font-bold text-ink">{QUOTE.name}</span>
-              <span className="mx-2 text-slate-400">·</span>
-              {QUOTE.role}
-            </figcaption>
-          </figure>
-        </Container>
-      </Section>
+          <SectionHeading
+            id="solution-heading"
+            align="center"
+            title={
+              <>
+                {SOLUTION.titleLead}{" "}
+                <span className="t-gradient-dark">{SOLUTION.titleAccent}</span>
+              </>
+            }
+            lede={SOLUTION.lede}
+            className="reveal max-w-5xl!"
+          />
 
-      {/* Workforce ------------------------------------------------------- */}
-      <Section tone="paper" id="workforce" labelledBy="workforce-heading">
-        <Container>
-          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-20">
-            <div className="reveal">
-              <SectionHeading
-                id="workforce-heading"
-                eyebrow={WORKFORCE.eyebrow}
-                title={WORKFORCE.title}
-                lede={WORKFORCE.lede}
-              />
-              <ul className="stagger mt-10 space-y-5">
-                {WORKFORCE.points.map((point, i) => (
-                  <li key={point.name} style={stagger(i)} className="flex gap-4">
-                    <span
-                      aria-hidden
-                      className="mt-2 size-2 shrink-0 rounded-full bg-green-500"
-                    />
-                    <span>
-                      <span className="t-h4 block">{point.name}</span>
-                      <span className="mt-1 block text-[0.9375rem] leading-relaxed text-slate-600">
-                        {point.blurb}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-10">
-                <TextLink href={WORKFORCE.cta.href}>{WORKFORCE.cta.label}</TextLink>
-              </p>
-              <p className="t-caption mt-5 text-slate-400">{WORKFORCE.footnote}</p>
-            </div>
+          <FillIn className="mt-10 grid gap-6 lg:mt-12 lg:grid-cols-3">
+            {SOLUTION.answers.map((item) => (
+              <li
+                key={item.answer}
+                className="card-shape-lg border border-line bg-white p-7 shadow-[0_18px_40px_-30px_rgba(10,24,38,0.35)] sm:p-9 lg:p-8"
+              >
+                <p className="t-eyebrow text-green-700">{SOLUTION.withLabel}</p>
+                <h3 className="t-h3 mt-3 sm:text-[1.875rem] lg:min-h-[2lh]">
+                  {item.answer}
+                </h3>
+                <p className="mt-2 text-[1.0625rem] text-slate-600">
+                  {item.detail}
+                </p>
+                <ul className="mt-7 flex flex-wrap gap-2">
+                  {item.pieces.map((piece) => (
+                    <li
+                      key={piece}
+                      data-piece
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-[0.8125rem] font-semibold text-ink/75"
+                    >
+                      <Check aria-hidden weight="bold" className="size-3.5 text-green-500" />
+                      {piece}
+                    </li>
+                  ))}
+                  {("added" in item ? item.added : []).map((piece) => (
+                    <li
+                      key={piece}
+                      data-piece
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-100 px-3 py-1.5 text-[0.8125rem] font-semibold text-green-700"
+                    >
+                      <Check aria-hidden weight="bold" className="size-3.5" />
+                      {piece}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </FillIn>
 
-            <div className="reveal-tilt min-w-0">
-              <DeliveryProof />
-            </div>
+          <div className="reveal mt-12 flex justify-center">
+            <CTAButton href={SOLUTION.cta.href} size="lg">
+              {SOLUTION.cta.label}
+            </CTAButton>
           </div>
         </Container>
       </Section>
 
-      {/* Where TruHu sits ------------------------------------------------ */}
-      <Section tone="white" id="stack" labelledBy="stack-heading">
+      {/* How it works ----------------------------------------------------
+          The platform above, as five steps that play in turn: files in,
+          finished materials out. */}
+      <Section tone="white" id="how-it-works" labelledBy="flow-heading">
         <Container>
           <SectionHeading
-            id="stack-heading"
-            eyebrow={STACK.eyebrow}
+            id="flow-heading"
             align="center"
-            title={STACK.title}
-            lede={STACK.lede}
+            title={
+              <>
+                {DOCUMENT_FLOW.titleLead}{" "}
+                <span className="t-gradient-dark block">
+                  {DOCUMENT_FLOW.titleAccent}
+                </span>
+              </>
+            }
+            className="reveal max-w-6xl!"
+          />
+
+          <div className="reveal mt-10 lg:mt-12">
+            <DocumentFlow />
+          </div>
+        </Container>
+      </Section>
+
+      {/* Testimonials ---------------------------------------------------- */}
+      <Section tone="white" labelledBy="voices-heading">
+        <Container>
+          <h2
+            id="voices-heading"
+            className="t-eyebrow reveal mb-10 text-center text-slate-400"
+          >
+            {QUOTES_HEADING}
+          </h2>
+          <div className="reveal">
+            <QuoteCarousel
+              quotes={QUOTES.map((quote) => ({
+                ...quote,
+                image: FACES[quote.face],
+              }))}
+            />
+          </div>
+        </Container>
+      </Section>
+
+      {/* Two products ----------------------------------------------------
+          What each one hands back, side by side at equal weight. Nothing
+          connects the two cards: they are sold separately. */}
+      <Section tone="paper" id="products" labelledBy="products-heading">
+        <Container>
+          <SectionHeading
+            id="products-heading"
+            align="center"
+            title={PRODUCTS.title}
             className="reveal"
           />
 
-          <ul className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {STACK.starts.map((item, i) => (
-              <Card as="li" key={item} tone="paper" style={stagger(i)} className="text-center">
-                <p className="t-h4">{item}</p>
-              </Card>
-            ))}
+          <ul className="stagger mt-12 grid gap-6 md:grid-cols-2">
+            {PRODUCTS.items.map((item, i) => {
+              const Preview = PREVIEWS[item.product];
+              return (
+                <SpotlightCard
+                  key={item.product}
+                  as="li"
+                  tone="paper"
+                  padding="none"
+                  style={stagger(i)}
+                >
+                  <div className="flex h-full flex-col">
+                    {/* A floor rather than a fixed height: side by side the
+                        two previews match, stacked each takes what it needs. */}
+                    <div className="flex items-center border-b border-line bg-paper px-5 py-8 sm:px-8 md:min-h-80">
+                      <Preview />
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-6 sm:p-8">
+                      <ProductLockup product={item.product} />
+                      <h3 className="t-h3 mt-5">{item.title}</h3>
+                      <p className="mt-3 text-[0.9375rem] leading-relaxed text-slate-600">
+                        {item.body}
+                      </p>
+                      <ul
+                        aria-label={`What ${item.product} produces`}
+                        className="mt-5 flex flex-wrap gap-2"
+                      >
+                        {item.outputs.map((output) => (
+                          <li key={output}>
+                            <Pill>{output}</Pill>
+                          </li>
+                        ))}
+                      </ul>
+                      {/* The link's box covers the card, so the whole card
+                          is the target without nesting interactive content. */}
+                      <p className="mt-auto pt-7">
+                        <TextLink
+                          href={item.href}
+                          className="after:absolute after:inset-0"
+                        >
+                          {item.cta}
+                        </TextLink>
+                      </p>
+                    </div>
+                  </div>
+                </SpotlightCard>
+              );
+            })}
           </ul>
 
           <p className="reveal t-caption mt-8 text-center text-slate-500">
-            {STACK.caption}
+            {PRODUCTS.footnote}
           </p>
         </Container>
       </Section>
 
-      {/* Resources ------------------------------------------------------- */}
-      <Section tone="paper" id="resources" labelledBy="resources-heading">
+      {/* Responsible AI --------------------------------------------------
+          The hero promises "enterprise-grade" AI; this is where the page
+          backs it up, one line per pillar, with /security
+          one click away for the detail. */}
+      <Section tone="white" id="responsible-ai" labelledBy="ai-heading">
         <Container>
           <SectionHeading
-            id="resources-heading"
-            eyebrow={RESOURCES.eyebrow}
-            title={RESOURCES.title}
+            id="ai-heading"
+            title={
+              <>
+                {RESPONSIBLE_AI.titleLead}{" "}
+                <span className="t-gradient-dark block">
+                  {RESPONSIBLE_AI.titleAccent}
+                </span>
+              </>
+            }
+            lede={RESPONSIBLE_AI.lede}
             className="reveal"
           />
 
-          {/* Driven by the library itself, so the home page cannot drift from
-              what /resources actually publishes. */}
-          <ul className="stagger mt-12 grid gap-5 md:grid-cols-3">
-            {LATEST_RESOURCES.map((item, i) => (
-              <SpotlightCard
-                key={item.slug}
-                as="li"
+          <ul className="stagger mt-12 grid gap-x-10 gap-y-10 md:grid-cols-3">
+            {RESPONSIBLE_AI.pillars.map((pillar, i) => (
+              <li
+                key={pillar.name}
                 style={stagger(i)}
-                className="flex flex-col"
+                className="border-t border-line pt-6"
               >
-                <Eyebrow>{item.kind === "case" ? "Case study" : "Blog"}</Eyebrow>
-                <h3 className="t-h3 mt-4">
-                  <Link
-                    href={`/resources/${item.slug}`}
-                    className="after:absolute after:inset-0"
-                  >
-                    {item.title}
-                  </Link>
-                </h3>
-                <p className="mt-3 flex-1 text-[0.9375rem] leading-relaxed text-slate-600">
-                  {item.dek}
+                <h3 className="t-h4">{pillar.name}</h3>
+                <p className="mt-3 text-[0.9375rem] leading-relaxed text-slate-600">
+                  {pillar.body}
                 </p>
-              </SpotlightCard>
+              </li>
             ))}
           </ul>
 
-          <div className="mt-10">
-            <TextLink href="/resources">See all resources</TextLink>
+          <div className="reveal mt-12 flex items-center gap-5">
+            <Image
+              src={socBadge}
+              alt="SOC 2 Type II compliant"
+              className="h-16 w-auto"
+            />
+            <TextLink href={RESPONSIBLE_AI.cta.href}>
+              {RESPONSIBLE_AI.cta.label}
+            </TextLink>
           </div>
         </Container>
       </Section>
