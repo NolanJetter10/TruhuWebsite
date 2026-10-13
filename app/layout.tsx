@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ViewTransition } from "react";
 import { DM_Sans, Inter } from "next/font/google";
+import { AttributionCapture } from "@/components/analytics/AttributionCapture";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SITE } from "@/lib/site";
@@ -63,6 +64,7 @@ export default function RootLayout({
           <main id="main">{children}</main>
         </ViewTransition>
         <SiteFooter />
+        <AttributionCapture />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

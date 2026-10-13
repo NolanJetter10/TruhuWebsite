@@ -1815,3 +1815,152 @@ export const DEMO_PAGE = {
     "One client's documents is enough to see it",
   ],
 } as const;
+
+/* ------------------------------------------------------------ /get-started */
+
+/**
+ * The booking page campaigns point at: who you will meet, what you get, proof
+ * beside the calendar, the calendar itself, then the confirmation.
+ *
+ * Bryan's title and background are from public sources (his ThinkHR
+ * announcement and current profile); confirm both with him before launch.
+ *
+ * PLACEHOLDER PROOF. The testimonial and both statistics are stand-ins so the
+ * layout can be judged. None is attributable yet, and by the rule at the top
+ * of this file none can ship as it is: replace each with a real, sourced
+ * figure, and get the client's written OK for the quote, the name and any
+ * logo before it goes live.
+ */
+export const GET_STARTED_PAGE = {
+  meta: {
+    title: "Get started",
+    description:
+      "Book 10 minutes with Bryan Kleppe. See a finished enrollment guide, benefits microsite and AI Counselor built for a client like yours, live on screen.",
+  },
+  hero: {
+    eyebrow: "10-minute live demo",
+    titleLead: "See it built for",
+    titleAccent: "a client like yours.",
+    lede: "Ten minutes on screen with someone who has spent his career on the broker's side of the table. Pick a time and have one client in mind.",
+  },
+  host: {
+    label: "Who you'll meet",
+    name: "Bryan Kleppe",
+    role: "VP, Strategic Accounts",
+    line: "I help brokers give every client the experience they give their top 10.",
+    credential:
+      "Ran customer success for ThinkHR's broker partners before joining TruHu.",
+    /** A square headshot in public/, e.g. "/images/team/bryan-kleppe.webp".
+     * Until then the page shows his initials. */
+    photo: null as string | null,
+  },
+  outcomes: {
+    label: "What you'll get out of it",
+    items: [
+      "A finished guide, microsite and AI Counselor for a client like yours, built while you watch.",
+      "A clear read on how fast your team could roll it out across your book.",
+      "A sample to keep and show a client.",
+    ],
+    format: ["10 minutes", "Live", "On screen"],
+    notIt: "Not a hard sales pitch. If it isn't a fit, I'll tell you.",
+  },
+  proof: {
+    label: "From a broker on TruHu",
+    quote:
+      "We put all 140 of our groups on TruHu in one renewal. Every client got the guide we used to save for our top ten, and the team wrapped open enrollment three weeks early.",
+    accent: "wrapped open enrollment three weeks early.",
+    name: "Megan R.",
+    role: "Senior Account Executive",
+    agency: "Midwest brokerage, 140 employer groups",
+    photo: null as string | null,
+    result: "140 groups live in one renewal",
+    stats: [
+      { value: "75%", label: "lower cost per client guide" },
+      { value: "2×", label: "faster open-enrollment timeline" },
+    ],
+    statsSource: "TruHu broker cohort, 2026 renewal season",
+  },
+  booking: {
+    title: "Pick a time",
+    meta: ["10 min", "Video call", "with Bryan"],
+    zoneLabel: "Times shown in",
+    noTimes: "No open times left this month.",
+    nextMonth: "See next month",
+    loadError: "Times didn't load.",
+    retry: "Try again",
+    form: {
+      title: "Your details",
+      change: "Change",
+      name: "Name",
+      email: "Work email",
+      agency: "Agency",
+      clients: "Roughly how many clients do you serve?",
+      clientsPlaceholder: "Choose a range",
+      clientBands: ["Under 25", "25–100", "100–250", "250–500", "500+"],
+      submit: "Confirm booking",
+      pending: "Booking…",
+      fine: "The invite goes to this address. Nothing else does.",
+    },
+    slotTaken: "That time was just taken. Here are the latest openings.",
+    /** Shown if the scheduler can't be reached (or isn't connected yet). */
+    offline: {
+      title: "Request a time with Bryan",
+      body: "Tell us a little about your book and Bryan will reply with times within one business day.",
+      cta: { href: "/demo", label: "Request a time" },
+    },
+    demoNotice:
+      "Demo scheduler: Cal.com isn't connected, so no invite is sent.",
+  },
+  agenda: {
+    title: "How the 10 minutes go",
+    steps: [
+      {
+        time: "0:00",
+        title: "Your book",
+        body: "Two minutes on who you serve and the client you have in mind.",
+      },
+      {
+        time: "2:00",
+        title: "Built live",
+        body: "Their enrollment guide, benefits microsite and AI Counselor, built on screen from plan documents.",
+      },
+      {
+        time: "8:00",
+        title: "Your rollout",
+        body: "What it takes to run the same thing across your whole book, and how long it takes.",
+      },
+    ],
+  },
+  confirmed: {
+    meta: { title: "You're booked" },
+    title: "You're booked",
+    inviteTo: "A calendar invite is on its way to",
+    fallbackLede:
+      "A calendar invite is on its way to your inbox. If it doesn't show up in a few minutes, check spam or reply to the confirmation email.",
+    with: "with Bryan Kleppe",
+    calendarLabel: "Add it to your calendar",
+    calendars: { google: "Google", outlook: "Outlook", ics: "Apple / .ics" },
+    manageLabel: "Plans changed?",
+    reschedule: "Reschedule",
+    cancel: "Cancel",
+    note: {
+      label: "A note from Bryan",
+      /** Set to a file in public/ (or a Loom/YouTube embed URL) once recorded. */
+      video: null as string | null,
+      videoPending: "Video note coming soon",
+      paragraphs: [
+        "Thanks for grabbing the time. I'll keep it to the ten minutes.",
+        "Come with one client you'd want this for. Their rough size and what open enrollment looks like for them today is plenty. If last year's guide or the SBCs are handy, even better, but don't go hunting.",
+        "I'll build their guide, microsite and AI Counselor on screen, then show you what rolling it out across your book looks like. The sample is yours to keep.",
+      ],
+      signoff: "Bryan",
+    },
+    prepTitle: "How to prep",
+    prep: [
+      "Bring one client you'd want this for",
+      "Camera optional; screen share is on our side",
+      "Invite whoever owns renewals, if it isn't you",
+    ],
+    back: { href: "/advisor", label: "See how TruHu Advisor works" },
+  },
+} as const;

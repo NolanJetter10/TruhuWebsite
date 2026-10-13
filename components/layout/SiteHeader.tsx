@@ -32,8 +32,8 @@ export function SiteHeader() {
               >
                 Login
               </a>
-              <CTAButton href="/demo" size="sm">
-                Book a demo
+              <CTAButton href="/get-started" size="sm">
+                Get started
               </CTAButton>
             </div>
           </div>

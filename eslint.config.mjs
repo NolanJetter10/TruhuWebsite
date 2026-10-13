@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // A separate app with its own lint setup, headed for its own repo.
+    "analytics dashboard/**",
   ]),
 ]);
 

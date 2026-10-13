@@ -1,0 +1,13 @@
+/node_modules
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# Local event log the website writes in development (see lib/store.ts).
+/.data
+
+.env*
+.vercel
+/.dev-server.log

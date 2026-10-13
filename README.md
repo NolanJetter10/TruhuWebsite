@@ -25,6 +25,10 @@ Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4.
 | Palette, type scale, motion | `app/globals.css` |
 | Page assembly | `app/page.tsx` |
 | Running product demos | `components/demos/` |
+| Booking page (`/get-started`) and its confirmation | `app/get-started/`, `components/get-started/` |
+| Booking engine (Cal.com client, dev scheduler) | `lib/booking/`, `app/api/booking/` |
+| Funnel tracking (browser tracker, beacon endpoint) | `lib/analytics/`, `app/api/track/` |
+| Analytics dashboard: a separate app, setup guide inside | `analytics dashboard/` |
 
 `lib/content.ts` is the only place copy is written. Page components are purely
 layout and motion, so a copy change never means touching a component.
@@ -116,4 +120,15 @@ final step rather than looping.
 3. **Forms** validate, rate-limit and honeypot correctly, then call `deliver()`
    in `app/actions.ts`, which logs server-side. Point it at the CRM.
 4. **Login** links to `app.truhu.ai`; confirm that is the real destination.
-5. **Analytics.** Nothing loads. Anything added must load post-consent.
+5. **Analytics.** No third-party script loads. `/get-started` runs first-party
+   funnel tracking (no cookies, no IPs stored, Global Privacy Control
+   honoured); every other page only remembers campaign tags in the visitor's
+   own browser. Any ad pixel added for retargeting must load post-consent.
+6. **Booking.** `/get-started` needs the Cal.com and Supabase variables listed
+   in `analytics dashboard/README.md`. Without Cal.com it falls back to a
+   link to `/demo`.
+7. **Get-started proof.** The testimonial and both statistics on
+   `/get-started` are placeholders, and Bryan's title and background come from
+   public sources (see `GET_STARTED_PAGE` in `lib/content.ts`). Confirm his
+   details with him, replace the proof with sourced figures, and get the
+   client's written OK on the quote, the name and any logo before launch.

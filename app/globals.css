@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* The dashboard is its own app with its own styles; keep its class names out
+   of the site's stylesheet. */
+@source not "../analytics dashboard";
+
 /* ---------------------------------------------------------------------------
    TruHu design system
 
@@ -1420,4 +1424,43 @@
   color: #fff;
   padding: 0.75rem 1rem;
   border-radius: 8px;
+}
+
+/* ---------------------------------------------------------------------------
+   Booking widget (/get-started). Each step of the widget arrives with the
+   hero's settle; loading slots shimmer rather than spin.
+--------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .bk-enter {
+    animation: hero-in 420ms var(--ease-out-expo) both;
+  }
+}
+
+@keyframes bk-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.bk-shimmer {
+  background: linear-gradient(
+      90deg,
+      var(--color-paper) 0%,
+      #e9eff6 50%,
+      var(--color-paper) 100%
+    )
+    0 0 / 200% 100%;
+  animation: bk-shimmer 1.4s linear infinite;
+}
+
+/* The time list scrolls inside the card; a soft fade at the foot says so. */
+.bk-times {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+  padding-bottom: 1.5rem;
 }
