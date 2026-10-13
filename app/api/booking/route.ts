@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { recordBooking } from "@/lib/analytics/store";
-import { bookingProvider } from "@/lib/booking";
+import { bookingProvider, forgetSlots } from "@/lib/booking";
 import { isValidTimeZone } from "@/lib/booking/time";
 import { BookingError } from "@/lib/booking/types";
 import { GET_STARTED_PAGE } from "@/lib/content";
@@ -79,10 +79,18 @@ export async function POST(request: Request) {
 
   const visitId = text(context.visitId, 40);
   const visitorId = text(context.visitorId, 40);
-  const source = text(context.source, 120);
-  const medium = text(context.medium, 120);
-  const campaign = text(context.campaign, 160);
   const zone = isValidTimeZone(timeZone) ? timeZone : "America/New_York";
+  // The visit and campaign behind the booking. Ids that aren't UUIDs are
+  // dropped here, since the database casts them.
+  const metadata = Object.fromEntries(
+    Object.entries({
+      visit_id: UUID.test(visitId) ? visitId : "",
+      visitor_id: UUID.test(visitorId) ? visitorId : "",
+      source: text(context.source, 120),
+      medium: text(context.medium, 120),
+      campaign: text(context.campaign, 160),
+    }).filter(([, value]) => value),
+  );
 
   try {
     const booking = await provider.createBooking({
@@ -92,36 +100,36 @@ export async function POST(request: Request) {
       agency,
       clients,
       timeZone: zone,
-      // Shows on the booking in Cal.com too, so the campaign is visible there.
-      metadata: Object.fromEntries(
-        Object.entries({ visit_id: visitId, source, medium, campaign }).filter(
-          ([, value]) => value,
-        ),
-      ),
+      metadata,
     });
+    forgetSlots();
 
-    after(async () => {
-      try {
-        await recordBooking({
-          uid: booking.uid,
-          visit_id: UUID.test(visitId) ? visitId : null,
-          visitor_id: UUID.test(visitorId) ? visitorId : null,
-          start_at: booking.start,
-          end_at: booking.end,
-          name,
-          email,
-          agency,
-          client_count: clients,
-          time_zone: zone,
-          status: "booked",
-          source: source || null,
-          medium: medium || null,
-          campaign: campaign || null,
-        });
-      } catch (error) {
-        console.error("[analytics] record_booking failed", error);
-      }
-    });
+    // The placeholder scheduler has already written the row (that write is
+    // its double-booking guard); a Cal.com booking is recorded here.
+    if (!provider.persists) {
+      after(async () => {
+        try {
+          await recordBooking({
+            uid: booking.uid,
+            visit_id: metadata.visit_id ?? null,
+            visitor_id: metadata.visitor_id ?? null,
+            start_at: booking.start,
+            end_at: booking.end,
+            name,
+            email,
+            agency,
+            client_count: clients,
+            time_zone: zone,
+            status: "booked",
+            source: metadata.source ?? null,
+            medium: metadata.medium ?? null,
+            campaign: metadata.campaign ?? null,
+          });
+        } catch (error) {
+          console.error("[analytics] record_booking failed", error);
+        }
+      });
+    }
 
     return Response.json({ ok: true, uid: booking.uid });
   } catch (error) {

@@ -124,11 +124,14 @@ final step rather than looping.
    funnel tracking (no cookies, no IPs stored, Global Privacy Control
    honoured); every other page only remembers campaign tags in the visitor's
    own browser. Any ad pixel added for retargeting must load post-consent.
-6. **Booking.** `/get-started` needs the Cal.com and Supabase variables listed
-   in `analytics dashboard/README.md`. Without Cal.com it falls back to a
-   link to `/demo`.
+6. **Booking.** `/get-started` books through a placeholder scheduler that
+   stores bookings in Supabase. It neither touches Bryan's calendar nor sends
+   email, so someone sends each booker the video link by hand. Setting the
+   Cal.com variables switches to his real calendar. Without Supabase
+   variables the live page falls back to a link to `/demo`. Setup:
+   `analytics dashboard/README.md`.
 7. **Get-started proof.** The testimonial and both statistics on
-   `/get-started` are placeholders, and Bryan's title and background come from
-   public sources (see `GET_STARTED_PAGE` in `lib/content.ts`). Confirm his
-   details with him, replace the proof with sourced figures, and get the
-   client's written OK on the quote, the name and any logo before launch.
+   `/get-started` are placeholders (see `GET_STARTED_PAGE` in
+   `lib/content.ts`). Replace them with sourced figures and get the client's
+   written OK on the quote, the name and any logo before launch. Bryan's title
+   is confirmed; his ThinkHR background line is from public sources.

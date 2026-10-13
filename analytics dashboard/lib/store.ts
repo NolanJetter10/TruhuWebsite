@@ -2,6 +2,7 @@ import "server-only";
 
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { env } from "./env";
 
 /**
  * Reads what the website wrote. Two backends, same rows out:
@@ -88,20 +89,22 @@ export const TRACKED_PAGE = "/get-started";
 const LIVE_WINDOW_MS = 45_000;
 const RECENT_EVENTS = 60;
 
-const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/\/+$/, "");
-const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
+function db() {
+  const url = env("SUPABASE_URL")?.replace(/\/+$/, "");
+  const key = env("SUPABASE_SECRET_KEY");
+  return url && key ? { url, key } : null;
+}
 
-export const BACKEND: "supabase" | "file" | "none" =
-  SUPABASE_URL && SUPABASE_KEY
-    ? "supabase"
-    : process.env.NODE_ENV === "production"
-      ? "none"
-      : "file";
+/** Read per call, so adding the keys needs no restart. */
+export function backend(): "supabase" | "file" | "none" {
+  if (db()) return "supabase";
+  return process.env.NODE_ENV === "production" ? "none" : "file";
+}
 
 /* --------------------------------------------------------------- supabase */
 
 function headers(extra: Record<string, string> = {}) {
-  const key = SUPABASE_KEY!;
+  const key = db()!.key;
   return {
     apikey: key,
     // Legacy service_role keys are JWTs and go in Authorization too; the
@@ -113,7 +116,7 @@ function headers(extra: Record<string, string> = {}) {
 }
 
 async function rest<T>(query: string, range?: [number, number]): Promise<T[]> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
+  const res = await fetch(`${db()!.url}/rest/v1/${query}`, {
     headers: headers(range ? { range: `${range[0]}-${range[1]}`, "range-unit": "items" } : {}),
     cache: "no-store",
   });
@@ -162,7 +165,7 @@ async function supabaseSnapshot(since: string | null): Promise<Snapshot> {
 }
 
 async function supabasePulse() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/pulse`, {
+  const res = await fetch(`${db()!.url}/rest/v1/rpc/pulse`, {
     method: "POST",
     headers: headers({ "content-type": "application/json" }),
     body: "{}",
@@ -342,14 +345,16 @@ async function filePulse() {
 /* ---------------------------------------------------------------- exports */
 
 export async function snapshot(since: string | null): Promise<Snapshot> {
-  if (BACKEND === "supabase") return supabaseSnapshot(since);
-  if (BACKEND === "file") return fileSnapshot(since);
+  const mode = backend();
+  if (mode === "supabase") return supabaseSnapshot(since);
+  if (mode === "file") return fileSnapshot(since);
   return { visits: [], bookings: [], recent: [], live: [], feedVisits: {} };
 }
 
 /** A string that changes whenever anything the dashboard shows has changed. */
 export async function pulse(): Promise<string> {
-  if (BACKEND === "supabase") return supabasePulse();
-  if (BACKEND === "file") return filePulse();
+  const mode = backend();
+  if (mode === "supabase") return `s:${await supabasePulse()}`;
+  if (mode === "file") return `f:${await filePulse()}`;
   return "none";
 }

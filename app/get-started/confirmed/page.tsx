@@ -7,6 +7,7 @@ import {
   XCircle,
 } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Avatar } from "@/components/get-started/Avatar";
 import { FunnelTracker } from "@/components/get-started/FunnelTracker";
@@ -34,15 +35,24 @@ export const metadata: Metadata = {
 export default async function ConfirmedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ b?: string | string[] }>;
+  searchParams: Promise<{ b?: string | string[]; moved?: string }>;
 }) {
-  const { b } = await searchParams;
+  const { b, moved } = await searchParams;
   const uid = typeof b === "string" && b.length < 600 ? b : null;
   const booking = uid
     ? await (bookingProvider()?.getBooking(uid) ?? Promise.resolve(null)).catch(() => null)
     : null;
 
   const firstName = booking?.attendee.name.split(/\s+/)[0];
+  const cancelled = booking?.status === "cancelled";
+  // Absolute links for the calendar entry, on whichever host served this page.
+  const head = await headers();
+  const origin = `${head.get("x-forwarded-proto") ?? "http"}://${head.get("host") ?? "truhu.ai"}`;
+  const title = cancelled
+    ? confirmed.cancelledTitle
+    : moved
+      ? confirmed.movedTitle
+      : confirmed.title;
 
   return (
     <>
@@ -54,17 +64,25 @@ export default async function ConfirmedPage({
             {/* The booking -------------------------------------------------- */}
             <div data-section="confirmed">
               <span
-                className="grid size-14 place-items-center rounded-full bg-green-500 text-ink-950 shadow-[0_0_0_10px_rgba(56,176,0,0.14)]"
+                className={
+                  cancelled
+                    ? "grid size-14 place-items-center rounded-full bg-white/10 text-white"
+                    : "grid size-14 place-items-center rounded-full bg-green-500 text-ink-950 shadow-[0_0_0_10px_rgba(56,176,0,0.14)]"
+                }
                 style={{ animation: "hero-in 600ms var(--ease-out-back) both" }}
               >
-                <Check weight="bold" className="size-7" />
+                {cancelled ? (
+                  <XCircle className="size-7" />
+                ) : (
+                  <Check weight="bold" className="size-7" />
+                )}
               </span>
               <h1
                 className="t-h1 mt-7 text-white"
                 style={{ animation: "hero-in 700ms var(--ease-out-expo) 120ms both" }}
               >
-                {confirmed.title}
-                {firstName ? (
+                {title}
+                {firstName && !cancelled ? (
                   <>
                     , <span className="t-gradient">{firstName}.</span>
                   </>
@@ -76,17 +94,34 @@ export default async function ConfirmedPage({
                 className="t-lede measure mt-5 text-slate-300"
                 style={{ animation: "hero-in 700ms var(--ease-out-expo) 200ms both" }}
               >
-                {booking ? (
+                {!booking ? (
+                  confirmed.fallbackLede
+                ) : cancelled ? (
+                  confirmed.cancelledLede
+                ) : booking.invites ? (
                   <>
                     {confirmed.inviteTo}{" "}
                     <span className="font-semibold text-white">{booking.attendee.email}</span>.
                   </>
                 ) : (
-                  confirmed.fallbackLede
+                  <>
+                    {confirmed.heldFor}{" "}
+                    <span className="font-semibold text-white">{booking.attendee.email}</span>{" "}
+                    {confirmed.heldTail}
+                  </>
                 )}
               </p>
 
-              {booking ? <BookingCard booking={booking} /> : null}
+              {cancelled ? (
+                <Link
+                  href={confirmed.rebook.href}
+                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-green-500 px-6 py-3 text-[0.9375rem] font-semibold text-ink-950 hover:bg-green-400"
+                >
+                  {confirmed.rebook.label} &rarr;
+                </Link>
+              ) : booking ? (
+                <BookingCard booking={booking} origin={origin} />
+              ) : null}
             </div>
 
             {/* A note from Bryan -------------------------------------------- */}
@@ -172,7 +207,7 @@ export default async function ConfirmedPage({
   );
 }
 
-function BookingCard({ booking }: { booking: Booking }) {
+function BookingCard({ booking, origin }: { booking: Booking; origin: string }) {
   const zone = booking.attendee.timeZone;
   const event = {
     title: MEETING.title,
@@ -180,6 +215,9 @@ function BookingCard({ booking }: { booking: Booking }) {
       `${MEETING.minutes} minutes with ${MEETING.host}, live on screen.`,
       "Bring one client you'd want this for.",
       booking.meetingUrl ? `Join: ${booking.meetingUrl}` : "",
+      booking.rescheduleUrl
+        ? `Reschedule or cancel: ${new URL(booking.rescheduleUrl, origin)}`
+        : "",
     ]
       .filter(Boolean)
       .join("\n"),

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { isRange, rangeStart, summarize, type RangeKey } from "@/lib/aggregate";
 import { COOKIE, isSignedIn } from "@/lib/auth";
-import { snapshot } from "@/lib/store";
+import { backend, snapshot } from "@/lib/store";
 
 /** Everything the dashboard draws, for one range, campaign and time zone. */
 export async function GET(request: NextRequest) {
@@ -23,12 +23,27 @@ export async function GET(request: NextRequest) {
   try {
     const rows = await snapshot(rangeStart(range, tz));
     const summary = summarize(rows, { range, tz, campaign });
-    return Response.json(summary, { headers: { "cache-control": "no-store" } });
+    return Response.json(
+      { ...summary, backend: backend() },
+      { headers: { "cache-control": "no-store" } },
+    );
   } catch (error) {
     console.error("[dashboard] summary failed", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Summary failed." },
-      { status: 502 },
-    );
+    return Response.json({ error: explain(error) }, { status: 502 });
   }
+}
+
+/** Turn a setup mistake into the step that fixes it. */
+function explain(error: unknown) {
+  const text = error instanceof Error ? error.message : String(error);
+  if (/PGRST20[25]|Could not find the (table|function)|does not exist/i.test(text)) {
+    return "Supabase is connected, but the tables aren't there yet. Run supabase/schema.sql in Supabase's SQL Editor.";
+  }
+  if (/\b401\b|Invalid API key|No API key|Unauthorized/i.test(text)) {
+    return "Supabase rejected the key. Check SUPABASE_SECRET_KEY: it should be the secret key (starts with sb_secret_), not the publishable one.";
+  }
+  if (/fetch failed|ENOTFOUND|getaddrinfo|Invalid URL/i.test(text)) {
+    return "Couldn't reach Supabase. Check SUPABASE_URL: it should look like https://abcdefghijklmnop.supabase.co";
+  }
+  return text;
 }

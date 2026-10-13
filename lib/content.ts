@@ -1822,8 +1822,8 @@ export const DEMO_PAGE = {
  * The booking page campaigns point at: who you will meet, what you get, proof
  * beside the calendar, the calendar itself, then the confirmation.
  *
- * Bryan's title and background are from public sources (his ThinkHR
- * announcement and current profile); confirm both with him before launch.
+ * Bryan's title, VP, Strategic Accounts, is confirmed. His background line
+ * comes from public sources (the ThinkHR announcement); check it with him.
  *
  * PLACEHOLDER PROOF. The testimonial and both statistics are stand-ins so the
  * layout can be judged. None is attributable yet, and by the rule at the top
@@ -1882,6 +1882,7 @@ export const GET_STARTED_PAGE = {
   },
   booking: {
     title: "Pick a time",
+    rescheduleTitle: "Pick a new time",
     meta: ["10 min", "Video call", "with Bryan"],
     zoneLabel: "Times shown in",
     noTimes: "No open times left this month.",
@@ -1898,8 +1899,9 @@ export const GET_STARTED_PAGE = {
       clientsPlaceholder: "Choose a range",
       clientBands: ["Under 25", "25–100", "100–250", "250–500", "500+"],
       submit: "Confirm booking",
+      submitMove: "Move my meeting",
       pending: "Booking…",
-      fine: "The invite goes to this address. Nothing else does.",
+      fine: "The meeting details go to this address. Nothing else does.",
     },
     slotTaken: "That time was just taken. Here are the latest openings.",
     /** Shown if the scheduler can't be reached (or isn't connected yet). */
@@ -1908,8 +1910,9 @@ export const GET_STARTED_PAGE = {
       body: "Tell us a little about your book and Bryan will reply with times within one business day.",
       cta: { href: "/demo", label: "Request a time" },
     },
-    demoNotice:
-      "Demo scheduler: Cal.com isn't connected, so no invite is sent.",
+    /** Development only; visitors never see it. */
+    placeholderNotice:
+      "Placeholder scheduler: bookings are saved and block the slot, but nothing is sent to a calendar.",
   },
   agenda: {
     title: "How the 10 minutes go",
@@ -1934,9 +1937,17 @@ export const GET_STARTED_PAGE = {
   confirmed: {
     meta: { title: "You're booked" },
     title: "You're booked",
+    movedTitle: "You're rescheduled",
+    cancelledTitle: "Meeting cancelled",
+    /** When the scheduler emails a calendar invite (Cal.com connected). */
     inviteTo: "A calendar invite is on its way to",
+    /** When it doesn't (the placeholder scheduler). */
+    heldFor: "Your time is held. Bryan will send the video link to",
+    heldTail: "before the call. Add it to your calendar below in the meantime.",
+    cancelledLede: "Your spot is released. If another time works better, pick one below.",
+    rebook: { href: "/get-started#calendar", label: "Pick a new time" },
     fallbackLede:
-      "A calendar invite is on its way to your inbox. If it doesn't show up in a few minutes, check spam or reply to the confirmation email.",
+      "You're all set. Bryan will be in touch by email with the details before the call.",
     with: "with Bryan Kleppe",
     calendarLabel: "Add it to your calendar",
     calendars: { google: "Google", outlook: "Outlook", ics: "Apple / .ics" },
@@ -1962,5 +1973,21 @@ export const GET_STARTED_PAGE = {
       "Invite whoever owns renewals, if it isn't you",
     ],
     back: { href: "/advisor", label: "See how TruHu Advisor works" },
+  },
+  /** /get-started/manage/[uid]: the reschedule and cancel links land here. */
+  manage: {
+    meta: { title: "Your meeting" },
+    title: "Your meeting with Bryan",
+    moveTitle: "Need a different time?",
+    moveBody: "Pick a new one and your current time is released.",
+    cancelTitle: "Can't make it at all?",
+    cancelBody: "Cancelling frees the time for someone else. You can always book again.",
+    cancelButton: "Cancel the meeting",
+    cancelConfirm: "Yes, cancel it",
+    cancelKeep: "Keep it",
+    cancelPending: "Cancelling…",
+    cancelled: "This meeting has been cancelled.",
+    notFound:
+      "We couldn't find that booking. The link may be incomplete; try the one in your confirmation.",
   },
 } as const;

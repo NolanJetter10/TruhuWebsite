@@ -98,10 +98,13 @@ export function BookingWidget({
   copy,
   hostName,
   hostPhoto,
+  reschedule,
 }: {
   copy: Copy;
   hostName: string;
   hostPhoto?: string | null;
+  /** Move this booking instead of making a new one: pick a time, confirm. */
+  reschedule?: { uid: string };
 }) {
   const router = useRouter();
   const detected = useSyncExternalStore(noSubscribe, detectZone, noZone);
@@ -217,9 +220,53 @@ export function BookingWidget({
     reachStep("details");
   }
 
+  async function move(uid: string, start: string) {
+    setPending(true);
+    setFormError(null);
+    track("reschedule_submit", start);
+    try {
+      const res = await fetch(`/api/booking/${encodeURIComponent(uid)}/reschedule`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ start }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+      if (res.ok) {
+        flushNow();
+        router.push(`/get-started/confirmed?b=${encodeURIComponent(uid)}&moved=1`);
+        return;
+      }
+      setPending(false);
+      track("booking_error", body.code ?? String(res.status));
+      if (res.status === 409) {
+        setNotice(copy.slotTaken);
+        setSlot(null);
+        forgetMonth();
+        return;
+      }
+      setFormError(body.error ?? "That didn't go through. Try again in a moment.");
+    } catch {
+      setPending(false);
+      setFormError("Couldn't reach us. Check your connection and try again.");
+    }
+  }
+
+  function forgetMonth() {
+    if (!zone || !month) return;
+    setMonths((all) => {
+      const rest = { ...all };
+      delete rest[`${zone}|${month}`];
+      return rest;
+    });
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!slot || !zone || pending) return;
+    if (reschedule) {
+      await move(reschedule.uid, slot);
+      return;
+    }
 
     const found: Partial<Record<FieldName, string>> = {};
     if (!fields.name.trim()) found.name = "Tell us your name.";
@@ -308,7 +355,11 @@ export function BookingWidget({
   /* ------------------------------------------------------------- render */
 
   const zoneOptions = zone && !US_ZONES.includes(zone) ? [zone, ...US_ZONES] : US_ZONES;
-  const isDemo = data?.status === "ready" && data.provider === "demo";
+  // A note for whoever is testing locally; visitors never see it.
+  const placeholderNote =
+    process.env.NODE_ENV !== "production" &&
+    data?.status === "ready" &&
+    data.provider === "placeholder";
 
   return (
     <div
@@ -321,7 +372,7 @@ export function BookingWidget({
       <div className="flex items-center gap-3.5 border-b border-line px-5 py-4 sm:px-6">
         <Avatar name={hostName} photo={hostPhoto} size={44} />
         <div className="min-w-0">
-          <h2 className="t-h4">{copy.title}</h2>
+          <h2 className="t-h4">{reschedule ? copy.rescheduleTitle : copy.title}</h2>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-slate-600">
             {copy.meta.map((item, i) => (
               <span key={item} className="flex items-center gap-2">
@@ -496,8 +547,10 @@ export function BookingWidget({
                 ▾
               </span>
             </span>
-            {isDemo ? (
-              <span className="basis-full text-[0.75rem] text-amber-500">{copy.demoNotice}</span>
+            {placeholderNote ? (
+              <span className="basis-full text-[0.75rem] text-amber-500">
+                {copy.placeholderNotice}
+              </span>
             ) : null}
           </div>
         </div>
@@ -529,6 +582,8 @@ export function BookingWidget({
             </div>
           </div>
 
+          {reschedule ? null : (
+          <>
           <h3 className="sr-only">{copy.form.title}</h3>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Field
@@ -608,6 +663,8 @@ export function BookingWidget({
             <label htmlFor="bk-website">Website</label>
             <input id="bk-website" name="website" tabIndex={-1} autoComplete="off" />
           </div>
+          </>
+          )}
 
           {formError ? (
             <p role="alert" className="mt-4 text-[0.875rem] text-red-600">
@@ -621,7 +678,11 @@ export function BookingWidget({
             className="sheen group mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-green-500 px-6 py-3.5 text-base font-semibold text-ink-950 shadow-[0_10px_28px_-12px_rgba(56,176,0,0.75)] transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-green-400 disabled:cursor-wait disabled:opacity-70"
           >
             <span className="relative z-[2]">
-              {pending ? copy.form.pending : copy.form.submit}
+              {pending
+                ? copy.form.pending
+                : reschedule
+                  ? copy.form.submitMove
+                  : copy.form.submit}
             </span>
             {pending ? (
               <span
@@ -637,7 +698,9 @@ export function BookingWidget({
               </span>
             )}
           </button>
-          <p className="t-caption mt-3 text-center text-slate-400">{copy.form.fine}</p>
+          {reschedule ? null : (
+            <p className="t-caption mt-3 text-center text-slate-400">{copy.form.fine}</p>
+          )}
         </form>
       )}
     </div>

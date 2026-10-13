@@ -95,6 +95,12 @@ create table if not exists public.bookings (
 
 create index if not exists bookings_created_idx on public.bookings (created_at desc);
 
+-- One live meeting per start time. The website's placeholder scheduler relies
+-- on this: two people racing for the same slot get one booking and one clean
+-- "that time was just taken", never a double booking.
+create unique index if not exists bookings_one_per_slot
+  on public.bookings (start_at) where status <> 'cancelled';
+
 alter table public.visits   enable row level security;
 alter table public.events   enable row level security;
 alter table public.bookings enable row level security;

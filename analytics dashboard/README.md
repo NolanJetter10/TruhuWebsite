@@ -13,13 +13,11 @@ project unchanged.
 
 ```
  visitor on truhu.ai/get-started
-   │  page beacons every few seconds ──────▶ website /api/track ─────┐
-   │  books a time ──▶ website /api/booking ──▶ Cal.com ──▶ Bryan's  │
-   │                                   │          calendar + invites │
-   │                                   └── record_booking ───────────┤
-   │                                                                 ▼
-   │          Cal.com webhook (cancel / reschedule) ─────────▶  Supabase Postgres
-   │                                                           visits · events · bookings
+   │  page beacons every few seconds ─────▶ website /api/track ──────┐
+   │  books, moves or cancels a time ─────▶ website /api/booking ────┤
+   │      (placeholder scheduler now; Cal.com later)                 ▼
+   │                                                          Supabase Postgres
+   │                                                    visits · events · bookings
    │                                                                 ▲
    └──────────────────── this dashboard ── reads + live pulse ───────┘
 ```
@@ -29,9 +27,9 @@ reads, so either one can move, redeploy or break without taking the other down.
 
 ## Run it locally
 
-You need no accounts to run it. The website's dev server writes every analytics
-call to `.data/analytics.ndjson` in this folder, and this app replays that file
-with the same rules the database uses.
+Both apps run on your computer with no accounts at all. Until a database is
+connected, the website writes to `.data/analytics.ndjson` in this folder, and
+this app replays that file with the same rules the database uses.
 
 ```bash
 # website (repo root) — usually already running on :3000
@@ -44,105 +42,153 @@ npm run dev            # http://localhost:3001
 
 Open http://localhost:3000/get-started?utm_source=linkedin&utm_campaign=test in
 one window and the dashboard in another. The visit appears within a couple of
-seconds.
+seconds. To reset local test data, delete `.data/analytics.ndjson`.
 
-The `/get-started` calendar runs on a **demo scheduler** until Cal.com is
-connected. You can book through it, but it sends no invites. To reset local
-data, delete `.data/analytics.ndjson`.
+## Connect the database (Supabase)
 
-## Going live
+This is the one setup step needed now. It takes about five minutes.
 
-### 1. Supabase (the database)
+**1. Create the tables.**
 
-1. Create a project at supabase.com. The free tier is fine to start.
-2. Open **SQL Editor → New query**, paste [`supabase/schema.sql`](supabase/schema.sql)
-   and run it. It's safe to re-run.
-3. Under **Project Settings → API Keys**, copy:
-   - the **Project URL**, for `SUPABASE_URL`
-   - a **secret key** (`sb_secret_…`), for `SUPABASE_SECRET_KEY`
+1. Open your project at [supabase.com/dashboard](https://supabase.com/dashboard).
+2. In the left sidebar, click **SQL Editor**.
+3. Open [`supabase/schema.sql`](supabase/schema.sql) in VS Code. Select all
+   (Ctrl+A) and copy (Ctrl+C).
+4. Paste it into the Supabase editor and click **Run** (or press Ctrl+Enter).
+   - If Supabase warns about "destructive operations", confirm. The script only
+     creates tables and sets permissions; it deletes nothing.
+   - You should see *Success. No rows returned.*
+5. Click **Table Editor** in the sidebar. You should see three tables:
+   `bookings`, `events` and `visits`.
 
-   Keep the secret key server-side only. It never reaches a browser.
+The script is safe to run again whenever it changes.
 
-The tables have row level security on and no policies, so the publishable
-(anon) key can't read or write anything.
+**2. Copy two values out of Supabase.**
+
+- **Project URL.** Go to **Project Settings** (the gear at the bottom of the
+  sidebar), then **Data API**. It looks like `https://abcdefghijklmnop.supabase.co`.
+  The **Connect** button at the top of the project shows it too.
+- **Secret key.** Go to **Project Settings**, then **API Keys**, then the
+  **Secret keys** section. Copy the key that starts with `sb_secret_`.
+  - If there isn't one yet, create one on that page.
+  - If the project only shows **Legacy API keys**, use the one labelled
+    `service_role` (click Reveal).
+  - Never use the *publishable* or *anon* key here.
+
+**3. Paste them into one file.**
+
+Open `.env.local` in the root of the TruhuWebsite folder. It already exists, so
+leave what's in it and add these two lines at the bottom, with your values:
+
+```
+SUPABASE_URL=https://abcdefghijklmnop.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Save the file. Within a few seconds the website writes to Supabase and the
+dashboard's badge switches from **Local file** to **Supabase**. Nothing needs
+restarting. If something is off, the dashboard says which step to recheck.
+
+The secret key stays on your computer and on the server. It never reaches a
+visitor's browser, and `.env.local` is never committed to git. The tables have
+row level security on with no policies, so the public (anon) key can't read or
+write anything.
 
 > Free projects pause after a week with **no** activity. A live page keeps it
 > active; a paused one wakes from the Supabase dashboard.
 
-### 2. Cal.com (the live calendar)
+## The calendar: placeholder for now
 
-The booking widget on `/get-started` is our own UI. Cal.com is the engine
-behind it. It does the following:
+Until Bryan's calendar is connected, the booking widget runs on a
+**placeholder scheduler** ([`lib/booking/placeholder.ts`](../lib/booking/placeholder.ts)
+in the website). From the visitor's side it behaves like the real thing:
 
-- checks Bryan's real calendar for conflicts
-- writes the meeting into that calendar
+- It offers Bryan's working hours: weekdays, 9:00 to 4:30 ET start times every
+  30 minutes, at least 3 hours ahead and up to 60 days out. Change these in
+  `HOURS` in that file.
+- Every booking is saved to the `bookings` table. The time disappears for
+  everyone else, and the booking shows on the dashboard straight away.
+- Two people racing for the same time get one booking and one "that time was
+  just taken". The database guarantees it.
+- The confirmation links to `/get-started/manage/<booking id>`, where the
+  visitor can move or cancel. The freed time opens up again.
+
+**What it doesn't do:**
+
+- It doesn't put anything on Bryan's calendar.
+- It doesn't send any email.
+
+The confirmation page says so honestly: *"Your time is held. Bryan will send the
+video link to … before the call."*
+
+So until Cal.com is connected, **someone sends each booker the video link by
+hand**. The dashboard's **Bookings** table lists each booking with name, email,
+agency and meeting time, live.
+
+## Later: connect Bryan's calendar (Cal.com)
+
+When you're ready, setting four variables switches every new booking to
+Bryan's real calendar. Cal.com then does the following:
+
+- checks his calendar for conflicts
+- adds the meeting
 - emails both sides the invite with the video link
 - hosts the reschedule and cancel pages
 
+Nothing else on the page changes.
+
 1. Bryan signs up at cal.com and connects his work calendar (Google or
-   Microsoft 365) under **Apps → Calendars**. He sets it as the destination
-   calendar and checks his working hours under **Availability**.
-2. Create an **event type**:
-   - title like "TruHu demo", **10 minutes**
-   - location **Google Meet**, Zoom or MS Teams
-   - a short buffer if he wants one
-3. On that event type, under **Advanced → Booking questions**, add two
-   **required** questions:
-   - **Agency**: type *Short text*, identifier `agency`
-   - **Roughly how many clients do you serve?**: type *Short text*, identifier
-     `clients`
-
-   Name and email are built in. If you use different identifiers, set
-   `CAL_FIELD_AGENCY` and `CAL_FIELD_CLIENTS`.
-4. Note the event type's **ID**. It's the number in the URL when editing it.
-5. Under **Settings → Developer → API keys**, create a key (`cal_live_…`).
-6. Under **Settings → Developer → Webhooks**:
-   - Subscriber URL: `https://truhu.ai/api/webhooks/cal`
-   - Triggers: **Booking cancelled** and **Booking rescheduled**
+   Microsoft 365) under **Apps → Calendars**.
+2. He creates an **event type**:
+   - **10 minutes**
+   - location Google Meet, Zoom or Teams
+3. On it, under **Advanced → Booking questions**, add two **required** *Short
+   text* questions, with identifiers `agency` and `clients`.
+4. Note the event type's **ID**. It's the number in the URL while editing it.
+5. Create an API key under **Settings → Developer → API keys**.
+6. Create a webhook under **Settings → Developer → Webhooks**:
+   - URL: `https://truhu.ai/api/webhooks/cal`
+   - Triggers: *Booking cancelled* and *Booking rescheduled*
    - Set a secret
+7. Add these to `.env.local` (and to Vercel, below):
 
-   This keeps cancelled and moved meetings honest on the dashboard.
+```
+CAL_API_KEY=cal_live_xxxxxxxxxxxxxxxx
+CAL_EVENT_TYPE_ID=1234567
+CAL_WEBHOOK_SECRET=the-webhook-secret
+```
 
-Make one test booking on the live page after setup. Confirm the invite reaches
-both inboxes and the meeting lands on Bryan's calendar.
+8. Make one test booking and check it lands on Bryan's calendar.
 
-### 3. Environment variables
+## Later: put it online (Vercel)
 
-**Website** (Vercel → truhu-website → Settings → Environment Variables, and
-`.env.local` at the repo root for local testing against real services):
+Everything above runs on your computer. Vercel is the service that runs the
+public truhu.ai site. Two things are needed when you want this live:
 
-| Variable | Value |
-|---|---|
-| `CAL_API_KEY` | the `cal_live_…` key |
-| `CAL_EVENT_TYPE_ID` | the event type's number |
-| `CAL_WEBHOOK_SECRET` | the webhook's secret |
-| `CAL_FIELD_AGENCY` / `CAL_FIELD_CLIENTS` | only if the question identifiers differ from `agency` / `clients` |
-| `CAL_PUBLIC_URL` | only if Bryan's Cal.com is on an org domain (e.g. `https://truhu.cal.com`) |
-| `SUPABASE_URL` | Project URL |
-| `SUPABASE_SECRET_KEY` | `sb_secret_…` |
+**The live site needs the same two Supabase values.**
 
-If the Cal.com values are missing in production, the calendar shows a "request
-a time" fallback linking to `/demo`. If the Supabase values are missing,
-analytics are dropped, with one warning in the logs.
+1. On vercel.com, open the **truhu-website** project.
+2. Go to **Settings → Environment Variables**.
+3. Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` with the same values as in
+   `.env.local`.
+4. Save, then redeploy the site.
 
-**Dashboard** (this app's own Vercel project, and `.env.local` in this folder):
+Without them, the live page shows a "request a time" link instead of the
+calendar, rather than taking bookings it can't store.
 
-| Variable | Value |
-|---|---|
-| `SUPABASE_URL` / `SUPABASE_SECRET_KEY` | the same project as the website |
-| `DASHBOARD_PASSWORD` | one shared password; **required** in production |
-| `SITE_URL` | where the link builder points, default `https://truhu.ai` |
+**The dashboard needs its own web address** if you want to open it away from
+your laptop.
 
-### 4. Deploy the dashboard
+1. In Vercel, choose **Add New → Project** and import this GitHub repo again.
+2. Set **Root Directory** to `analytics dashboard`.
+3. Add these environment variables:
+   - `SUPABASE_URL`
+   - `SUPABASE_SECRET_KEY`
+   - `DASHBOARD_PASSWORD`: any password you choose; it's required online
+4. Deploy.
 
-In Vercel, choose **Add New → Project** and import this repo again. Then:
-
-- **Root Directory**: `analytics dashboard`
-- Framework: Next.js
-- Add the env vars above, and deploy
-
-Put it on a subdomain like `analytics.truhu.ai` if you want one. The page is
-`noindex` and every route sits behind the password.
+You get an address like `truhu-analytics.vercel.app`. Every page needs the
+password, and none of them is indexed by search engines.
 
 ## Tagging campaign links
 
@@ -180,7 +226,7 @@ the right campaign.
 | Picked a time | a slot was clicked |
 | Started details | name, email, agency or client count was touched |
 | Hit confirm | the form was submitted |
-| Booked | Cal.com confirmed the booking (set server-side) |
+| Booked | the booking was saved (set server-side, never by the browser) |
 
 **Time on page** is *active* time: the tab is in view and there was some sign
 of a person in the last 30 seconds. A tab left open over lunch doesn't count.
@@ -254,5 +300,5 @@ On the website side:
 | `lib/analytics/tracker.ts` | The browser tracker |
 | `app/api/track` | Its endpoint |
 | `lib/analytics/store.ts` | The writer |
-| `lib/booking/` | Cal.com client, demo scheduler, calendar links |
+| `lib/booking/` | Placeholder scheduler, Cal.com client, calendar links |
 | `app/get-started/` | The page and its confirmation |

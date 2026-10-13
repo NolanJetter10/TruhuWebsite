@@ -59,7 +59,7 @@ function when(iso: string, tz: string) {
 }
 
 export function Dashboard({
-  backend,
+  backend: initialBackend,
   openAccess,
   initialRange,
   initialCampaign,
@@ -74,7 +74,9 @@ export function Dashboard({
   const tz = useSyncExternalStore(noSubscribe, browserZone, serverZone);
   const [range, setRange] = useState<RangeKey>(initialRange);
   const [campaign, setCampaign] = useState(initialCampaign);
-  const [data, setData] = useState<Summary | null>(null);
+  const [data, setData] = useState<(Summary & { backend: Backend }) | null>(null);
+  // Follows the server, so adding the Supabase keys flips this without a reload.
+  const backend = data?.backend ?? initialBackend;
   const [error, setError] = useState<string | null>(null);
   const [dimmed, setDimmed] = useState(false);
   const [link, setLink] = useState<Link>("connecting");
@@ -95,7 +97,7 @@ export function Dashboard({
       const body = await res.json();
       if (id !== request.current) return;
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-      setData(body as Summary);
+      setData(body as Summary & { backend: Backend });
       setError(null);
     } catch (e) {
       if (id === request.current) setError(e instanceof Error ? e.message : String(e));
@@ -196,9 +198,10 @@ export function Dashboard({
       <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
         {backend === "file" ? (
           <Notice tone="info">
-            Local mode: reading <code>.data/analytics.ndjson</code>, which the website&apos;s dev
-            server writes. Add <code>SUPABASE_URL</code> and <code>SUPABASE_SECRET_KEY</code> to
-            both apps to see live production data.
+            Local mode: no database connected yet, so this shows test data from{" "}
+            <code>.data/analytics.ndjson</code>. Add <code>SUPABASE_URL</code> and{" "}
+            <code>SUPABASE_SECRET_KEY</code> to the website&apos;s <code>.env.local</code> and this
+            switches to Supabase on its own.
           </Notice>
         ) : null}
         {backend === "none" ? (
@@ -465,7 +468,10 @@ export function Dashboard({
             </div>
 
             {/* Bookings --------------------------------------------------- */}
-            <Card title="Bookings" subtitle="Made on the page, newest first. Status follows the Cal.com webhook.">
+            <Card
+              title="Bookings"
+              subtitle="Made on the page, newest first, with reschedules and cancellations. Until Cal.com is connected, send each one the video link by hand."
+            >
               <div className="-mx-1 overflow-x-auto">
                 <table className="w-full min-w-[760px] text-sm">
                   <thead>

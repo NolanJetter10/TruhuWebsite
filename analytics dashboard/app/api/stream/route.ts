@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { COOKIE, isSignedIn } from "@/lib/auth";
-import { BACKEND, pulse } from "@/lib/store";
+import { backend, pulse } from "@/lib/store";
 
 /**
  * The live wire. A Server-Sent Events stream that says `change` the moment
@@ -12,9 +12,10 @@ import { BACKEND, pulse } from "@/lib/store";
  * a host's response time limit only ever costs a moment.
  */
 
-const INTERVAL_MS = { supabase: 2000, file: 1000, none: 30_000 }[BACKEND];
+const INTERVAL_MS = { supabase: 2000, file: 1000, none: 30_000 };
 
 export async function GET(request: NextRequest) {
+  const mode = backend();
   if (!(await isSignedIn(request.cookies.get(COOKIE)?.value))) {
     return new Response("Sign in first.", { status: 401 });
   }
@@ -40,10 +41,10 @@ export async function GET(request: NextRequest) {
         } catch (error) {
           send(`event: trouble\ndata: ${JSON.stringify(String(error)).slice(0, 300)}\n\n`);
         }
-        timer = setTimeout(tick, INTERVAL_MS);
+        timer = setTimeout(tick, INTERVAL_MS[mode]);
       };
 
-      send(`event: ready\ndata: ${BACKEND}\n\n`);
+      send(`event: ready\ndata: ${mode}\n\n`);
       void tick();
       keepAlive = setInterval(() => send(": keep-alive\n\n"), 20_000);
 

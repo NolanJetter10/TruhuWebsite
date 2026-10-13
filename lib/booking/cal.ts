@@ -25,19 +25,27 @@ const API = "https://api.cal.com/v2";
 const SLOTS_VERSION = "2024-09-04";
 const BOOKINGS_VERSION = "2026-02-25";
 
-const KEY = process.env.CAL_API_KEY ?? "";
-const EVENT_TYPE_ID = Number(process.env.CAL_EVENT_TYPE_ID);
-/** Where Cal.com's own reschedule and cancel pages live. */
-const PUBLIC_BASE = (process.env.CAL_PUBLIC_URL ?? "https://cal.com").replace(/\/+$/, "");
-/** Slugs of the two booking questions added to the event type in Cal.com. */
-const FIELD_AGENCY = process.env.CAL_FIELD_AGENCY ?? "agency";
-const FIELD_CLIENTS = process.env.CAL_FIELD_CLIENTS ?? "clients";
+/** Read per call, so setting the variables needs no restart. */
+function config() {
+  return {
+    key: process.env.CAL_API_KEY ?? "",
+    eventTypeId: Number(process.env.CAL_EVENT_TYPE_ID),
+    /** Where Cal.com's own reschedule and cancel pages live. */
+    publicBase: (process.env.CAL_PUBLIC_URL ?? "https://cal.com").replace(/\/+$/, ""),
+    /** Slugs of the two booking questions added to the event type in Cal.com. */
+    fieldAgency: process.env.CAL_FIELD_AGENCY ?? "agency",
+    fieldClients: process.env.CAL_FIELD_CLIENTS ?? "clients",
+  };
+}
 
-export const calConfigured = Boolean(KEY && Number.isFinite(EVENT_TYPE_ID));
+export function calConfigured() {
+  const { key, eventTypeId } = config();
+  return Boolean(key && Number.isFinite(eventTypeId) && eventTypeId > 0);
+}
 
 function headers(version: string) {
   return {
-    authorization: `Bearer ${KEY}`,
+    authorization: `Bearer ${config().key}`,
     "cal-api-version": version,
     "content-type": "application/json",
   };
@@ -55,6 +63,7 @@ type CalBooking = {
 };
 
 function toBooking(data: CalBooking): Booking {
+  const { fieldAgency, fieldClients, publicBase } = config();
   const attendee = data.attendees?.[0];
   const responses = data.bookingFieldsResponses ?? {};
   const location = data.location ?? data.meetingUrl;
@@ -71,12 +80,13 @@ function toBooking(data: CalBooking): Booking {
       email: attendee?.email ?? "",
       timeZone: attendee?.timeZone ?? "America/New_York",
     },
-    agency: typeof responses[FIELD_AGENCY] === "string" ? (responses[FIELD_AGENCY] as string) : undefined,
-    clients:
-      responses[FIELD_CLIENTS] != null ? String(responses[FIELD_CLIENTS]) : undefined,
+    agency:
+      typeof responses[fieldAgency] === "string" ? (responses[fieldAgency] as string) : undefined,
+    clients: responses[fieldClients] != null ? String(responses[fieldClients]) : undefined,
     meetingUrl: location && /^https?:\/\//.test(location) ? location : undefined,
-    rescheduleUrl: `${PUBLIC_BASE}/reschedule/${data.uid}`,
-    cancelUrl: `${PUBLIC_BASE}/booking/${data.uid}?cancel=true`,
+    rescheduleUrl: `${publicBase}/reschedule/${data.uid}`,
+    cancelUrl: `${publicBase}/booking/${data.uid}?cancel=true`,
+    invites: true,
   };
 }
 
@@ -97,10 +107,11 @@ async function failure(res: Response, fallback: string): Promise<never> {
 
 export const calProvider: BookingProvider = {
   name: "cal",
+  persists: false,
 
   async getSlots(from, to, timeZone) {
     const url = new URL(`${API}/slots`);
-    url.searchParams.set("eventTypeId", String(EVENT_TYPE_ID));
+    url.searchParams.set("eventTypeId", String(config().eventTypeId));
     url.searchParams.set("start", from);
     url.searchParams.set("end", to);
     url.searchParams.set("timeZone", timeZone);
@@ -121,7 +132,7 @@ export const calProvider: BookingProvider = {
       cache: "no-store",
       body: JSON.stringify({
         start: request.start,
-        eventTypeId: EVENT_TYPE_ID,
+        eventTypeId: config().eventTypeId,
         attendee: {
           name: request.name,
           email: request.email,
@@ -129,8 +140,8 @@ export const calProvider: BookingProvider = {
           language: "en",
         },
         bookingFieldsResponses: {
-          [FIELD_AGENCY]: request.agency,
-          [FIELD_CLIENTS]: request.clients,
+          [config().fieldAgency]: request.agency,
+          [config().fieldClients]: request.clients,
         },
         metadata: request.metadata,
       }),

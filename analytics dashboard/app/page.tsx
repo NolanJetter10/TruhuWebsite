@@ -1,7 +1,7 @@
 import { Dashboard } from "@/components/Dashboard";
 import { isRange } from "@/lib/aggregate";
 import { authMode } from "@/lib/auth";
-import { BACKEND } from "@/lib/store";
+import { backend } from "@/lib/store";
 
 /** The proxy has already checked the cookie by the time this renders. */
 export default async function Home({
@@ -12,7 +12,7 @@ export default async function Home({
   const { range, campaign } = await searchParams;
   return (
     <Dashboard
-      backend={BACKEND}
+      backend={backend()}
       openAccess={authMode === "open"}
       initialRange={range && isRange(range) ? range : "7d"}
       initialCampaign={campaign ?? ""}
