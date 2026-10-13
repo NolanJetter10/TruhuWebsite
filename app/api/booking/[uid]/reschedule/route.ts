@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { bookingProvider, forgetSlots } from "@/lib/booking";
+import { sendBookingEmails } from "@/lib/booking/email";
 import { BookingError } from "@/lib/booking/types";
 
 /**
@@ -29,6 +31,8 @@ export async function POST(
   try {
     const booking = await provider.reschedule(uid, at.toISOString());
     forgetSlots();
+    const origin = new URL(request.url).origin;
+    after(() => sendBookingEmails("moved", booking, origin));
     return Response.json({ ok: true, uid: booking.uid });
   } catch (error) {
     if (error instanceof BookingError) {

@@ -146,7 +146,7 @@ export async function POST(request: Request) {
     country: header(request, "x-vercel-ip-country"),
     region: header(request, "x-vercel-ip-country-region"),
     city: header(request, "x-vercel-ip-city"),
-    returning: v.returning === true,
+    returning_visitor: v.returning === true,
     engaged_ms: int(v.engagedMs, 0, 6 * 60 * 60 * 1000),
     max_scroll: int(v.maxScroll, 0, 100),
     furthest_step: int(v.step, 0, 5), // `booked` (6) is only ever set by the server

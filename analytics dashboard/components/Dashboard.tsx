@@ -470,7 +470,7 @@ export function Dashboard({
             {/* Bookings --------------------------------------------------- */}
             <Card
               title="Bookings"
-              subtitle="Made on the page, newest first, with reschedules and cancellations. Until Cal.com is connected, send each one the video link by hand."
+              subtitle="Made on the page, newest first, with reschedules and cancellations. Until a Zoom link is set up, send each booker theirs before the call."
             >
               <div className="-mx-1 overflow-x-auto">
                 <table className="w-full min-w-[760px] text-sm">

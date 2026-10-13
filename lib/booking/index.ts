@@ -17,11 +17,7 @@ export function bookingProvider(): BookingProvider | null {
   return null;
 }
 
-export const MEETING = {
-  title: "TruHu demo with Bryan Kleppe",
-  minutes: 10,
-  host: "Bryan Kleppe",
-} as const;
+export { MEETING } from "./meeting";
 
 /*
  * Open times are held for 15 seconds per (provider, range, zone), which keeps

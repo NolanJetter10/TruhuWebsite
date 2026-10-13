@@ -110,25 +110,76 @@ in the website). From the visitor's side it behaves like the real thing:
   everyone else, and the booking shows on the dashboard straight away.
 - Two people racing for the same time get one booking and one "that time was
   just taken". The database guarantees it.
-- The confirmation links to `/get-started/manage/<booking id>`, where the
-  visitor can move or cancel. The freed time opens up again.
+- Once email is on (next section), the booker gets a real **calendar
+  invitation** that Gmail and Outlook show with Accept / Decline. Your team
+  gets a heads-up email with their details.
+- The confirmation and the email link to `/get-started/manage/<booking id>`,
+  where the visitor can move or cancel. A move updates the invitation on
+  their calendar, a cancellation removes it, and the freed time opens up
+  again.
 
-**What it doesn't do:**
+**What it doesn't do:** read or write Bryan's own calendar, so it can't see
+his other meetings. There's also no Zoom link until one is set: invites say
+*"Bryan will send the Zoom link before the call."*
 
-- It doesn't put anything on Bryan's calendar.
-- It doesn't send any email.
+If Bryan has a personal Zoom meeting link, put it in `.env.local` and every
+invite will include it:
 
-The confirmation page says so honestly: *"Your time is held. Bryan will send the
-video link to … before the call."*
+```
+BOOKING_MEETING_URL=https://zoom.us/j/1234567890
+```
 
-So until Cal.com is connected, **someone sends each booker the video link by
-hand**. The dashboard's **Bookings** table lists each booking with name, email,
-agency and meeting time, live.
+## Turn on email invites (Resend)
+
+The emails go out through [Resend](https://resend.com), an email-sending
+service with a free tier. There are two stages.
+
+**Stage 1: test it on your laptop (about 5 minutes).**
+
+1. Sign up at resend.com with your own email address.
+2. Go to **API Keys → Create API Key** and copy the key. It starts with `re_`.
+3. Add these lines to `.env.local` and save:
+
+   ```
+   RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
+   BOOKING_NOTIFY_TO=you@yourcompany.com
+   ```
+
+   `BOOKING_NOTIFY_TO` is who gets the "new demo booked" heads-up. Separate
+   several addresses with commas.
+4. Book a time at http://localhost:3000/get-started **using the same email you
+   signed up to Resend with**. The invite arrives from `onboarding@resend.dev`.
+
+Until a domain is verified, Resend only delivers to the address the account was
+opened with. That's what Stage 2 fixes.
+
+**Stage 2: send from truhu.ai to anyone (before real prospects book).**
+
+1. In Resend, go to **Domains → Add Domain** and enter `truhu.ai`.
+2. Resend lists a few DNS records (MX and TXT). truhu.ai's DNS is managed in
+   Vercel, so add each record there:
+   - Open vercel.com → **Domains** → `truhu.ai` → **DNS Records**.
+   - Add each record with the Name, Type and Value exactly as Resend shows
+     them.
+3. Back in Resend, click **Verify**. It usually takes a few minutes.
+4. Add these to `.env.local`:
+
+   ```
+   BOOKING_EMAIL_FROM=Bryan Kleppe <bryan@truhu.ai>
+   BOOKING_EMAIL_REPLY_TO=bryans-real-inbox@example.com
+   ```
+
+   truhu.ai doesn't receive email, so replies and RSVPs need to go to Bryan's
+   real inbox. Set that in `BOOKING_EMAIL_REPLY_TO`.
+
+Without `RESEND_API_KEY`, nothing is sent. In development each email is
+instead saved as a preview in a `truhu-outbox` folder in your system's temp
+directory, and the confirmation page stops claiming an invite went out.
 
 ## Later: connect Bryan's calendar (Cal.com)
 
 When you're ready, setting four variables switches every new booking to
-Bryan's real calendar. Cal.com then does the following:
+Bryan's real calendar. Cal.com then does the following, and the placeholder's own emails stop:
 
 - checks his calendar for conflicts
 - adds the meeting
@@ -170,7 +221,9 @@ public truhu.ai site. Two things are needed when you want this live:
 1. On vercel.com, open the **truhu-website** project.
 2. Go to **Settings → Environment Variables**.
 3. Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` with the same values as in
-   `.env.local`.
+   `.env.local`. Add the email settings you've set (`RESEND_API_KEY`,
+   `BOOKING_EMAIL_FROM`, `BOOKING_EMAIL_REPLY_TO`, `BOOKING_NOTIFY_TO`,
+   `BOOKING_MEETING_URL`) the same way.
 4. Save, then redeploy the site.
 
 Without them, the live page shows a "request a time" link instead of the

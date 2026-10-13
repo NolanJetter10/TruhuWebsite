@@ -1,7 +1,6 @@
 /**
- * "Add to calendar" for the confirmation page. The invite Cal.com emails is
- * the real thing; these are for the visitor who wants it on their calendar
- * before they have opened their inbox.
+ * Calendar plumbing: "add to calendar" links for the confirmation page, a
+ * plain .ics download, and the invitation file attached to booking emails.
  */
 
 type CalendarEvent = {
@@ -52,6 +51,60 @@ function fold(line: string) {
   }
   out.push(rest);
   return out.join("\r\n");
+}
+
+/**
+ * A real meeting invitation (RFC 5546 iTIP), the kind Gmail and Outlook show
+ * with Accept / Decline. One event uid per booking and a rising SEQUENCE, so a
+ * move updates the same calendar entry and a cancellation removes it.
+ */
+export function inviteIcs(event: CalendarEvent & {
+  uid: string;
+  method: "REQUEST" | "CANCEL" | "PUBLISH";
+  organizer: { name: string; email: string };
+  attendee?: { name: string; email: string };
+}) {
+  const cancelled = event.method === "CANCEL";
+  // Seconds since late 2025: always rising, comfortably inside an int.
+  const sequence = Math.max(0, Math.floor(Date.now() / 1000) - 1_760_000_000);
+  const person = (who: { name: string; email: string }) =>
+    `CN=${JSON.stringify(who.name.replace(/"/g, ""))}:mailto:${who.email}`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TruHu//Get started//EN",
+    "CALSCALE:GREGORIAN",
+    `METHOD:${event.method}`,
+    "BEGIN:VEVENT",
+    `UID:${event.uid}@truhu.ai`,
+    `SEQUENCE:${sequence}`,
+    `DTSTAMP:${stamp(new Date().toISOString())}`,
+    `DTSTART:${stamp(event.start)}`,
+    `DTEND:${stamp(event.end)}`,
+    `SUMMARY:${escapeIcs(event.title)}`,
+    `DESCRIPTION:${escapeIcs(event.description)}`,
+    ...(event.location ? [`LOCATION:${escapeIcs(event.location)}`] : []),
+    `ORGANIZER;${person(event.organizer)}`,
+    ...(event.attendee
+      ? [
+          `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=${cancelled ? "DECLINED" : "NEEDS-ACTION"};RSVP=${cancelled ? "FALSE" : "TRUE"};${person(event.attendee)}`,
+        ]
+      : []),
+    `STATUS:${cancelled ? "CANCELLED" : "CONFIRMED"}`,
+    "TRANSP:OPAQUE",
+    ...(cancelled
+      ? []
+      : [
+          "BEGIN:VALARM",
+          "TRIGGER:-PT10M",
+          "ACTION:DISPLAY",
+          "DESCRIPTION:TruHu demo in 10 minutes",
+          "END:VALARM",
+        ]),
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+  return lines.map(fold).join("\r\n") + "\r\n";
 }
 
 export function icsFile(event: CalendarEvent & { uid: string; organizerEmail?: string }) {

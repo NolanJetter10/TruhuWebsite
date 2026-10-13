@@ -36,7 +36,7 @@ export type Visit = {
   country: string | null;
   region: string | null;
   city: string | null;
-  returning: boolean;
+  returning_visitor: boolean;
   engaged_ms: number;
   max_scroll: number;
   furthest_step: number;
@@ -217,7 +217,10 @@ function replay(text: string): Replayed {
           landing_url: null, device: null, browser: null, os: null, country: null,
           region: null, city: null, last_section: null, exit_target: null,
           ...v,
-          returning: Boolean(v.returning),
+          // Older local entries used "returning", a word SQL reserves.
+          returning_visitor: Boolean(
+            v.returning_visitor ?? (v as { returning?: boolean }).returning,
+          ),
           engaged_ms: v.engaged_ms ?? 0,
           max_scroll: v.max_scroll ?? 0,
           furthest_step: v.furthest_step ?? 0,

@@ -54,5 +54,6 @@ export interface BookingProvider {
   getBooking(uid: string): Promise<Booking | null>;
   /** Our own reschedule and cancel; Cal.com hosts its own pages for these. */
   reschedule?(uid: string, start: string): Promise<Booking>;
-  cancel?(uid: string): Promise<void>;
+  /** Resolves to the booking as it now stands (cancelled). */
+  cancel?(uid: string): Promise<Booking>;
 }

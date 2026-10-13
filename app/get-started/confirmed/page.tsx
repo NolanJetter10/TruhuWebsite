@@ -100,8 +100,9 @@ export default async function ConfirmedPage({
                   confirmed.cancelledLede
                 ) : booking.invites ? (
                   <>
-                    {confirmed.inviteTo}{" "}
+                    {moved ? confirmed.updatedInviteTo : confirmed.inviteTo}{" "}
                     <span className="font-semibold text-white">{booking.attendee.email}</span>.
+                    {booking.meetingUrl ? null : <> {confirmed.linkToFollow}</>}
                   </>
                 ) : (
                   <>

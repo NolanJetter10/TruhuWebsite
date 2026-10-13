@@ -40,7 +40,7 @@ create table if not exists public.visits (
   country       text,
   region        text,
   city          text,
-  returning     boolean not null default false,
+  returning_visitor boolean not null default false,  -- "returning" is reserved in SQL
 
   -- Engagement. Every write sends running totals, and the upsert keeps the
   -- larger value, so a late or repeated beacon can never move them backwards.
@@ -127,7 +127,7 @@ begin
     id, visitor_id, page, started_at, last_seen_at,
     source, medium, campaign, content, term, click_id, attribution,
     referrer, from_path, landing_url,
-    device, browser, os, country, region, city, returning,
+    device, browser, os, country, region, city, returning_visitor,
     engaged_ms, max_scroll, furthest_step, last_section, exit_target
   )
   values (
@@ -142,7 +142,7 @@ begin
     visit ->> 'referrer', visit ->> 'from_path', visit ->> 'landing_url',
     visit ->> 'device', visit ->> 'browser', visit ->> 'os',
     visit ->> 'country', visit ->> 'region', visit ->> 'city',
-    coalesce((visit ->> 'returning')::boolean, false),
+    coalesce((visit ->> 'returning_visitor')::boolean, false),
     coalesce((visit ->> 'engaged_ms')::integer, 0),
     coalesce((visit ->> 'max_scroll')::smallint, 0),
     coalesce((visit ->> 'furthest_step')::smallint, 0),

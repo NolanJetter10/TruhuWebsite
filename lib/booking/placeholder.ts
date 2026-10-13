@@ -9,6 +9,7 @@ import {
   updateBookingStatus,
   type BookingRecord,
 } from "@/lib/analytics/store";
+import { emailConfigured } from "./email";
 import { addDays, dateKey, weekday, zonedToUtc } from "./time";
 import { BookingError, type Booking, type BookingProvider, type SlotsByDay } from "./types";
 
@@ -23,10 +24,13 @@ import { BookingError, type Booking, type BookingProvider, type SlotsByDay } fro
  *   database's one-booking-per-start-time index for two people racing;
  * - supports reschedule and cancel through /get-started/manage/[uid].
  *
- * What it doesn't do is touch a calendar or send email: the confirmation
- * page says so, and someone sends the video link by hand from the dashboard's
- * Bookings table. Setting the Cal.com variables switches every new booking
- * over to the real calendar; nothing else changes.
+ * - emails the booker a real calendar invitation, and the team a heads-up,
+ *   for every booking, move and cancellation (see ./email.ts).
+ *
+ * What it doesn't do is read or write Bryan's own calendar, so it can't see
+ * his other meetings, and there's no Zoom link unless BOOKING_MEETING_URL
+ * sets a standing one. Setting the Cal.com variables switches every new
+ * booking over to the real calendar; nothing else changes.
  */
 
 export const HOURS = {
@@ -97,9 +101,10 @@ function toBooking(row: BookingRecord): Booking {
     attendee: { name: row.name, email: row.email, timeZone: row.time_zone ?? HOURS.zone },
     agency: row.agency ?? undefined,
     clients: row.client_count ?? undefined,
+    meetingUrl: process.env.BOOKING_MEETING_URL || undefined,
     rescheduleUrl: `/get-started/manage/${row.uid}`,
     cancelUrl: `/get-started/manage/${row.uid}?cancel=1`,
-    invites: false,
+    invites: emailConfigured(),
   };
 }
 
@@ -193,7 +198,9 @@ export const placeholderProvider: BookingProvider = {
   async cancel(uid) {
     const row = await findBooking(uid);
     if (!row) throw new BookingError("We couldn't find that booking.", "not_found");
-    if (row.status === "cancelled") return;
-    await updateBookingStatus({ booking_uid: uid, new_status: "cancelled" });
+    if (row.status !== "cancelled") {
+      await updateBookingStatus({ booking_uid: uid, new_status: "cancelled" });
+    }
+    return toBooking({ ...row, status: "cancelled" });
   },
 };

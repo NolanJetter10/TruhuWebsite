@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { recordBooking } from "@/lib/analytics/store";
 import { bookingProvider, forgetSlots } from "@/lib/booking";
+import { sendBookingEmails } from "@/lib/booking/email";
 import { isValidTimeZone } from "@/lib/booking/time";
 import { BookingError } from "@/lib/booking/types";
 import { GET_STARTED_PAGE } from "@/lib/content";
@@ -103,6 +104,13 @@ export async function POST(request: Request) {
       metadata,
     });
     forgetSlots();
+
+    // Cal.com emails its own invites; the placeholder's are sent from here,
+    // after the response, so the visitor never waits on the email service.
+    if (provider.name === "placeholder") {
+      const origin = new URL(request.url).origin;
+      after(() => sendBookingEmails("booked", booking, origin));
+    }
 
     // The placeholder scheduler has already written the row (that write is
     // its double-booking guard); a Cal.com booking is recorded here.

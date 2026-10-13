@@ -125,11 +125,11 @@ final step rather than looping.
    honoured); every other page only remembers campaign tags in the visitor's
    own browser. Any ad pixel added for retargeting must load post-consent.
 6. **Booking.** `/get-started` books through a placeholder scheduler that
-   stores bookings in Supabase. It neither touches Bryan's calendar nor sends
-   email, so someone sends each booker the video link by hand. Setting the
-   Cal.com variables switches to his real calendar. Without Supabase
-   variables the live page falls back to a link to `/demo`. Setup:
-   `analytics dashboard/README.md`.
+   stores bookings in Supabase and emails a real calendar invitation through
+   Resend. It doesn't see Bryan's own calendar, and there's no Zoom link until
+   `BOOKING_MEETING_URL` is set. Setting the Cal.com variables switches to his
+   real calendar. Without Supabase variables the live page falls back to a
+   link to `/demo`. Setup: `analytics dashboard/README.md`.
 7. **Get-started proof.** The testimonial and both statistics on
    `/get-started` are placeholders (see `GET_STARTED_PAGE` in
    `lib/content.ts`). Replace them with sourced figures and get the client's

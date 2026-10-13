@@ -292,7 +292,7 @@ export function summarize(
   const kpis: Summary["kpis"] = {
     visits: visits.length,
     visitors: new Set(visits.map((v) => v.visitor_id)).size,
-    returning: visits.filter((v) => v.returning).length,
+    returning: visits.filter((v) => v.returning_visitor).length,
     engaged: reached(1),
     sawCalendar: reached(2),
     bookedVisits,
@@ -445,7 +445,7 @@ export function summarize(
     engagedSec: Math.round(v.engaged_ms / 1000),
     device: v.device ?? "—",
     place: place(v),
-    returning: v.returning,
+    returning: v.returning_visitor,
   }));
 
   /* Live ------------------------------------------------------------------- */

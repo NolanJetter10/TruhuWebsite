@@ -34,6 +34,8 @@ export function Avatar({
         alt=""
         width={size * 2}
         height={size * 2}
+        // The optimizer doesn't take SVG (the placeholder); it needs none.
+        unoptimized={photo.endsWith(".svg")}
         className={cx(shape, "shrink-0 object-cover", className)}
         style={{ width: size, height: size }}
       />

@@ -1850,9 +1850,9 @@ export const GET_STARTED_PAGE = {
     line: "I help brokers give every client the experience they give their top 10.",
     credential:
       "Ran customer success for ThinkHR's broker partners before joining TruHu.",
-    /** A square headshot in public/, e.g. "/images/team/bryan-kleppe.webp".
-     * Until then the page shows his initials. */
-    photo: null as string | null,
+    /** PLACEHOLDER image. Swap for Bryan's square headshot in public/, e.g.
+     * "/images/team/bryan-kleppe.webp". Set to null to show his initials. */
+    photo: "/images/placeholders/headshot.svg" as string | null,
   },
   outcomes: {
     label: "What you'll get out of it",
@@ -1939,9 +1939,12 @@ export const GET_STARTED_PAGE = {
     title: "You're booked",
     movedTitle: "You're rescheduled",
     cancelledTitle: "Meeting cancelled",
-    /** When the scheduler emails a calendar invite (Cal.com connected). */
+    /** When a calendar invite has been emailed. */
     inviteTo: "A calendar invite is on its way to",
-    /** When it doesn't (the placeholder scheduler). */
+    updatedInviteTo: "An updated invite is on its way to",
+    /** Added while there's no video link yet. */
+    linkToFollow: "Bryan will send the Zoom link before the call.",
+    /** When no email could be sent (email not set up). */
     heldFor: "Your time is held. Bryan will send the video link to",
     heldTail: "before the call. Add it to your calendar below in the meantime.",
     cancelledLede: "Your spot is released. If another time works better, pick one below.",
