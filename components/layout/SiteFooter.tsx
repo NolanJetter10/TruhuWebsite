@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CookiePreferences } from "@/components/analytics/ConsentManager";
 import { Logo } from "@/components/art/Logo";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Container } from "@/components/ui/primitives";
+import { CONSENT_BANNER } from "@/lib/content";
 import { FOOTER_CTA, FOOTER_NAV, SITE } from "@/lib/site";
 import socBadge from "@/public/images/soc-badge.svg";
 
@@ -57,6 +59,7 @@ export function SiteFooter() {
           <p className="t-caption flex gap-6 text-white/40">
             <span>Terms of Use</span>
             <span>Privacy Policy</span>
+            <CookiePreferences label={CONSENT_BANNER.preferences} />
           </p>
         </div>
       </Container>

@@ -62,7 +62,8 @@ export default async function ConfirmedPage({
         <Container>
           <div className="grid gap-x-14 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,32rem)]">
             {/* The booking -------------------------------------------------- */}
-            <div data-section="confirmed">
+            {/* Name and email show here, so session recordings mask it. */}
+            <div data-section="confirmed" data-clarity-mask="true">
               <span
                 className={
                   cancelled

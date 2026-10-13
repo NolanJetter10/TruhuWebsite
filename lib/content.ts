@@ -1912,7 +1912,7 @@ export const GET_STARTED_PAGE = {
     },
     /** Development only; visitors never see it. */
     placeholderNotice:
-      "Placeholder scheduler: bookings are saved and block the slot, but nothing is sent to a calendar.",
+      "Placeholder scheduler: bookings are saved and block the slot, and invites go out by email once RESEND_API_KEY is set. Bryan's own calendar isn't touched.",
   },
   agenda: {
     title: "How the 10 minutes go",
@@ -1993,4 +1993,18 @@ export const GET_STARTED_PAGE = {
     notFound:
       "We couldn't find that booking. The link may be incomplete; try the one in your confirmation.",
   },
+} as const;
+
+/* ---------------------------------------------------------------- consent */
+
+/**
+ * The cookie banner. Shown only to visitors from the EU, UK and Switzerland,
+ * and to anyone who opens "Cookie preferences" in the footer.
+ */
+export const CONSENT_BANNER = {
+  label: "Cookie consent",
+  body: "We use cookies from Google Analytics and Microsoft Clarity to see how people use this site, so we can make it better. Nothing is used for advertising.",
+  accept: "Accept",
+  decline: "Decline",
+  preferences: "Cookie preferences",
 } as const;

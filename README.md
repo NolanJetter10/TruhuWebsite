@@ -120,10 +120,14 @@ final step rather than looping.
 3. **Forms** validate, rate-limit and honeypot correctly, then call `deliver()`
    in `app/actions.ts`, which logs server-side. Point it at the CRM.
 4. **Login** links to `app.truhu.ai`; confirm that is the real destination.
-5. **Analytics.** No third-party script loads. `/get-started` runs first-party
-   funnel tracking (no cookies, no IPs stored, Global Privacy Control
-   honoured); every other page only remembers campaign tags in the visitor's
-   own browser. Any ad pixel added for retargeting must load post-consent.
+5. **Analytics.** `/get-started` runs first-party funnel tracking (no
+   cookies, no IPs stored, Global Privacy Control honoured). Microsoft Clarity
+   and Google Analytics 4 load site-wide once their ids are set
+   (`NEXT_PUBLIC_CLARITY_ID`, `NEXT_PUBLIC_GA_ID`): straight away for
+   visitors outside Europe, and only after Accept on a cookie banner for the
+   EU, UK and Switzerland (`components/analytics/ConsentManager.tsx`).
+   Browsers sending Global Privacy Control get neither unless they accept.
+   Any ad pixel added for retargeting must follow the same consent path.
 6. **Booking.** `/get-started` books through a placeholder scheduler that
    stores bookings in Supabase and emails a real calendar invitation through
    Resend. It doesn't see Bryan's own calendar, and there's no Zoom link until

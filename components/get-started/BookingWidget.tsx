@@ -17,6 +17,7 @@ import {
   type FormEvent,
 } from "react";
 import { cx } from "@/components/ui/primitives";
+import { thirdPartyEvent } from "@/lib/analytics/third-party";
 import {
   flushNow,
   reachStep,
@@ -319,6 +320,10 @@ export function BookingWidget({
 
     if (res.ok && body.ok) {
       flushNow();
+      // GA4's lead event (mark it as a key event there) and a Clarity tag
+      // that keeps this recording in full.
+      thirdPartyEvent("generate_lead", { method: "get_started_calendar" }, { upgrade: "booked" });
+      thirdPartyEvent("funnel_booked");
       router.push(
         body.uid
           ? `/get-started/confirmed?b=${encodeURIComponent(body.uid)}`
@@ -561,6 +566,8 @@ export function BookingWidget({
           id={formId}
           onSubmit={submit}
           noValidate
+          // Session recordings never show what's typed here.
+          data-clarity-mask="true"
           className="bk-enter px-5 py-5 sm:px-6"
         >
           <div className="flex items-start gap-3 rounded-2xl bg-paper p-3.5">

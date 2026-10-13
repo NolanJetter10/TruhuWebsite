@@ -176,6 +176,79 @@ Without `RESEND_API_KEY`, nothing is sent. In development each email is
 instead saved as a preview in a `truhu-outbox` folder in your system's temp
 directory, and the confirmation page stops claiming an invite went out.
 
+## Session recordings and site analytics (Clarity + GA4)
+
+This dashboard is the live view of the `/get-started` funnel and its bookings.
+Two free tools add what it can't show:
+
+- **[Microsoft Clarity](https://clarity.microsoft.com)** records sessions so you
+  can watch real visits, and draws heatmaps of clicks and scrolling.
+  - Every recording carries the visitor's `campaign`, `source` and `medium` as
+    custom tags.
+  - Funnel steps are Clarity events (`funnel_calendar`, `funnel_time`, …).
+  - Bookings are `generate_lead`.
+  - So you can filter to, say, "visits from `q4-broker-outreach` that picked a
+    time but didn't book".
+  - Each visit's Clarity *custom user ID* is the visitor ID this dashboard
+    shows. Hover a row in "Clicked but didn't book" to copy it.
+- **[Google Analytics 4](https://analytics.google.com)** covers traffic and
+  campaigns across the whole site. It reads the `utm_` tags itself. A booking
+  is sent as `generate_lead`, the event GA4 uses for leads.
+
+Both load on every page of the site, with this consent logic:
+
+- **Most visitors:** they load straight away.
+- **Visitors from the EU, UK and Switzerland:** a small Accept/Decline banner
+  appears first, and the tools load only after Accept.
+- **Browsers sending Global Privacy Control:** they don't load.
+- "Cookie preferences" in the footer reopens the banner for anyone.
+
+Clarity also hides everything typed into the booking form, and the name and
+email shown on the confirmation pages.
+
+**Set up Clarity (about 3 minutes).**
+
+1. Go to clarity.microsoft.com and sign in with a Microsoft, Google or Facebook
+   account.
+2. Click **New project**. Name it `TruHu website`, set the URL to
+   `https://truhu.ai`, and create it.
+3. If it asks how to install, choose **Install manually** and close the
+   snippet; you don't need it.
+4. Go to **Settings → Overview** and copy the **Project ID**, a short code like
+   `abcd1234ef`.
+5. Add it to `.env.local`:
+
+   ```
+   NEXT_PUBLIC_CLARITY_ID=abcd1234ef
+   ```
+
+Recordings show up in Clarity within about an hour. Visits from your laptop
+are tagged `environment = development`, so you can filter them out.
+
+**Set up Google Analytics 4 (about 5 minutes).**
+
+1. Go to analytics.google.com and create an account named `TruHu`.
+2. Create a property named `truhu.ai`, with your time zone.
+3. For business objectives, choose **Generate leads**.
+4. Choose **Web** as the platform. Set the website URL to `truhu.ai` and the
+   stream name to `truhu.ai`, then create the stream.
+5. Copy the **Measurement ID**, which looks like `G-ABC123DEF4`.
+6. Add it to `.env.local`:
+
+   ```
+   NEXT_PUBLIC_GA_ID=G-ABC123DEF4
+   ```
+
+7. Go to **Admin → Data display → Key events → New key event**, enter
+   `generate_lead` and save. Bookings now count as conversions in every
+   campaign report.
+
+From your laptop, events show in GA4's **Admin → DebugView** within seconds.
+Live-site traffic fills the normal reports over the following day.
+
+Once the IDs are in `.env.local`, this dashboard's header links straight to
+Clarity's recordings and to GA4.
+
 ## Later: connect Bryan's calendar (Cal.com)
 
 When you're ready, setting four variables switches every new booking to
@@ -223,7 +296,8 @@ public truhu.ai site. Two things are needed when you want this live:
 3. Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` with the same values as in
    `.env.local`. Add the email settings you've set (`RESEND_API_KEY`,
    `BOOKING_EMAIL_FROM`, `BOOKING_EMAIL_REPLY_TO`, `BOOKING_NOTIFY_TO`,
-   `BOOKING_MEETING_URL`) the same way.
+   `BOOKING_MEETING_URL`) and the tool IDs (`NEXT_PUBLIC_CLARITY_ID`,
+   `NEXT_PUBLIC_GA_ID`) the same way.
 4. Save, then redeploy the site.
 
 Without them, the live page shows a "request a time" link instead of the

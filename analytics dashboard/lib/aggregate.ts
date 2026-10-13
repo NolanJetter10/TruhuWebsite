@@ -157,6 +157,8 @@ export type Summary = {
   }[];
   retarget: {
     visitor: string;
+    /** The full id, which is also the visit's Clarity "custom user ID". */
+    visitorId: string;
     lastSeen: string;
     campaign: string;
     step: string;
@@ -439,6 +441,7 @@ export function summarize(
     .sort((a, b) => b.furthest_step - a.furthest_step || b.last_seen_at.localeCompare(a.last_seen_at));
   const retarget = warm.slice(0, 25).map((v) => ({
     visitor: v.visitor_id.slice(0, 6),
+    visitorId: v.visitor_id,
     lastSeen: v.last_seen_at,
     campaign: campaignLabel(v),
     step: stepLabel(v.furthest_step),

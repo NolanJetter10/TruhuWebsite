@@ -64,12 +64,17 @@ export function Dashboard({
   initialRange,
   initialCampaign,
   siteUrl,
+  clarityId,
+  gaConfigured,
 }: {
   backend: Backend;
   openAccess: boolean;
   initialRange: RangeKey;
   initialCampaign: string;
   siteUrl: string;
+  /** Set once Clarity is set up on the site, for the header link. */
+  clarityId: string;
+  gaConfigured: boolean;
 }) {
   const tz = useSyncExternalStore(noSubscribe, browserZone, serverZone);
   const [range, setRange] = useState<RangeKey>(initialRange);
@@ -181,6 +186,26 @@ export function Dashboard({
             {data ? `Updated ${ago(data.generatedAt, now)}` : "Loading…"}
           </span>
           <span className="ml-auto flex items-center gap-3">
+            {clarityId ? (
+              <a
+                href={`https://clarity.microsoft.com/projects/view/${encodeURIComponent(clarityId)}/dashboard`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-medium text-accent-text hover:underline"
+              >
+                Recordings (Clarity) ↗
+              </a>
+            ) : null}
+            {gaConfigured ? (
+              <a
+                href="https://analytics.google.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-medium text-accent-text hover:underline"
+              >
+                Google Analytics ↗
+              </a>
+            ) : null}
             <span className="rounded-full border border-line px-2.5 py-1 text-[0.6875rem] font-medium text-ink-2">
               {backend === "supabase" ? "Supabase" : backend === "file" ? "Local file" : "No database"}
             </span>
@@ -517,7 +542,11 @@ export function Dashboard({
             {/* Clicked but didn't book -------------------------------- */}
             <Card
               title="Clicked but didn't book"
-              subtitle={`${fmt.format(data.retargetTotal)} visits reached the calendar and left without booking — the retargeting audience. Anonymous until they book; to show them ads, add your ad platform's pixel (see README).`}
+              subtitle={`${fmt.format(data.retargetTotal)} visits reached the calendar and left without booking — the retargeting audience. Anonymous until they book. ${
+                clarityId
+                  ? "To watch one, copy its visitor ID (hover it) into Clarity's Custom user ID filter."
+                  : "Once Clarity is set up you can watch their recordings."
+              }`}
             >
               <div className="-mx-1 overflow-x-auto">
                 <table className="w-full min-w-[680px] text-sm">
@@ -535,7 +564,7 @@ export function Dashboard({
                   <tbody>
                     {data.retarget.map((r, i) => (
                       <tr key={`${r.visitor}-${i}`} className="border-t border-line">
-                        <td className="px-1 py-2.5 font-mono text-xs">
+                        <td className="px-1 py-2.5 font-mono text-xs" title={r.visitorId}>
                           #{r.visitor}
                           {r.returning ? <span className="ml-1.5 font-sans text-muted">returning</span> : null}
                         </td>

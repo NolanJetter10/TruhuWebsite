@@ -8,6 +8,7 @@ import {
   type FunnelKey,
   type Touch,
 } from "./schema";
+import { thirdPartyEvent } from "./third-party";
 
 /**
  * First-party funnel tracking for the pages that matter: no third-party
@@ -78,7 +79,7 @@ function uuid() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-function privacySignal() {
+export function privacySignal() {
   const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
   return nav.globalPrivacyControl === true || nav.doNotTrack === "1";
 }
@@ -308,6 +309,8 @@ class Tracker {
     const from = this.state.step;
     this.state.step = target;
     this.event("step", key, { from });
+    // Mirrored to Clarity and GA4 (no-ops until consent has loaded them).
+    thirdPartyEvent(`funnel_${key}`, { from_step: from });
   }
 
   calendarVisible(visible: boolean) {
@@ -547,6 +550,21 @@ export function setCalendarVisible(visible: boolean) {
 /** Sends whatever is queued now, as a beacon that survives navigation. */
 export function flushNow() {
   current?.flush(true);
+}
+
+/**
+ * The campaign this browser is attributed to and its visitor id, for Clarity
+ * and GA4. Reads only; never creates an id. Empty under a privacy signal.
+ */
+export function attributionForTools() {
+  if (privacySignal()) return {};
+  const { touch } = resolveTouch();
+  return {
+    campaign: touch.campaign,
+    source: touch.source,
+    medium: touch.medium,
+    visitorId: read("local", KEYS.visitor) ?? undefined,
+  };
 }
 
 /** What a booking needs to be tied back to this visit and its campaign. */

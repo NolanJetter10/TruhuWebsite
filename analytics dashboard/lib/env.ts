@@ -14,7 +14,13 @@ import path from "node:path";
  * without restarting the dashboard.
  */
 
-const SHARED = new Set(["SUPABASE_URL", "SUPABASE_SECRET_KEY"]);
+const SHARED = new Set([
+  "SUPABASE_URL",
+  "SUPABASE_SECRET_KEY",
+  // Only used to link out to the tools from the header.
+  "NEXT_PUBLIC_CLARITY_ID",
+  "NEXT_PUBLIC_GA_ID",
+]);
 const TTL_MS = 3000;
 let cache: { at: number; values: Record<string, string> } | null = null;
 

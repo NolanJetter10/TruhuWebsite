@@ -50,7 +50,8 @@ export default async function ManagePage({
       <Section tone="dark" ambient size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-24">
         <Container>
           <div className="grid gap-x-14 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,35rem)] lg:items-start">
-            <div data-section="manage">
+            {/* Name and email show here, so session recordings mask it. */}
+            <div data-section="manage" data-clarity-mask="true">
               <h1 className="t-h1 text-white">{manage.title}</h1>
 
               {!booking ? (

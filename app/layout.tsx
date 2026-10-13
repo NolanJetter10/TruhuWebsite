@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { ViewTransition } from "react";
 import { DM_Sans, Inter } from "next/font/google";
 import { AttributionCapture } from "@/components/analytics/AttributionCapture";
+import { ConsentManager } from "@/components/analytics/ConsentManager";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { CONSENT_BANNER } from "@/lib/content";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
@@ -65,6 +67,7 @@ export default function RootLayout({
         </ViewTransition>
         <SiteFooter />
         <AttributionCapture />
+        <ConsentManager copy={CONSENT_BANNER} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
