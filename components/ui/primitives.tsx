@@ -45,6 +45,8 @@ export function Section({
   /** Doubles the grid and turns over the cell under the cursor. Ambient
    * surfaces only. */
   pointer,
+  /** With `pointer`: the highlight fades toward the bottom of the section. */
+  pointerFade,
 }: {
   children: ReactNode;
   tone?: Tone;
@@ -54,6 +56,7 @@ export function Section({
   labelledBy?: string;
   ambient?: boolean;
   pointer?: boolean;
+  pointerFade?: boolean;
 }) {
   const pad =
     size === "none"
@@ -85,7 +88,7 @@ export function Section({
           </div>
           {/* Rendered as a direct child: FlipGrid tracks its parent. */}
           {pointer ? (
-            <FlipGrid tone={tone === "dark" ? "dark" : "light"} />
+            <FlipGrid tone={tone === "dark" ? "dark" : "light"} fade={pointerFade} />
           ) : (
             <div
               className={tone === "dark" ? "grid-field" : "grid-field-light"}

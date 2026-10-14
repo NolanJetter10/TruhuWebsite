@@ -360,11 +360,8 @@ export function BookingWidget({
   /* ------------------------------------------------------------- render */
 
   const zoneOptions = zone && !US_ZONES.includes(zone) ? [zone, ...US_ZONES] : US_ZONES;
-  // A note for whoever is testing locally; visitors never see it.
-  const placeholderNote =
-    process.env.NODE_ENV !== "production" &&
-    data?.status === "ready" &&
-    data.provider === "placeholder";
+  // Flagged on the page for as long as the placeholder scheduler is in use.
+  const placeholderNote = data?.status === "ready" && data.provider === "placeholder";
 
   return (
     <div

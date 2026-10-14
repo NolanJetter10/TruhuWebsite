@@ -33,7 +33,7 @@ export default function GetStartedPage() {
     <>
       <FunnelTracker page="/get-started" />
 
-      <Section tone="dark" ambient size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-28">
+      <Section tone="dark" ambient pointer pointerFade size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-28">
         <Container>
           <div className="grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,35rem)] lg:items-start">
             <div className="space-y-10 lg:pt-4">
@@ -74,6 +74,9 @@ export default function GetStartedPage() {
                 <div className="card-shape mt-3 flex gap-5 border border-white/10 bg-white/[0.05] p-5 backdrop-blur-sm sm:p-6">
                   <Avatar name={host.name} photo={host.photo} size={76} />
                   <div className="min-w-0">
+                    <span className="mb-2.5 inline-flex rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-amber-300 uppercase">
+                      {host.placeholderLabel}
+                    </span>
                     <p className="t-h3 text-white">{host.name}</p>
                     <p className="mt-1 text-[0.875rem] text-slate-300">
                       {host.role}, TruHu

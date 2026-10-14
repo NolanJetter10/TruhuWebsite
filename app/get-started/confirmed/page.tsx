@@ -58,7 +58,7 @@ export default async function ConfirmedPage({
     <>
       <FunnelTracker page="/get-started" resumeOnly />
 
-      <Section tone="dark" ambient size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-24">
+      <Section tone="dark" ambient pointer pointerFade size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-24">
         <Container>
           <div className="grid gap-x-14 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,32rem)]">
             {/* The booking -------------------------------------------------- */}

@@ -1845,6 +1845,8 @@ export const GET_STARTED_PAGE = {
   },
   host: {
     label: "Who you'll meet",
+    /** Shown on the card until Bryan's photo and copy are final. */
+    placeholderLabel: "Placeholder stand-in",
     name: "Bryan Kleppe",
     role: "VP, Strategic Accounts",
     line: "I help brokers give every client the experience they give their top 10.",
@@ -1878,7 +1880,7 @@ export const GET_STARTED_PAGE = {
       { value: "75%", label: "lower cost per client guide" },
       { value: "2×", label: "faster open-enrollment timeline" },
     ],
-    statsSource: "TruHu broker cohort, 2026 renewal season",
+    statsSource: "placeholder info to be filled in properly later",
   },
   booking: {
     title: "Pick a time",
@@ -1910,9 +1912,8 @@ export const GET_STARTED_PAGE = {
       body: "Tell us a little about your book and Bryan will reply with times within one business day.",
       cta: { href: "/demo", label: "Request a time" },
     },
-    /** Development only; visitors never see it. */
-    placeholderNotice:
-      "Placeholder scheduler: bookings are saved and block the slot, and invites go out by email once RESEND_API_KEY is set. Bryan's own calendar isn't touched.",
+    /** Shown under the calendar while the placeholder scheduler is in use. */
+    placeholderNotice: "Need to wire up a few APIs before scheduling is automated.",
   },
   agenda: {
     title: "How the 10 minutes go",

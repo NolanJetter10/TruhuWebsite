@@ -449,6 +449,13 @@
   --tile-front: 0.2;
 }
 
+/* On a tall surface the highlight dims as it goes down: full strength at the
+   top, a whisper by the bottom. A mask on the tile layer, so every tile takes
+   the brightness of where it sits and nothing per tile has to be computed. */
+.flip-fade {
+  mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.45) 55%, rgb(0 0 0 / 0.12) 100%);
+}
+
 /* One cell turning over under the cursor. FlipGrid places and animates it;
    it is inset a pixel so the hairlines stay drawn along its edges. */
 .flip-tile {

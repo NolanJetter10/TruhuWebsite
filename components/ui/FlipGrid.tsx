@@ -51,7 +51,16 @@ type Reach = { col: number; row: number; d: number };
  * it turns back, which is what makes a quick sweep leave whole flips rather
  * than a flicker.
  */
-export function FlipGrid({ tone }: { tone: "dark" | "light" }) {
+export function FlipGrid({
+  tone,
+  fade = false,
+}: {
+  tone: "dark" | "light";
+  /** Dim the cursor's highlight down the surface: full at the top, faint at
+   * the bottom. For tall sections, where an even glow overpowers the content
+   * further down. */
+  fade?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -248,7 +257,7 @@ export function FlipGrid({ tone }: { tone: "dark" | "light" }) {
       />
       <div
         ref={ref}
-        className={`${dark ? "flip-field" : "flip-field-light"} grid-dense`}
+        className={`${dark ? "flip-field" : "flip-field-light"} grid-dense${fade ? " flip-fade" : ""}`}
         aria-hidden
       />
     </>
