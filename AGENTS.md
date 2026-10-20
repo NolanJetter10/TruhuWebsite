@@ -39,3 +39,14 @@ Several agent sessions edit this checkout at the same time, all on `main`, with 
 - Stage only the files you changed, by name: `git add path/a.tsx path/b.ts`. Never use `git add -A`, `git add .`, or `git commit -a`, because they sweep up other sessions' half-finished work. If a file you changed also holds someone else's edits, committing it together is fine.
 - Never run commands that move or discard the working tree: `stash`, `checkout`, `switch`, `restore`, `reset --hard`, `clean`, `pull`, `merge`, `rebase`. They silently destroy or yank away other sessions' uncommitted work. To undo your own change, edit it back by hand.
 - If git reports `index.lock` exists, another session is mid-commit. Wait a few seconds and retry, and don't delete the lock.
+
+## Site log (required)
+
+Every change to the site is recorded in `site-log/`, so Nolan can check the work against the advice it answers and pick up in the Claude project "truhu website" where VS Code left off. `site-log/README.md` has the template and the rules.
+
+- Before you start: read `site-log/DIRECTION.md` and run `node scripts/site-log.mjs`. It shows the current focus, open feedback, the latest entries, and commits that no entry covers.
+- After a piece of work: add an entry at the bottom of `site-log/LOG.md` (`node scripts/site-log.mjs next` prints a blank one). For every `FB-` item the work touches, update its Status, Where and Log lines in `site-log/FEEDBACK.md`. Add any decision to `site-log/DIRECTION.md`.
+- Put the entry's ID in the commit message, as in `Home: say chatbot instead of Q&A (L-014)`, and stage the site-log files with your code.
+- Mark an item `done` only with evidence in the entry: what changed and how you checked it. If you couldn't look at the page, use `check`.
+- If the status output lists commits with no entry (Nolan's own commits from VS Code included), write one entry that covers them.
+- New advice from anyone becomes new items in `site-log/FEEDBACK.md`, quoting the person, with the full original in `site-log/sources/`.
