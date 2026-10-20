@@ -62,4 +62,4 @@ When someone gives feedback (Slack, a call, a doc, a comment):
 
 Chats in the project read this folder through Nolan's linked PC (`C:\Users\nolan\Documents\GitHub\TruhuWebsite\site-log\`). At the start of a chat about the site: read DIRECTION.md, run `node scripts/site-log.mjs`, and read the recent LOG entries. Decisions made in chat go into DIRECTION.md here, not only into the conversation.
 
-When a chat session changes anything here, it ends by running `node scripts/site-log.mjs snapshot` and saving the output to the project doc `claude/site-log/snapshot.md`, so the project still has the picture when the PC is off. The project doc `claude/site-log/00-how-we-track-changes.md` explains the same setup from the project's side.
+When a chat session changes anything here, it ends by running `node scripts/site-log.mjs snapshot --out site-log/.snapshot.md` (git-ignored) and saving that file to the project doc `claude/site-log/snapshot.md`, so the project still has the picture when the PC is off. The project doc `claude/site-log/00-how-we-track-changes.md` explains the same setup from the project's side.

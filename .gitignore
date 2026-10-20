@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# The site log's snapshot for the Claude project, regenerated on demand.
+/site-log/.snapshot.md

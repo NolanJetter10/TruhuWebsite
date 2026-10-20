@@ -7,7 +7,7 @@
  *   node scripts/site-log.mjs status --all    list done and dropped items too
  *   node scripts/site-log.mjs next            the next log ID and a blank entry
  *   node scripts/site-log.mjs snapshot        one markdown page for the Claude project
- *   node scripts/site-log.mjs snapshot --out PATH
+ *   node scripts/site-log.mjs snapshot --out site-log/.snapshot.md   (git-ignored)
  *
  * No dependencies. Runs from any directory.
  */
@@ -304,7 +304,7 @@ function snapshot() {
   out.push("| ID | Item | From | Status | Log |");
   out.push("|---|---|---|---|---|");
   for (const i of items) {
-    out.push(`| ${i.id} | ${cell(i.title)} | ${cell(i.from)} | ${i.status} | ${cell(i.log)} |`);
+    out.push(`| ${i.id} | ${cell(i.title)} | ${cell(i.from.split(" · ").slice(0, 2).join(" · "))} | ${i.status} | ${cell(i.log)} |`);
   }
   out.push("");
   out.push(`## Recent log entries (last ${Math.min(8, entries.length)} of ${entries.length})`);
