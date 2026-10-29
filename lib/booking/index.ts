@@ -1,20 +1,18 @@
 import "server-only";
 
-import { analyticsBackend } from "@/lib/analytics/store";
 import { calConfigured, calProvider } from "./cal";
 import { placeholderProvider } from "./placeholder";
 import type { BookingProvider, SlotsByDay } from "./types";
 
 /**
  * Cal.com once its variables are set. Until then the placeholder scheduler,
- * which needs somewhere to keep bookings: the Supabase database (or the local
- * file in development). With neither, nothing — the widget then shows its
- * "request a time" fallback rather than taking a booking it can't keep.
+ * which keeps bookings in the Supabase database, or without one in a local
+ * file (see lib/analytics/store.ts), so the calendar always takes bookings.
+ * The null case stays for callers that check, in case that ever changes.
  */
 export function bookingProvider(): BookingProvider | null {
   if (calConfigured()) return calProvider;
-  if (analyticsBackend() !== "none") return placeholderProvider;
-  return null;
+  return placeholderProvider;
 }
 
 export { MEETING } from "./meeting";

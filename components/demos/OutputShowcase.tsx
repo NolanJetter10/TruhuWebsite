@@ -1,36 +1,70 @@
 "use client";
 
+import Image, { type StaticImageData } from "next/image";
 import {
-  Fragment,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
-import { BrowserFrame, PhoneFrame } from "@/components/art/frames";
+import { PhoneFrame } from "@/components/art/frames";
 import { cx } from "@/components/ui/primitives";
 import { ADVISOR_PAGE } from "@/lib/content";
-import { useInView, useReducedMotion, useSequence } from "./hooks";
+import flipbookWide from "@/public/images/outputs/flipbook.webp";
+import flyerWide from "@/public/images/outputs/flyer.webp";
+import guideNarrow from "@/public/images/outputs/m-guide.webp";
+import flyerNarrow from "@/public/images/outputs/m-flyer.webp";
+import qnaNarrow from "@/public/images/outputs/m-qna.webp";
+import websiteNarrow from "@/public/images/outputs/m-website.webp";
+import qnaWide from "@/public/images/outputs/qna.webp";
+import videoWide from "@/public/images/outputs/video.webp";
+import websiteWide from "@/public/images/outputs/website.webp";
+import { useInView, useReducedMotion } from "./hooks";
 
 /**
- * What Advisor builds, one tab per output, each with a small running example
- * of the finished thing in a client's brand.
+ * What Advisor builds, one tab per output, each shown as the real thing:
+ * the deliverables TruHu built for Kindlerye Baking Co., a made-up employer.
  *
- * The tabs advance on their own until the visitor picks one; from then on the
- * visitor is exploring and the rotation stays out of the way.
+ * The guide is its own pages, scrolled here. Every other tab is the live
+ * published page, embedded. Until the visitor asks for it, an embed is a
+ * capture of that page taken at the stage's exact size, so it costs nothing
+ * to show, can't trap the page's scrolling, and swaps for the live page
+ * without a jump. Below `lg`, where an embed would be cramped and would trap
+ * touch scrolling, the capture sits on a phone and opens the page in a tab.
+ *
+ * The tabs advance on their own until the visitor picks one or reaches for
+ * the stage; from then on the rotation stays out of the way.
  */
 
-const TABS = ADVISOR_PAGE.outputs.tabs;
-export type OutputKey = (typeof TABS)[number]["key"];
+const { sample, tabs: TABS } = ADVISOR_PAGE.outputs;
+type Tab = (typeof TABS)[number];
+export type OutputKey = Tab["key"];
 
 const DWELL = 7000;
 
-/** The sample client, shared with the hero walkthrough. Not a TruHu colour. */
-const BRAND = "#0E5A63";
-const ACCENT = "#F2A93B";
-const TINT = "#E6F0F1";
+/** The size the wide captures were taken at, and the size an embed is laid
+ *  out at before it is scaled to the stage. Wide stages hold this ratio. */
+const FRAME = { w: 1256, h: 600 };
+
+const POSTERS: Record<
+  Exclude<OutputKey, "guide">,
+  { wide: StaticImageData; narrow: StaticImageData }
+> = {
+  flipbook: { wide: flipbookWide, narrow: guideNarrow },
+  // Caught mid-narration, the way a video shows a frame from partway in.
+  video: { wide: videoWide, narrow: guideNarrow },
+  website: { wide: websiteWide, narrow: websiteNarrow },
+  // The assistant opened, since the chatbot is what this tab is about.
+  qna: { wide: qnaWide, narrow: qnaNarrow },
+  flyer: { wide: flyerWide, narrow: flyerNarrow },
+};
+
+/** The published viewers render after their page loads, so the capture
+ *  stays up a beat longer to cover it. */
+const SETTLE_MS = 1200;
 
 export function OutputShowcase() {
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
@@ -120,1161 +154,421 @@ export function OutputShowcase() {
         role="tabpanel"
         id={`output-panel-${tab.key}`}
         aria-labelledby={`output-tab-${tab.key}`}
-        className="mt-12 grid items-center gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-16"
+        className="mt-6"
       >
-        <div
+        {/* One paragraph per output, held to three lines on wide screens so
+            the stage below doesn't shift as the tabs change. */}
+        <p
           key={tab.key}
+          className="mx-auto max-w-[52rem] text-center text-[1rem] leading-[1.65] sm:text-[1.0625rem] text-slate-600 lg:min-h-[4.95em]"
           style={{ animation: "hero-in 600ms var(--ease-out-expo) both" }}
         >
-          <h3 className="t-h3">{tab.title}</h3>
-          <p className="mt-4 text-[1.0625rem] leading-relaxed text-slate-600">
-            {tab.blurb}
-          </p>
-          <ul className="mt-6 space-y-3">
-            {tab.points.map((point) => (
-              <li
-                key={point}
-                className="flex gap-3 text-[0.9375rem] leading-snug text-ink"
-              >
-                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-green-100 text-green-700">
-                  <CheckIcon className="size-3" />
-                </span>
-                {point}
-              </li>
-            ))}
-          </ul>
-        </div>
+          <strong className="font-semibold text-ink">{tab.lead}</strong>{" "}
+          {tab.body}
+        </p>
 
         <div
-          key={`demo-${tab.key}`}
-          aria-hidden
-          className="card-shape-lg relative h-[440px] min-w-0 overflow-hidden border border-line bg-paper select-none"
-          style={{ animation: "hero-in 700ms var(--ease-out-expo) both" }}
+          onPointerEnter={() => setExploring(true)}
+          onFocusCapture={() => setExploring(true)}
+          className="card-shape-lg relative isolate mt-6 h-[440px] overflow-hidden border border-line bg-paper shadow-[0_40px_90px_-48px_rgba(5,14,26,0.5)] lg:aspect-[157/75] lg:h-auto"
         >
-          <div className="grid-field-light" />
-          <Demo kind={tab.key} />
+          <div
+            key={tab.key}
+            className="absolute inset-0"
+            style={{ animation: "demo-fade 450ms var(--ease-out-expo) both" }}
+          >
+            {tab.key === "guide" ? (
+              <GuideReader tab={tab} />
+            ) : (
+              <LiveEmbed tab={tab} poster={POSTERS[tab.key]} />
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-1.5 text-[0.875rem] sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <p className="flex items-center gap-2 font-medium text-ink">
+            <PointerIcon className="size-4 shrink-0 text-blue-700" />
+            {tab.hint}
+          </p>
+          <p className="text-slate-500">
+            {sample}{" "}
+            <a
+              href={tab.live}
+              target="_blank"
+              rel="noopener"
+              className="font-semibold whitespace-nowrap text-blue-700 underline-offset-4 hover:underline"
+            >
+              Open full screen
+              <span aria-hidden> &#8599;</span>
+            </a>
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function Demo({ kind }: { kind: OutputKey }) {
-  if (kind === "guide") return <GuideDemo />;
-  if (kind === "flipbook") return <FlipbookDemo />;
-  if (kind === "website") return <WebsiteDemo />;
-  if (kind === "qna") return <QnaDemo />;
-  if (kind === "video") return <VideoDemo />;
-  return <FlyerDemo />;
+/* -------------------------------------------------------------------------- */
+/* Live embeds                                                                 */
+/* -------------------------------------------------------------------------- */
+
+function LiveEmbed({
+  tab,
+  poster,
+}: {
+  tab: Tab;
+  poster: { wide: StaticImageData; narrow: StaticImageData };
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const scale = useFitScale(box, FRAME.w);
+  // Mounted on hover so it is usually ready by the click; shown once asked
+  // for and loaded.
+  const [mounted, setMounted] = useState(false);
+  const [wanted, setWanted] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const live = wanted && loaded;
+  const label = `the live ${tab.name.toLowerCase()}`;
+
+  return (
+    <>
+      {/* Wide: the published page in place, laid out at the capture's size. */}
+      <div ref={box} className="absolute inset-0 hidden lg:block">
+        {mounted ? (
+          <div
+            className="absolute top-0 left-0 origin-top-left"
+            style={{
+              width: FRAME.w,
+              height: FRAME.h,
+              transform: `scale(${scale})`,
+            }}
+          >
+            <iframe
+              src={tab.live}
+              title={`Kindlerye Baking Co. ${tab.name.toLowerCase()}, live`}
+              allow="autoplay; microphone; clipboard-write; fullscreen"
+              onLoad={() => window.setTimeout(() => setLoaded(true), SETTLE_MS)}
+              inert={!live}
+              className="size-full border-0 bg-white"
+            />
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onPointerEnter={() => setMounted(true)}
+          onFocus={() => setMounted(true)}
+          onClick={() => {
+            setMounted(true);
+            setWanted(true);
+          }}
+          aria-label={`Try ${label}`}
+          className={cx(
+            "group absolute inset-0 cursor-pointer transition-opacity duration-500",
+            live && "pointer-events-none opacity-0",
+          )}
+        >
+          <Image
+            src={poster.wide}
+            alt=""
+            fill
+            sizes={`(min-width: 1024px) ${FRAME.w}px, 1px`}
+            className="object-cover"
+          />
+          <span className="absolute inset-0 bg-ink-950/0 transition-colors duration-300 group-hover:bg-ink-950/10" />
+          <TryPill
+            busy={wanted && !loaded}
+            label={wanted ? `Loading ${label}…` : `Try ${label}`}
+          />
+        </button>
+      </div>
+
+      {/* Narrow: the capture on a phone, opening the real page. */}
+      <a
+        href={tab.live}
+        target="_blank"
+        rel="noopener"
+        aria-label={`Open ${label} in a new tab`}
+        className="absolute inset-0 flex flex-col items-center justify-center gap-4 lg:hidden"
+      >
+        <div className="grid-field-light" />
+        <PhoneFrame width={252} className="relative">
+          <Image
+            src={poster.narrow}
+            alt=""
+            sizes="236px"
+            className="block h-auto w-full"
+          />
+        </PhoneFrame>
+        <span className="relative inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-[0.8125rem] font-semibold text-white shadow-lg">
+          <LiveDot />
+          Open it live
+          <span aria-hidden>&#8599;</span>
+        </span>
+      </a>
+    </>
+  );
+}
+
+/** Width of `ref`'s box over `width`, capped at 1, kept current. Measured
+ *  before paint, so an embed never shows at the wrong size. */
+function useFitScale(ref: RefObject<HTMLElement | null>, width: number) {
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => {
+      if (node.clientWidth) setScale(Math.min(1, node.clientWidth / width));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref, width]);
+  return scale;
+}
+
+/** Centred over a capture; `low` sits it near the bottom instead, off a page's
+ *  title. */
+function TryPill({
+  label,
+  busy = false,
+  low = false,
+}: {
+  label: string;
+  busy?: boolean;
+  low?: boolean;
+}) {
+  return (
+    <span
+      className={cx(
+        "absolute left-1/2 inline-flex -translate-x-1/2 items-center",
+        low ? "bottom-6" : "top-1/2 -translate-y-1/2",
+      )}
+    >
+      <span className="inline-flex items-center gap-2.5 rounded-full bg-ink/90 py-2.5 pr-5 pl-4 text-[0.9375rem] font-semibold whitespace-nowrap text-white shadow-[0_18px_40px_-16px_rgba(5,14,26,0.8)] ring-1 ring-white/15 backdrop-blur-sm transition-transform duration-300 group-hover:scale-[1.04]">
+        {busy ? (
+          <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+        ) : (
+          <LiveDot />
+        )}
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function LiveDot() {
+  return (
+    <span aria-hidden className="relative grid size-2.5 place-items-center">
+      <span className="absolute inset-0 rounded-full bg-green-400/60 anim-pulse" />
+      <span className="size-1.5 rounded-full bg-green-400" />
+    </span>
+  );
 }
 
 /* -------------------------------------------------------------------------- */
 /* Benefits guide                                                              */
 /* -------------------------------------------------------------------------- */
 
-/** Every guide page is drawn at this size; thumbnails are the same page scaled. */
-const PAGE = { w: 272, h: 352 };
-const GUIDE_PAGES = ["Cover", "Medical", "Dental & vision", "Contacts"] as const;
+/** The guide proper runs to its back cover on page 23; the PDF then carries
+ *  eleven pages of required notices, left to the full guide. */
+const GUIDE_PAGES = 23;
+const GUIDE_TOTAL = 34;
+const PAGE = { w: 1102, h: 1426 };
+const pageSrc = (n: number) =>
+  `/images/outputs/guide/p${String(n).padStart(2, "0")}.webp`;
 
-function GuideDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  const [page] = useSequence(GUIDE_PAGES.length, 1900, inView);
-  const thumb = 0.19;
-
-  return (
-    <div
-      ref={ref}
-      className="relative flex h-full items-center justify-center gap-6 px-6"
-    >
-      {/* Thumbnails */}
-      <div className="hidden flex-col gap-2.5 sm:flex">
-        {GUIDE_PAGES.map((name, i) => (
-          <div key={name} className="flex items-center gap-2">
-            <span
-              className={cx(
-                "tabular w-3 text-right text-[10px] font-semibold transition-colors duration-300",
-                i === page ? "text-blue-700" : "text-slate-400",
-              )}
-            >
-              {i + 1}
-            </span>
-            <div
-              className={cx(
-                "overflow-hidden rounded-[3px] bg-white shadow-sm ring-2 transition-[box-shadow,transform] duration-300",
-                i === page ? "scale-105 ring-blue-500" : "ring-transparent",
-              )}
-              style={{ width: PAGE.w * thumb, height: PAGE.h * thumb }}
-            >
-              <div
-                style={{
-                  width: PAGE.w,
-                  height: PAGE.h,
-                  transform: `scale(${thumb})`,
-                  transformOrigin: "0 0",
-                }}
-              >
-                <GuidePage index={i} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* The page itself */}
-      <div className="relative shrink-0" style={{ width: PAGE.w, height: PAGE.h }}>
-        {GUIDE_PAGES.map((name, i) => (
-          <div
-            key={name}
-            className="absolute inset-0 overflow-hidden rounded-[4px] bg-white shadow-[0_24px_50px_-24px_rgba(5,14,26,0.55)] transition-[opacity,transform] duration-700 ease-out"
-            style={{
-              opacity: i === page ? 1 : 0,
-              transform:
-                i === page
-                  ? "none"
-                  : i < page
-                    ? "translate3d(0,-14px,0) scale(0.98)"
-                    : "translate3d(0,14px,0) scale(0.98)",
-            }}
-          >
-            <GuidePage index={i} />
-          </div>
-        ))}
-      </div>
-
-      <span className="absolute bottom-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap text-slate-600 shadow-sm">
-        <span className="tabular">Page {page + 1} of 12</span>
-        <span className="h-3 w-px bg-line" />
-        <span className="text-blue-700">Download PDF</span>
-        <span className="h-3 w-px bg-line" />
-        <span className="text-blue-700">Share link</span>
-      </span>
-    </div>
-  );
-}
-
-function GuidePage({ index }: { index: number }) {
-  if (index === 0) return <GuideCover />;
-  return (
-    <GuideSheet label={GUIDE_PAGES[index]} folio={index + 2}>
-      {index === 1 ? <GuideMedical /> : null}
-      {index === 2 ? <GuideDentalVision /> : null}
-      {index === 3 ? <GuideContacts /> : null}
-    </GuideSheet>
-  );
-}
-
-/** An inside page of the guide: the running head and folio around its body. */
-function GuideSheet({
-  label,
-  folio,
-  children,
-}: {
-  label: string;
-  folio: number;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex h-full flex-col bg-white text-ink">
-      <div
-        className="flex items-center justify-between px-4 py-2.5"
-        style={{ background: BRAND }}
-      >
-        <Logo />
-        <span className="text-[8px] font-semibold tracking-wider text-white/70 uppercase">
-          {label}
-        </span>
-      </div>
-      <div className="h-[3px]" style={{ background: ACCENT }} />
-      <div className="flex-1 px-4 pt-3">{children}</div>
-      <p className="px-4 pb-2.5 text-right text-[7px] text-slate-400">
-        Sample Company · 2027 Benefits Guide · {folio}
-      </p>
-    </div>
-  );
-}
-
-function GuideCover() {
-  return (
-    <div className="relative h-full overflow-hidden" style={{ background: BRAND }}>
-      {/* A simple mountain range: the client's cover art. */}
-      <svg
-        viewBox="0 0 272 352"
-        className="absolute inset-0 h-full w-full"
-        preserveAspectRatio="none"
-      >
-        <circle cx="206" cy="196" r="34" fill={ACCENT} opacity="0.9" />
-        <path d="M0 262 70 196l44 34 58-62 100 96v88H0z" fill="#ffffff" opacity="0.12" />
-        <path d="M0 292 54 250l48 26 70-58 100 78v56H0z" fill="#ffffff" opacity="0.18" />
-        <path d="M0 322 80 284l62 22 58-32 72 40v38H0z" fill="#08192b" opacity="0.35" />
-      </svg>
-      <div className="relative px-5 pt-5">
-        <Logo />
-        <p
-          className="mt-12 text-[9px] font-bold tracking-[0.18em] uppercase"
-          style={{ color: ACCENT }}
-        >
-          Plan year 2027
-        </p>
-        <p className="mt-2 font-display text-[28px] leading-[1.02] font-bold text-white">
-          Employee
-          <br />
-          Benefits Guide
-        </p>
-        <p className="mt-3 text-[10px] text-white/75">
-          Open enrollment · Nov 3 – Nov 14
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function PageTitle({ kicker, title }: { kicker: string; title: string }) {
-  return (
-    <>
-      <p
-        className="text-[8px] font-bold tracking-wider uppercase"
-        style={{ color: BRAND }}
-      >
-        {kicker}
-      </p>
-      <p className="font-display text-[16px] leading-tight font-bold">{title}</p>
-    </>
-  );
-}
-
-function GuideMedical() {
-  const rows = [
-    ["Deductible", "$1,500", "$3,200", "$1,000"],
-    ["Out-of-pocket max", "$4,000", "$6,400", "$3,500"],
-    ["Doctor visit", "$25", "20%", "$20"],
-    ["Per paycheck", "$48", "$22", "$61"],
-  ];
-  return (
-    <>
-      <PageTitle kicker="Medical" title="Compare your medical plans" />
-      <p className="mt-1 text-[8.5px] leading-snug text-slate-600">
-        Three plans, all with the same doctor network. Pick the one that fits
-        how you use care.
-      </p>
-      <div className="mt-3 overflow-hidden rounded-[3px] border border-line text-[8px]">
-        <div
-          className="grid grid-cols-[1.4fr_1fr_1fr_1fr] font-bold text-white"
-          style={{ background: BRAND }}
-        >
-          {["", "PPO 1500", "HDHP 3200", "EPO 1000"].map((h) => (
-            <span key={h} className="px-1.5 py-1.5">
-              {h}
-            </span>
-          ))}
-        </div>
-        {rows.map((row, r) => (
-          <div
-            key={row[0]}
-            className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-t border-line"
-            style={{ background: r === rows.length - 1 ? TINT : undefined }}
-          >
-            {row.map((cell, c) => (
-              <span
-                key={c}
-                className={cx("tabular px-1.5 py-1.5", c === 0 && "font-semibold")}
-              >
-                {cell}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-      <div
-        className="mt-3 rounded-[3px] border-l-2 px-2 py-1.5 text-[8px] leading-snug text-slate-600"
-        style={{ borderColor: ACCENT, background: "#FDF6EA" }}
-      >
-        <span className="font-bold text-ink">Tip:</span> the HDHP pairs with an
-        HSA, and Sample Company adds $750 to it.
-      </div>
-    </>
-  );
-}
-
-function GuideDentalVision() {
-  return (
-    <>
-      <PageTitle kicker="Dental & vision" title="Keep your smile and sight" />
-      <div className="mt-3 grid grid-cols-2 gap-2 text-[8px]">
-        {[
-          { name: "Dental Base", cost: "$4", lines: ["Cleanings 100%", "Fillings 80%", "Annual max $1,000"] },
-          { name: "Dental Plus", cost: "$9", lines: ["Cleanings 100%", "Crowns 50%", "Annual max $2,000"] },
-        ].map((plan) => (
-          <div key={plan.name} className="rounded-[3px] border border-line p-2">
-            <p className="font-bold">{plan.name}</p>
-            <p className="font-display text-[15px] font-bold" style={{ color: BRAND }}>
-              {plan.cost}
-              <span className="text-[8px] font-medium text-slate-400"> / check</span>
-            </p>
-            <ul className="mt-1 space-y-0.5 text-slate-600">
-              {plan.lines.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 flex items-center gap-3 rounded-[3px] p-2 text-[8px]" style={{ background: TINT }}>
-        <span
-          className="grid size-7 shrink-0 place-items-center rounded-full text-white"
-          style={{ background: BRAND }}
-        >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="size-4">
-            <circle cx="4.5" cy="9" r="2.5" />
-            <circle cx="11.5" cy="9" r="2.5" />
-            <path d="M7 9h2M2 9l.8-3.5M14 9l-.8-3.5" strokeLinecap="round" />
-          </svg>
-        </span>
-        <div>
-          <p className="font-bold">Vision · $3 / check</p>
-          <p className="text-slate-600">$10 eye exam · $150 toward frames</p>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function GuideContacts() {
-  const contacts = [
-    ["Medical", "Northwind Health", "(800) 555-0141"],
-    ["Dental", "Brightsmile Dental", "(800) 555-0162"],
-    ["Vision", "ClearView Vision", "(800) 555-0178"],
-    ["HSA", "Summit HSA", "(800) 555-0190"],
-    ["Questions", "Sample Company HR", "(800) 555-0125"],
-  ];
-  return (
-    <>
-      <PageTitle kicker="Contacts" title="Who to call" />
-      <ul className="mt-2.5 text-[8px]">
-        {contacts.map(([kind, who, how]) => (
-          <li
-            key={kind}
-            className="grid grid-cols-[0.8fr_1.3fr_1.4fr] gap-1 border-b border-line py-1.5"
-          >
-            <span className="font-bold" style={{ color: BRAND }}>
-              {kind}
-            </span>
-            <span>{who}</span>
-            <span className="tabular truncate text-slate-600">{how}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 flex items-center gap-2.5">
-        <QrCode size={40} />
-        <p className="text-[8px] leading-snug text-slate-600">
-          <span className="font-bold text-ink">Scan for your benefits site.</span>
-          <br />
-          Everything in this guide, on your phone.
-        </p>
-      </div>
-    </>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Digital flipbook                                                            */
-/* -------------------------------------------------------------------------- */
-
-/** The guide's pages bound as leaves, front and back: the cover turns over
- *  onto the medical page, and so on. The last leaf lies on the enroll page. */
-const LEAVES = [
-  [0, 1],
-  [2, 3],
+/** The guide's own table of contents, as its viewer lists it. */
+const SECTIONS = [
+  { label: "Cover", page: 1 },
+  { label: "Benefits overview", page: 3 },
+  { label: "Medical", page: 8 },
+  { label: "Dental", page: 11 },
+  { label: "Vision", page: 12 },
+  { label: "FSA / HSA", page: 13 },
+  { label: "Life & disability", page: 14 },
+  { label: "Wellness & perks", page: 15 },
+  { label: "Time off & leave", page: 17 },
+  { label: "Compliance & notices", page: 19 },
+  { label: "Additional benefits", page: 20 },
+  { label: "Contacts & resources", page: 21 },
+  { label: "Plan documents", page: 22 },
 ] as const;
 
-/** How many leaves have turned at each beat: the book opens, turns a page,
- *  turns it back, and closes. Reduced motion holds the last beat, open. */
-const TURNED = [0, 1, 2, 1] as const;
-const SPREADS = ["Cover", "Pages 3–4 of 12", "Pages 5–6 of 12"] as const;
-const TURN_MS = 900;
+const PAGE_NUMBERS = Array.from({ length: GUIDE_PAGES }, (_, i) => i + 1);
 
-function FlipbookDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.3);
+function GuideReader({ tab }: { tab: Tab }) {
   const reduced = useReducedMotion();
-  const [beat] = useSequence(TURNED.length, 1800, inView);
-  const turned = TURNED[beat];
-  const before = TURNED[(beat + TURNED.length - 1) % TURNED.length];
-  // The leaf turning now rides above the others until the next one goes.
-  const moving = Math.min(turned, before);
-  const closed = turned === 0;
-  const ease = (property: string) =>
-    reduced ? undefined : `${property} ${TURN_MS}ms var(--ease-in-out-soft)`;
+  const scroller = useRef<HTMLDivElement>(null);
+  const pages = useRef<(HTMLDivElement | null)[]>([]);
+  // Held still until clicked, so scrolling the page past it never gets
+  // caught in the guide.
+  const [live, setLive] = useState(false);
+  const [page, setPage] = useState(1);
+  const section = SECTIONS.findLast((s) => s.page <= page) ?? SECTIONS[0];
 
-  return (
-    <div ref={ref} className="relative flex h-full items-center justify-center px-6 pb-10">
-      <div
-        className="shrink-0 scale-[0.58] sm:scale-[0.82]"
-        style={{ width: PAGE.w * 2, height: PAGE.h }}
-      >
-        {/* Shut, the cover sits centred; open, the spread does. */}
-        <div
-          className="relative h-full"
-          style={{
-            perspective: 1800,
-            transform: closed ? `translateX(${-PAGE.w / 2}px)` : "none",
-            transition: ease("transform"),
-          }}
-        >
-          <span
-            className="absolute inset-y-0 right-0 rounded-[4px] shadow-[0_24px_50px_-24px_rgba(5,14,26,0.55)]"
-            style={{ left: closed ? "50%" : 0, transition: ease("left") }}
-          />
-          <div className="absolute inset-y-0 right-0 w-1/2">
-            <LeafFace side="right">
-              <GuideSheet label="Enroll" folio={6}>
-                <GuideEnroll />
-              </GuideSheet>
-            </LeafFace>
-          </div>
-          {LEAVES.map(([front, back], k) => {
-            const over = k < turned;
-            return (
-              <div
-                key={front}
-                className="absolute inset-y-0 right-0 w-1/2 [transform-style:preserve-3d]"
-                style={{
-                  zIndex:
-                    k === moving ? 30 : over ? 10 + k : 10 + LEAVES.length - k,
-                  transformOrigin: "0 50%",
-                  transform: `rotateY(${over ? -180 : 0}deg)`,
-                  transition: ease("transform"),
-                }}
-              >
-                <LeafFace side="right">
-                  <GuidePage index={front} />
-                </LeafFace>
-                <LeafFace side="left">
-                  <GuidePage index={back} />
-                </LeafFace>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+  const start = () => {
+    setLive(true);
+    scroller.current?.focus({ preventScroll: true });
+  };
 
-      <span className="absolute bottom-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap text-slate-600 shadow-sm">
-        <Chevron
-          className={cx("size-3", turned < before ? "text-blue-700" : "text-slate-400")}
-        />
-        <span className="tabular w-[6.5rem] text-center">{SPREADS[turned]}</span>
-        <Chevron
-          flip
-          className={cx("size-3", turned > before ? "text-blue-700" : "text-slate-400")}
-        />
-        <span className="h-3 w-px bg-line" />
-        <span className="text-blue-700">Share link</span>
-      </span>
-    </div>
-  );
-}
+  const jump = (n: number) => {
+    start();
+    const target = pages.current[n - 1];
+    if (!target || !scroller.current) return;
+    scroller.current.scrollTo({
+      top: target.offsetTop - 24,
+      behavior: reduced ? "auto" : "smooth",
+    });
+  };
 
-/** One side of a leaf. A left-hand page is the back of a leaf, so it is
- *  turned to face the reader once the leaf has gone over. */
-function LeafFace({ side, children }: { side: "left" | "right"; children: ReactNode }) {
-  const left = side === "left";
-  return (
-    <div
-      className={cx(
-        "absolute inset-0 overflow-hidden bg-white [backface-visibility:hidden]",
-        left ? "rounded-l-[4px]" : "rounded-r-[4px]",
-      )}
-      style={left ? { transform: "rotateY(180deg)" } : undefined}
-    >
-      {children}
-      {/* The fold into the spine. */}
-      <span
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: `linear-gradient(to ${left ? "left" : "right"}, rgba(5,14,26,0.16), transparent 9%)`,
-        }}
-      />
-    </div>
-  );
-}
+  const onScroll = () => {
+    const node = scroller.current;
+    if (!node) return;
+    const line = node.scrollTop + node.clientHeight * 0.4;
+    let current = 1;
+    pages.current.forEach((el, i) => {
+      if (el && el.offsetTop <= line) current = i + 1;
+    });
+    setPage(current);
+  };
 
-function GuideEnroll() {
-  const steps = [
-    "Compare your plans in this guide",
-    "Scan to open your benefits site",
-    "Enroll by Nov 14",
-  ];
   return (
     <>
-      <PageTitle kicker="Enroll" title="Ready to enroll?" />
-      <ol className="mt-3 space-y-2 text-[8.5px]">
-        {steps.map((step, i) => (
-          <li key={step} className="flex items-center gap-2">
-            <span
-              className="grid size-4 shrink-0 place-items-center rounded-full text-[8px] font-bold text-white"
-              style={{ background: BRAND }}
-            >
-              {i + 1}
-            </span>
-            {step}
-          </li>
-        ))}
-      </ol>
-      <div
-        className="mt-4 flex items-center gap-3 rounded-[3px] p-2"
-        style={{ background: TINT }}
-      >
-        <QrCode size={48} />
-        <p className="text-[8px] leading-snug text-slate-600">
-          <span className="font-bold text-ink">sampleco.truhu.site</span>
-          <br />
-          No app, no login.
-        </p>
-      </div>
-    </>
-  );
-}
-
-function Chevron({ flip = false, className }: { flip?: boolean; className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={flip ? { transform: "scaleX(-1)" } : undefined}
-      aria-hidden
-    >
-      <path d="M10 3.5 5.5 8l4.5 4.5" />
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Benefits website                                                            */
-/* -------------------------------------------------------------------------- */
-
-const SITE_TABS = [
-  {
-    name: "Medical",
-    cards: [
-      ["PPO 1500", "$48", "Most flexibility"],
-      ["HDHP 3200", "$22", "Lowest premium + HSA"],
-      ["EPO 1000", "$61", "Lowest deductible"],
-    ],
-  },
-  {
-    name: "Dental",
-    cards: [
-      ["Dental Base", "$4", "Cleanings covered"],
-      ["Dental Plus", "$9", "Crowns and ortho"],
-    ],
-  },
-  {
-    name: "Vision",
-    cards: [
-      ["Vision", "$3", "$150 toward frames"],
-      ["LASIK", "15% off", "In-network discount"],
-    ],
-  },
-] as const;
-
-function WebsiteDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  const [section] = useSequence(SITE_TABS.length, 2300, inView);
-  const [chat] = useSequence(4, 1500, inView);
-  const current = SITE_TABS[section];
-
-  return (
-    <div ref={ref} className="relative h-full p-5 sm:p-6">
-      <div className="w-full sm:w-[88%]">
-        <BrowserFrame label="sampleco.truhu.site">
-          <div className="h-[330px] overflow-hidden bg-white text-ink">
-            <div className="px-4 pt-3" style={{ background: BRAND }}>
-              <div className="flex items-center justify-between">
-                <Logo />
-                <span
-                  className="rounded-full px-2 py-1 text-[9px] font-bold text-ink"
-                  style={{ background: ACCENT }}
-                >
-                  Enroll by Nov 14
-                </span>
-              </div>
-              <p className="mt-4 font-display text-[18px] leading-tight font-bold text-white">
-                Your 2027 benefits,
-                <br />
-                all in one place.
-              </p>
-              <div className="mt-4 flex gap-4 text-[10px] font-semibold">
-                {[...SITE_TABS.map((t) => t.name), "401(k)", "Contacts"].map((name, i) => (
-                  <span
-                    key={name}
+      {/* Wide: contents beside a continuous scroll of every page. */}
+      <div className="absolute inset-0 hidden grid-cols-[220px_minmax(0,1fr)] lg:grid">
+        <nav
+          aria-label="Guide sections"
+          className="flex min-h-0 flex-col border-r border-line bg-white"
+        >
+          <p className="px-4 pt-4 pb-2 text-[0.6875rem] font-bold tracking-[0.12em] text-slate-400 uppercase">
+            Contents
+          </p>
+          <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+            {SECTIONS.map((item) => {
+              const current = item === section;
+              return (
+                <li key={item.label}>
+                  <button
+                    type="button"
+                    onClick={() => jump(item.page)}
+                    aria-current={current ? "true" : undefined}
                     className={cx(
-                      "border-b-2 pb-2 transition-colors duration-300",
-                      i === section
-                        ? "border-white text-white"
-                        : "border-transparent text-white/60",
-                      i > 2 && "hidden sm:inline",
+                      "flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1 text-left text-[0.8125rem] transition-colors duration-200",
+                      current
+                        ? "bg-blue-100 font-semibold text-blue-700"
+                        : "text-slate-600 hover:bg-paper hover:text-ink",
                     )}
                   >
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div key={current.name} className="p-4" style={{ animation: "hero-in 500ms var(--ease-out-expo) both" }}>
-              <p className="text-[12px] font-bold">{current.name} plans</p>
-              <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {current.cards.map(([name, cost, note]) => (
-                  <div key={name} className="card-shape-sm border border-line p-2.5">
-                    <span className="block h-1 w-6 rounded-full" style={{ background: BRAND }} />
-                    <p className="mt-2 text-[11px] font-bold">{name}</p>
-                    <p className="font-display text-[15px] font-bold" style={{ color: BRAND }}>
-                      {cost}
-                      {cost.startsWith("$") ? (
-                        <span className="text-[9px] font-medium text-slate-400"> / check</span>
-                      ) : null}
-                    </p>
-                    <p className="mt-0.5 text-[9px] text-slate-400">{note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </BrowserFrame>
-      </div>
-
-      {/* The same site on a phone, answering a question. */}
-      <div className="absolute right-5 bottom-[-18px] hidden sm:block">
-        <PhoneFrame width={168}>
-          <div className="h-[268px] bg-white">
-            <div className="flex items-center gap-1.5 px-3 py-2" style={{ background: BRAND }}>
-              <span className="grid size-3.5 place-items-center rounded-[3px] bg-white text-[7px] font-black" style={{ color: BRAND }}>
-                S
-              </span>
-              <span className="text-[8px] font-bold tracking-wider text-white">
-                ASK ABOUT YOUR BENEFITS
-              </span>
-            </div>
-            <div className="flex flex-col gap-2 p-2.5 text-[9px] leading-snug">
-              <p
-                className="max-w-[88%] self-end rounded-xl rounded-br-sm px-2.5 py-1.5 text-white"
-                style={{ background: BRAND }}
-              >
-                Is urgent care covered on the PPO?
-              </p>
-              {chat === 0 ? null : chat === 1 ? (
-                <span className="flex gap-1 self-start rounded-xl rounded-bl-sm bg-paper px-2.5 py-2">
-                  {[0, 150, 300].map((d) => (
-                    <span key={d} className="size-1 rounded-full bg-slate-400 anim-pulse" style={{ animationDelay: `${d}ms` }} />
-                  ))}
-                </span>
-              ) : (
-                <div
-                  className="max-w-[92%] self-start rounded-xl rounded-bl-sm bg-paper px-2.5 py-1.5"
-                  style={{ animation: "hero-in 400ms var(--ease-out-expo) both" }}
-                >
-                  <p className="text-ink">
-                    Yes. It&rsquo;s a $40 copay in network, and the ER is $250.
-                  </p>
-                  <p className="mt-1 text-[7px] font-semibold tracking-wide text-slate-400 uppercase">
-                    From: PPO 1500 plan summary
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </PhoneFrame>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Benefit flyer                                                               */
-/* -------------------------------------------------------------------------- */
-
-function FlyerDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  // Camera finds the code, the link appears, the site opens.
-  const [beat] = useSequence(4, 1500, inView);
-
-  return (
-    <div ref={ref} className="relative flex h-full items-center justify-center p-6">
-      <div
-        className="relative overflow-hidden rounded-[4px] bg-white text-ink shadow-[0_24px_50px_-24px_rgba(5,14,26,0.55)] sm:-translate-x-20"
-        style={{ width: 250, height: 368, rotate: "-2.5deg" }}
-      >
-        <div className="relative px-5 pt-4 pb-6" style={{ background: BRAND }}>
-          <Logo />
-          <p
-            className="mt-4 text-[9px] font-bold tracking-[0.18em] uppercase"
-            style={{ color: ACCENT }}
-          >
-            Open enrollment
-          </p>
-          <p className="mt-1 font-display text-[24px] leading-[1.02] font-bold text-white">
-            Your 2027 benefits are here.
-          </p>
-          <span
-            className="mt-3 inline-block rounded-full px-2.5 py-1 text-[10px] font-bold text-ink"
-            style={{ background: ACCENT }}
-          >
-            Nov 3 – Nov 14
-          </span>
-          <svg viewBox="0 0 250 24" className="absolute inset-x-0 -bottom-px w-full" preserveAspectRatio="none">
-            <path d="M0 24V12Q62 0 125 10T250 6v18z" fill="#fff" />
-          </svg>
-        </div>
-        <div className="px-5 pt-2">
-          <p className="text-[8px] font-bold tracking-wider text-slate-400 uppercase">
-            What&rsquo;s new
-          </p>
-          <ul className="mt-1.5 space-y-1.5 text-[10px]">
-            {["A lower PPO deductible", "$750 into your HSA from Sample Company", "Free virtual care visits"].map((line) => (
-              <li key={line} className="flex items-center gap-2">
-                <span className="grid size-3.5 shrink-0 place-items-center rounded-full text-white" style={{ background: BRAND }}>
-                  <CheckIcon className="size-2" />
-                </span>
-                {line}
-              </li>
-            ))}
+                    {item.label}
+                    <span className="tabular text-[0.75rem] text-slate-400">
+                      {item.page}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
-          <div className="mt-3.5 flex items-center gap-3 rounded-[4px] p-2" style={{ background: TINT }}>
-            <QrCode size={52} />
-            <p className="text-[9px] leading-snug">
-              <span className="font-bold">Scan to see your benefits</span>
-              <br />
-              <span className="text-slate-600">No app, no login.</span>
-            </p>
-          </div>
-        </div>
-      </div>
+          <p className="tabular border-t border-line px-4 py-2.5 text-[0.75rem] font-semibold text-slate-500">
+            Page {page} of {GUIDE_TOTAL}
+          </p>
+        </nav>
 
-      {/* A phone scanning the flyer. */}
-      <div className="absolute right-6 bottom-[-22px] hidden sm:block">
-        <PhoneFrame width={164}>
-          <div className="relative h-[272px] overflow-hidden">
-            {beat < 3 ? (
-              <div className="absolute inset-0 grid place-items-center bg-ink-900">
-                <div className="relative p-3">
-                  <div className="rounded-[3px] bg-white p-1.5 opacity-90">
-                    <QrCode size={64} />
-                  </div>
-                  {/* Viewfinder corners */}
-                  {["top-0 left-0 border-t-2 border-l-2", "top-0 right-0 border-t-2 border-r-2", "bottom-0 left-0 border-b-2 border-l-2", "right-0 bottom-0 border-r-2 border-b-2"].map((c) => (
-                    <span
-                      key={c}
-                      className={cx(
-                        "absolute size-4 rounded-[3px] transition-colors duration-300",
-                        c,
-                        beat >= 1 ? "border-green-400" : "border-white/80",
-                      )}
-                    />
-                  ))}
-                  {beat === 0 ? (
-                    <span
-                      className="absolute inset-x-2 h-px bg-green-400 shadow-[0_0_8px_rgba(87,217,94,0.9)]"
-                      style={{ animation: "scan-down 1.4s var(--ease-in-out-soft) infinite" }}
-                    />
-                  ) : null}
-                </div>
-                <span
-                  className="absolute inset-x-3 bottom-4 flex items-center gap-1.5 rounded-lg bg-white/95 px-2 py-1.5 text-[9px] font-semibold text-ink shadow-lg transition-[opacity,translate] duration-300"
-                  style={{ opacity: beat >= 1 ? 1 : 0, translate: beat >= 1 ? "0 0" : "0 8px" }}
-                >
-                  <span className="grid size-4 shrink-0 place-items-center rounded-[4px] text-[7px] font-black text-white" style={{ background: BRAND }}>
-                    S
-                  </span>
-                  <span className="truncate">sampleco.truhu.site</span>
-                  <span className={cx("ml-auto shrink-0 text-blue-700", beat >= 2 && "font-bold")}>Open</span>
-                </span>
-              </div>
-            ) : (
-              <div className="absolute inset-0 bg-white" style={{ animation: "hero-in 450ms var(--ease-out-expo) both" }}>
-                <div className="px-3 pt-2.5 pb-3" style={{ background: BRAND }}>
-                  <Logo small />
-                  <p className="mt-3 font-display text-[13px] leading-tight font-bold text-white">
-                    Your 2027 benefits, all in one place.
-                  </p>
-                </div>
-                <div className="space-y-1.5 p-2.5">
-                  {[["Medical", "3 plans"], ["Dental", "2 plans"], ["Vision", "1 plan"], ["Ask a question", "Get an answer"]].map(([name, note]) => (
-                    <div key={name} className="flex items-center justify-between rounded-md border border-line px-2 py-1.5 text-[9px]">
-                      <span className="font-bold">{name}</span>
-                      <span className="text-slate-400">{note}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </PhoneFrame>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Benefits chatbot                                                            */
-/* -------------------------------------------------------------------------- */
-
-/** The client's documents the answers are drawn from. */
-const SOURCES = [
-  "PPO 1500 plan summary",
-  "HDHP 3200 plan summary",
-  "2027 rates & contributions",
-  "2027 benefits guide",
-] as const;
-
-const EXCHANGES: readonly {
-  q: string;
-  a: string;
-  source: (typeof SOURCES)[number];
-}[] = [
-  {
-    q: "Is urgent care covered on the PPO?",
-    a: "Yes. It’s a $40 copay in network, and the ER is $250.",
-    source: "PPO 1500 plan summary",
-  },
-  {
-    q: "How much goes into my HSA?",
-    a: "Sample Company adds $750 when you enroll in the HDHP 3200.",
-    source: "2027 rates & contributions",
-  },
-  {
-    q: "When do I have to enroll by?",
-    a: "Open enrollment runs Nov 3 to Nov 14.",
-    source: "2027 benefits guide",
-  },
-];
-
-/** Per exchange: the question lands, the reply is typed, the answer lands. */
-const BEATS_PER_EXCHANGE = 3;
-
-function QnaDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  // One extra beat at the end to sit on the finished conversation.
-  const [beat] = useSequence(
-    EXCHANGES.length * BEATS_PER_EXCHANGE + 1,
-    1200,
-    inView,
-  );
-  const latest = EXCHANGES.findLastIndex(
-    (_, i) => beat >= i * BEATS_PER_EXCHANGE + 2,
-  );
-  const cited = latest >= 0 ? EXCHANGES[latest].source : null;
-
-  return (
-    <div ref={ref} className="relative flex h-full items-center justify-center p-6">
-      <div className="sm:-translate-x-28">
-        <PhoneFrame width={220}>
-          <div className="flex h-[372px] flex-col bg-white">
-            <div
-              className="flex items-center justify-between px-3 py-2.5"
-              style={{ background: BRAND }}
-            >
-              <Logo small />
-              <span className="text-[7px] font-bold tracking-wider text-white/80">
-                ASK ABOUT YOUR BENEFITS
-              </span>
-            </div>
-
-            {/* Anchored to the bottom, so the thread grows like a chat; the
-                top edge fades, so earlier messages read as scrolled away. */}
-            <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 overflow-hidden p-3 text-[10px] leading-snug [mask-image:linear-gradient(to_bottom,transparent,black_40px)]">
-              {EXCHANGES.map((exchange, i) => {
-                const start = i * BEATS_PER_EXCHANGE;
-                if (beat < start) return null;
-                return (
-                  <Fragment key={exchange.q}>
-                    <p
-                      className="max-w-[85%] self-end rounded-xl rounded-br-sm px-2.5 py-1.5 text-white"
-                      style={{
-                        background: BRAND,
-                        animation: "hero-in 400ms var(--ease-out-expo) both",
-                      }}
-                    >
-                      {exchange.q}
-                    </p>
-                    {beat === start + 1 ? (
-                      <span className="flex gap-1 self-start rounded-xl rounded-bl-sm bg-paper px-2.5 py-2">
-                        {[0, 150, 300].map((d) => (
-                          <span
-                            key={d}
-                            className="size-1 rounded-full bg-slate-400 anim-pulse"
-                            style={{ animationDelay: `${d}ms` }}
-                          />
-                        ))}
-                      </span>
-                    ) : beat >= start + 2 ? (
-                      <div
-                        className="max-w-[92%] self-start rounded-xl rounded-bl-sm bg-paper px-2.5 py-1.5"
-                        style={{ animation: "hero-in 400ms var(--ease-out-expo) both" }}
-                      >
-                        <p className="text-ink">{exchange.a}</p>
-                        <p className="mt-1 text-[7px] font-semibold tracking-wide text-slate-400 uppercase">
-                          From: {exchange.source}
-                        </p>
-                      </div>
-                    ) : null}
-                  </Fragment>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-line p-2">
-              <p className="rounded-full border border-line bg-paper px-3 py-1.5 text-[9px] text-slate-400">
-                Ask a question&hellip;
-              </p>
-            </div>
-          </div>
-        </PhoneFrame>
-      </div>
-
-      {/* Where each answer came from, lit as it is used. */}
-      <div className="absolute top-1/2 right-5 hidden w-[210px] -translate-y-1/2 rounded-xl border border-line bg-white p-3 shadow-[0_24px_50px_-26px_rgba(5,14,26,0.55)] sm:block">
-        <p className="text-[10px] font-bold text-blue-700">
-          Answers from Sample Company&rsquo;s documents
-        </p>
-        <ul className="mt-2 space-y-1">
-          {SOURCES.map((source) => (
-            <li
-              key={source}
-              className={cx(
-                "flex items-center gap-2 rounded-md px-2 py-1.5 text-[9.5px] font-semibold transition-colors duration-300",
-                source === cited ? "bg-blue-100 text-blue-700" : "text-slate-600",
-              )}
-            >
-              <svg
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinejoin="round"
-                className="size-3 shrink-0"
-                aria-hidden
-              >
-                <path d="M4 2.5h5.5L12 5v8.5H4z" />
-              </svg>
-              {source}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Narrated video                                                              */
-/* -------------------------------------------------------------------------- */
-
-/** What the voice says over the medical slide, and the plan it lights. */
-const NARRATION = [
-  { plan: 0, line: "The PPO 1500 gives you the most flexibility, with $25 doctor visits." },
-  { plan: 1, line: "The HDHP 3200 has the lowest premium, and it pairs with an HSA." },
-] as const;
-
-/** Two lines narrated, then the viewer stops it to ask, the reply is typed,
- *  and the answer lands. The answer is the last beat, which reduced motion
- *  holds. */
-const VIDEO_BEATS = 5;
-const ASKED_AT = NARRATION.length;
-
-/** How far through the video each beat is. It stops moving once paused. */
-const PLAYED = ["36%", "40%", "42%"] as const;
-const CLOCK = ["3:08", "3:19", "3:26"] as const;
-
-function VideoDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.3);
-  const [beat] = useSequence(VIDEO_BEATS, 1400, inView);
-  const paused = beat >= ASKED_AT;
-  const said = NARRATION[Math.min(beat, NARRATION.length - 1)];
-  const at = Math.min(beat, PLAYED.length - 1);
-
-  return (
-    <div ref={ref} className="relative flex h-full items-center justify-center p-5 sm:p-8">
-      <div className="w-full max-w-[540px] overflow-hidden rounded-xl bg-ink-950 shadow-[0_24px_50px_-24px_rgba(5,14,26,0.55)]">
-        {/* The guide, playing as a presentation. */}
-        <div className="relative aspect-video overflow-hidden bg-white text-ink">
+        <div className="relative min-h-0 bg-slate-100">
           <div
-            className="flex items-center justify-between px-4 py-2.5"
-            style={{ background: BRAND }}
-          >
-            <Logo />
-            <span className="text-[8px] font-semibold tracking-wider text-white/70 uppercase">
-              Medical · 3 of 12
-            </span>
-          </div>
-          <div className="h-[3px]" style={{ background: ACCENT }} />
-          <div className="px-4 pt-3">
-            <PageTitle kicker="Medical" title="Compare your medical plans" />
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {SITE_TABS[0].cards.map(([name, cost, note], i) => {
-                const lit = !paused && said.plan === i;
-                return (
-                  <div
-                    key={name}
-                    className="card-shape-sm border border-line p-2 transition-[border-color,box-shadow] duration-300"
-                    style={
-                      lit
-                        ? { borderColor: BRAND, boxShadow: `0 0 0 1px ${BRAND}` }
-                        : undefined
-                    }
-                  >
-                    <span className="block h-1 w-6 rounded-full" style={{ background: BRAND }} />
-                    <p className="mt-1.5 text-[10px] font-bold">{name}</p>
-                    <p className="font-display text-[14px] font-bold" style={{ color: BRAND }}>
-                      {cost}
-                      <span className="text-[8px] font-medium text-slate-400"> / check</span>
-                    </p>
-                    <p className="mt-0.5 hidden text-[8px] leading-snug text-slate-400 sm:block">
-                      {note}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Subtitles, while it plays. */}
-          {!paused ? (
-            <p
-              key={beat}
-              className="absolute inset-x-6 bottom-3 rounded-md bg-ink-950/85 px-3 py-1.5 text-center text-[10px] leading-snug text-white"
-              style={{ animation: "hero-in 400ms var(--ease-out-expo) both" }}
-            >
-              {said.line}
-            </p>
-          ) : null}
-
-          {/* Stopped partway to ask: the answer comes from the client's plans. */}
-          <div
+            ref={scroller}
+            onScroll={onScroll}
+            tabIndex={live ? 0 : -1}
+            aria-label="Kindlerye Baking Co. benefits guide"
             className={cx(
-              "absolute inset-0 bg-ink-950/25 transition-opacity duration-300",
-              paused ? "opacity-100" : "opacity-0",
+              "relative h-full outline-none",
+              live ? "overflow-y-auto" : "overflow-hidden",
             )}
-          />
-          {paused ? (
-            <div
-              className="absolute inset-2 flex flex-col overflow-hidden rounded-lg border border-line bg-white p-2.5 shadow-[0_18px_40px_-20px_rgba(5,14,26,0.6)] sm:left-auto sm:w-[46%]"
-              style={{ animation: "hero-in 450ms var(--ease-out-expo) both" }}
-            >
-              <p className="hidden text-[7px] font-bold tracking-wider text-slate-400 uppercase sm:block">
-                Video paused · Ask anything
-              </p>
-              <div className="flex min-h-0 flex-1 flex-col gap-1.5 text-[9px] leading-snug sm:mt-2">
-                <p
-                  className="max-w-[90%] self-end rounded-xl rounded-br-sm px-2.5 py-1.5 text-white"
-                  style={{ background: BRAND }}
-                >
-                  Does Sample Company put money in my HSA?
-                </p>
-                {beat === ASKED_AT + 1 ? (
-                  <span className="flex gap-1 self-start rounded-xl rounded-bl-sm bg-paper px-2.5 py-2">
-                    {[0, 150, 300].map((d) => (
-                      <span
-                        key={d}
-                        className="size-1 rounded-full bg-slate-400 anim-pulse"
-                        style={{ animationDelay: `${d}ms` }}
-                      />
-                    ))}
-                  </span>
-                ) : beat >= ASKED_AT + 2 ? (
-                  <div
-                    className="max-w-[94%] self-start rounded-xl rounded-bl-sm bg-paper px-2.5 py-1.5"
-                    style={{ animation: "hero-in 400ms var(--ease-out-expo) both" }}
-                  >
-                    <p className="text-ink">
-                      Yes. Sample Company adds $750 when you enroll in the HDHP 3200.
-                    </p>
-                    <p className="mt-1 text-[7px] font-semibold tracking-wide text-slate-400 uppercase">
-                      From: 2027 rates &amp; contributions
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-              {beat >= ASKED_AT + 2 ? (
-                <span
-                  className="mt-1.5 inline-flex items-center gap-1 self-start rounded-full px-2 py-1 text-[8px] font-bold text-white"
-                  style={{
-                    background: BRAND,
-                    animation: "hero-in 400ms var(--ease-out-expo) both",
-                    animationDelay: "250ms",
+          >
+            <div className="mx-auto flex max-w-[600px] flex-col gap-5 px-6 py-6">
+              {PAGE_NUMBERS.map((n) => (
+                <div
+                  key={n}
+                  ref={(node) => {
+                    pages.current[n - 1] = node;
                   }}
+                  className="overflow-hidden rounded-[3px] bg-white shadow-[0_18px_40px_-24px_rgba(5,14,26,0.45)] ring-1 ring-black/5"
                 >
-                  <PlayGlyph paused className="size-2" />
-                  Resume from {CLOCK[at]}
-                </span>
-              ) : null}
+                  <Image
+                    src={pageSrc(n)}
+                    alt={`Page ${n} of the guide`}
+                    width={PAGE.w}
+                    height={PAGE.h}
+                    sizes="552px"
+                    loading={n <= 2 ? "eager" : "lazy"}
+                    className="block h-auto w-full"
+                  />
+                </div>
+              ))}
+              <MoreNotices href={tab.live} />
             </div>
-          ) : null}
-        </div>
+          </div>
 
-        {/* Player controls. */}
-        <div className="flex items-center gap-2.5 px-3 py-2.5 text-white">
-          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white/10">
-            <PlayGlyph paused={paused} className="size-2.5" />
-          </span>
-          <span className="tabular shrink-0 text-[9px] text-white/60">
-            {CLOCK[at]} / 8:40
-          </span>
-          <span className="relative h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15">
-            <span
-              className="absolute inset-y-0 left-0 rounded-full"
-              style={{
-                width: PLAYED[at],
-                background: "var(--grad-brand-bright)",
-                // Back to the start of the loop without running backwards.
-                transition: beat === 0 ? "none" : "width 1300ms linear",
-              }}
-            />
-          </span>
-          <span className="hidden shrink-0 text-[9px] text-white/50 sm:inline">
-            AI voice · 1.0&times;
-          </span>
-          <span
-            className={cx(
-              "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[9px] font-semibold transition-colors duration-300",
-              paused ? "bg-white text-ink" : "bg-white/10 text-white/80",
-            )}
-          >
-            <svg
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              className="size-3"
-              aria-hidden
+          {live ? null : (
+            <button
+              type="button"
+              onClick={start}
+              aria-label="Scroll through the guide"
+              className="group absolute inset-0 cursor-pointer"
             >
-              <rect x="5.5" y="2" width="5" height="8" rx="2.5" />
-              <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" />
-            </svg>
-            Ask a question
-          </span>
+              <span className="absolute inset-0 bg-ink-950/0 transition-colors duration-300 group-hover:bg-ink-950/5" />
+              <TryPill label="Scroll through the guide" low />
+            </button>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* Narrow: the pages side by side, swiped, so they never catch the
+          page's own vertical scrolling. */}
+      <div className="absolute inset-0 lg:hidden">
+        <div className="flex h-full snap-x snap-mandatory items-center gap-4 overflow-x-auto px-[14%] [scrollbar-width:none]">
+          {PAGE_NUMBERS.map((n) => (
+            <Image
+              key={n}
+              src={pageSrc(n)}
+              alt={`Page ${n} of the guide`}
+              width={PAGE.w}
+              height={PAGE.h}
+              sizes="300px"
+              loading={n <= 2 ? "eager" : "lazy"}
+              className="h-[84%] w-auto max-w-none shrink-0 snap-center rounded-[3px] shadow-[0_18px_40px_-24px_rgba(5,14,26,0.45)] ring-1 ring-black/5"
+            />
+          ))}
+          <div className="flex h-[84%] shrink-0 snap-center items-center">
+            <MoreNotices href={tab.live} />
+          </div>
+        </div>
+        <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1.5 text-[0.75rem] font-semibold whitespace-nowrap text-white">
+          Swipe through all {GUIDE_PAGES} pages
+        </span>
+      </div>
+    </>
   );
 }
 
-/** Play while paused, pause while playing, as a player's button shows it. */
-function PlayGlyph({ paused, className }: { paused: boolean; className?: string }) {
+function MoreNotices({ href }: { href: string }) {
   return (
-    <svg viewBox="0 0 16 16" fill="currentColor" className={className} aria-hidden>
-      {paused ? (
-        <path d="M4.5 2.5v11l9-5.5z" />
-      ) : (
-        <>
-          <rect x="3.5" y="2.5" width="3" height="11" rx="0.75" />
-          <rect x="9.5" y="2.5" width="3" height="11" rx="0.75" />
-        </>
-      )}
-    </svg>
+    <div className="card-shape-sm w-64 border border-line bg-white p-5 text-center lg:w-auto">
+      <p className="font-semibold text-ink">
+        Plus {GUIDE_TOTAL - GUIDE_PAGES} pages of required notices
+      </p>
+      <p className="mt-1 text-[0.875rem] text-slate-600">
+        FMLA, Medicaid and CHIP, and the rest, in the full guide.
+      </p>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener"
+        className="mt-3 inline-block text-[0.875rem] font-semibold text-blue-700 underline-offset-4 hover:underline"
+      >
+        Open the full guide<span aria-hidden> &#8599;</span>
+      </a>
+    </div>
   );
 }
 
@@ -1282,71 +576,19 @@ function PlayGlyph({ paused, className }: { paused: boolean; className?: string 
 /* Small parts                                                                 */
 /* -------------------------------------------------------------------------- */
 
-function Logo({ small = false }: { small?: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        className={cx(
-          "grid place-items-center rounded-[3px] bg-white font-black",
-          small ? "size-3.5 text-[7px]" : "size-4 text-[8px]",
-        )}
-        style={{ color: BRAND }}
-      >
-        S
-      </span>
-      <span
-        className={cx(
-          "font-bold tracking-[0.14em] text-white",
-          small ? "text-[7px]" : "text-[9px]",
-        )}
-      >
-        SAMPLE CO
-      </span>
-    </span>
-  );
-}
-
-/** A deterministic, QR-like pattern. Decorative: it does not encode anything. */
-const QR_SIZE = 21;
-const QR_CELLS = (() => {
-  const cells: [number, number][] = [];
-  let seed = 11;
-  const next = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-  const inFinder = (x: number, y: number) =>
-    (x < 8 && y < 8) || (x >= QR_SIZE - 8 && y < 8) || (x < 8 && y >= QR_SIZE - 8);
-  for (let y = 0; y < QR_SIZE; y++) {
-    for (let x = 0; x < QR_SIZE; x++) {
-      if (!inFinder(x, y) && next() > 0.5) cells.push([x, y]);
-    }
-  }
-  return cells;
-})();
-
-function QrCode({ size }: { size: number }) {
-  const finders = [
-    [0, 0],
-    [QR_SIZE - 7, 0],
-    [0, QR_SIZE - 7],
-  ];
+function PointerIcon({ className }: { className?: string }) {
   return (
     <svg
-      viewBox={`0 0 ${QR_SIZE} ${QR_SIZE}`}
-      width={size}
-      height={size}
-      shapeRendering="crispEdges"
-      className="shrink-0"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
     >
-      <rect width={QR_SIZE} height={QR_SIZE} fill="#fff" />
-      {QR_CELLS.map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#0a1826" />
-      ))}
-      {finders.map(([x, y]) => (
-        <g key={`${x}-${y}`}>
-          <rect x={x} y={y} width="7" height="7" fill="#0a1826" />
-          <rect x={x + 1} y={y + 1} width="5" height="5" fill="#fff" />
-          <rect x={x + 2} y={y + 2} width="3" height="3" fill="#0a1826" />
-        </g>
-      ))}
+      <path d="M4 2.5 12.5 8 8.6 8.9 6.9 12.6z" />
+      <path d="M8.6 8.9 11.5 12.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -1406,20 +648,6 @@ export function TabIcon({ kind, className }: { kind: OutputKey; className?: stri
       aria-hidden
     >
       {paths[kind]}
-    </svg>
-  );
-}
-
-function CheckIcon({ className, style }: { className?: string; style?: CSSProperties }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" className={className} style={style} aria-hidden>
-      <path
-        d="M3.5 8.4 6.6 11.3 12.5 4.8"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 }

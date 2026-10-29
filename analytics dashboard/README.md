@@ -146,7 +146,10 @@ service with a free tier. There are two stages.
    ```
 
    `BOOKING_NOTIFY_TO` is who gets the "new demo booked" heads-up. Separate
-   several addresses with commas.
+   several addresses with commas. Guide requests from /BryanKleppe (the
+   visitor's email and links to their files) go to `GUIDE_NOTIFY_TO` if it's
+   set, and to `BOOKING_NOTIFY_TO` if not. The files themselves go to the
+   private `guide-uploads` bucket, which `supabase/schema.sql` creates.
 4. Book a time at http://localhost:3000/get-started **using the same email you
    signed up to Resend with**. The invite arrives from `onboarding@resend.dev`.
 

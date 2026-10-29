@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // A separate app with its own lint setup, headed for its own repo.
     "analytics dashboard/**",
+    // Copied as-is from benefits-guides (the flipbook viewer and pdf.js).
+    "public/flipbook/**",
   ]),
 ]);
 

@@ -42,7 +42,7 @@ export function emailConfigured() {
 
 type Kind = "booked" | "moved" | "cancelled";
 
-const esc = (value: string) =>
+export const esc = (value: string) =>
   value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -71,17 +71,18 @@ function settings() {
 
 /* ------------------------------------------------------------- sending */
 
-type Message = {
+export type Message = {
   to: string[];
   subject: string;
   html: string;
   text: string;
-  ics: string;
-  method: "REQUEST" | "CANCEL" | "PUBLISH";
+  /** The calendar file, attached as invite.ics. The guide emails (lib/guide/email.ts) have none. */
+  ics?: string;
+  method?: "REQUEST" | "CANCEL" | "PUBLISH";
   idempotencyKey: string;
 };
 
-async function send(message: Message) {
+export async function send(message: Message) {
   const s = settings();
   if (!s.key) {
     if (process.env.NODE_ENV === "production") return;
@@ -89,7 +90,7 @@ async function send(message: Message) {
     await mkdir(dir, { recursive: true });
     const base = path.join(dir, `${Date.now()}-${message.idempotencyKey.replace(/[^a-z0-9]+/gi, "-")}`);
     await writeFile(`${base}.html`, message.html);
-    await writeFile(`${base}.ics`, message.ics);
+    if (message.ics) await writeFile(`${base}.ics`, message.ics);
     console.info(`[email] RESEND_API_KEY not set; "${message.subject}" to ${message.to.join(", ")} saved to ${base}.html`);
     return;
   }
@@ -109,13 +110,17 @@ async function send(message: Message) {
       subject: message.subject,
       html: message.html,
       text: message.text,
-      attachments: [
-        {
-          filename: "invite.ics",
-          content: Buffer.from(message.ics).toString("base64"),
-          content_type: `text/calendar; charset=utf-8; method=${message.method}`,
-        },
-      ],
+      ...(message.ics
+        ? {
+            attachments: [
+              {
+                filename: "invite.ics",
+                content: Buffer.from(message.ics).toString("base64"),
+                content_type: `text/calendar; charset=utf-8; method=${message.method ?? "REQUEST"}`,
+              },
+            ],
+          }
+        : {}),
     }),
     cache: "no-store",
   });
@@ -130,7 +135,7 @@ async function send(message: Message) {
 
 /* ------------------------------------------------------------ template */
 
-function layout(opts: { preheader: string; heading: string; body: string; footer: string }) {
+export function layout(opts: { preheader: string; heading: string; body: string; footer: string }) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(opts.heading)}</title></head>
 <body style="margin:0;padding:0;background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:#0a1826;">
@@ -150,7 +155,7 @@ function layout(opts: { preheader: string; heading: string; body: string; footer
 </body></html>`;
 }
 
-function button(href: string, label: string, primary = false) {
+export function button(href: string, label: string, primary = false) {
   return `<a href="${esc(href)}" style="display:inline-block;margin:0 8px 8px 0;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;${
     primary ? "background:#38b000;color:#050e1a;" : "background:#f4f7fb;color:#0a1826;border:1px solid #e2e9f1;"
   }">${esc(label)}</a>`;
@@ -194,7 +199,7 @@ function attendeeEmail(kind: Kind, booking: Booking, origin: string): Message {
   const event = eventFor(booking, origin, location);
   const manage = booking.rescheduleUrl ? new URL(booking.rescheduleUrl, origin).toString() : null;
   const cancelUrl = booking.cancelUrl ? new URL(booking.cancelUrl, origin).toString() : null;
-  const rebook = new URL("/get-started#calendar", origin).toString();
+  const rebook = new URL("/BryanKleppe#calendar", origin).toString();
   const note = GET_STARTED_PAGE.confirmed.note;
   const prep = GET_STARTED_PAGE.confirmed.prep;
 
@@ -307,8 +312,8 @@ function teamEmail(kind: Kind, booking: Booking, origin: string, to: string[]): 
       : kind === "moved"
         ? "This booking moved to a new time."
         : location
-          ? "A demo was just booked on truhu.ai/get-started."
-          : "A demo was just booked on truhu.ai/get-started. Send them the Zoom link before the call (reply to the invite thread or email them directly)."
+          ? "A demo was just booked on truhu.ai/BryanKleppe."
+          : "A demo was just booked on truhu.ai/BryanKleppe. Send them the Zoom link before the call (reply to the invite thread or email them directly)."
   }</p>
 <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;">${rows
     .map(

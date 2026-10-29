@@ -25,7 +25,7 @@ Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4.
 | Palette, type scale, motion | `app/globals.css` |
 | Page assembly | `app/page.tsx` |
 | Running product demos | `components/demos/` |
-| Booking page (`/get-started`) and its confirmation | `app/get-started/`, `components/get-started/` |
+| Booking page (`/BryanKleppe`, was `/get-started`) and its confirmation | `app/BryanKleppe/`, `components/get-started/` |
 | Booking engine (Cal.com client, dev scheduler) | `lib/booking/`, `app/api/booking/` |
 | Funnel tracking (browser tracker, beacon endpoint) | `lib/analytics/`, `app/api/track/` |
 | Analytics dashboard: a separate app, setup guide inside | `analytics dashboard/` |
@@ -120,7 +120,8 @@ final step rather than looping.
 3. **Forms** validate, rate-limit and honeypot correctly, then call `deliver()`
    in `app/actions.ts`, which logs server-side. Point it at the CRM.
 4. **Login** links to `app.truhu.ai`; confirm that is the real destination.
-5. **Analytics.** `/get-started` runs first-party funnel tracking (no
+5. **Analytics.** `/BryanKleppe` runs first-party funnel tracking, still
+   labelled `/get-started` so the dashboard's history stays in one funnel (no
    cookies, no IPs stored, Global Privacy Control honoured). Microsoft Clarity
    and Google Analytics 4 load site-wide once their ids are set
    (`NEXT_PUBLIC_CLARITY_ID`, `NEXT_PUBLIC_GA_ID`): straight away for
@@ -128,14 +129,14 @@ final step rather than looping.
    EU, UK and Switzerland (`components/analytics/ConsentManager.tsx`).
    Browsers sending Global Privacy Control get neither unless they accept.
    Any ad pixel added for retargeting must follow the same consent path.
-6. **Booking.** `/get-started` books through a placeholder scheduler that
+6. **Booking.** `/BryanKleppe` books through a placeholder scheduler that
    stores bookings in Supabase and emails a real calendar invitation through
    Resend. It doesn't see Bryan's own calendar, and there's no Zoom link until
    `BOOKING_MEETING_URL` is set. Setting the Cal.com variables switches to his
    real calendar. Without Supabase variables the live page falls back to a
    link to `/demo`. Setup: `analytics dashboard/README.md`.
 7. **Get-started proof.** The testimonial and both statistics on
-   `/get-started` are placeholders (see `GET_STARTED_PAGE` in
+   `/BryanKleppe` are placeholders (see `GET_STARTED_PAGE` in
    `lib/content.ts`). Replace them with sourced figures and get the client's
    written OK on the quote, the name and any logo before launch. Bryan's title
    is confirmed; his ThinkHR background line is from public sources.

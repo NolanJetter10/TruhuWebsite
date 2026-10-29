@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ensemble": {
+      "type": "http",
+      "url": "https://service.ensembleapp.dev/mcp",
+      "headersHelper": "node scripts/ensemble-mcp-headers.mjs"
+    }
+  }
+}

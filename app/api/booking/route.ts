@@ -18,15 +18,17 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BANDS: readonly string[] = GET_STARTED_PAGE.booking.form.clientBands;
 
 const WINDOW_MS = 10 * 60_000;
+/** Per email. Per address it's wider, since a whole office shares one. */
 const MAX_PER_WINDOW = 6;
+const MAX_PER_ADDRESS = 30;
 const hits = new Map<string, number[]>();
 
-function rateLimited(key: string) {
+function rateLimited(key: string, max = MAX_PER_WINDOW) {
   const now = Date.now();
   const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
   recent.push(now);
   hits.set(key, recent);
-  return recent.length > MAX_PER_WINDOW;
+  return recent.length > max;
 }
 
 const text = (value: unknown, max: number) =>
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
   }
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (rateLimited(ip) || rateLimited(email)) {
+  if (rateLimited(ip, MAX_PER_ADDRESS) || rateLimited(email)) {
     return Response.json(
       { error: "That's a lot of bookings in a few minutes. Try again shortly." },
       { status: 429 },

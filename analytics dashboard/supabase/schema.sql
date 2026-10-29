@@ -282,3 +282,30 @@ grant execute on function public.ingest(jsonb, jsonb) to service_role;
 grant execute on function public.record_booking(jsonb) to service_role;
 grant execute on function public.update_booking_status(text, text, timestamptz, timestamptz, text) to service_role;
 grant execute on function public.pulse() to service_role;
+
+-- -------------------------------------------------------- guide uploads ----
+
+-- Files visitors send on /BryanKleppe for TruHu's team to build a guide from
+-- (lib/guide/storage.ts). Private: no policies on storage.objects, so only
+-- the secret key can read or write, and visitors upload on signed links the
+-- server hands out. The limits match lib/guide/files.ts.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'guide-uploads',
+  'guide-uploads',
+  false,
+  26214400,  -- 25 MB
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'image/png',
+    'image/jpeg'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;

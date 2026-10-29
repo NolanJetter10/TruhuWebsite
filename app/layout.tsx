@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 import { DM_Sans, Inter } from "next/font/google";
 import { AttributionCapture } from "@/components/analytics/AttributionCapture";
 import { ConsentManager } from "@/components/analytics/ConsentManager";
+import { HideOnBarePages } from "@/components/layout/HideOnBarePages";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { CONSENT_BANNER } from "@/lib/content";
@@ -55,7 +56,9 @@ export default function RootLayout({
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <SiteHeader />
+        <HideOnBarePages>
+          <SiteHeader />
+        </HideOnBarePages>
         {/*
           Route changes become real document transitions. The CSS in globals.css
           decides what that looks like: the outgoing page falls back and blurs
@@ -65,7 +68,9 @@ export default function RootLayout({
         <ViewTransition>
           <main id="main">{children}</main>
         </ViewTransition>
-        <SiteFooter />
+        <HideOnBarePages>
+          <SiteFooter />
+        </HideOnBarePages>
         <AttributionCapture />
         <ConsentManager copy={CONSENT_BANNER} />
         <script

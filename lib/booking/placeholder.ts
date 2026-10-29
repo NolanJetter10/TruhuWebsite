@@ -1,6 +1,5 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
 import {
   activeBookings,
   findBooking,
@@ -11,6 +10,7 @@ import {
 } from "@/lib/analytics/store";
 import { emailConfigured } from "./email";
 import { addDays, dateKey, weekday, zonedToUtc } from "./time";
+import { openBooking, sealBooking } from "./token";
 import { BookingError, type Booking, type BookingProvider, type SlotsByDay } from "./types";
 
 /**
@@ -22,7 +22,12 @@ import { BookingError, type Booking, type BookingProvider, type SlotsByDay } fro
  *   disappears for everyone and shows on the dashboard straight away;
  * - refuses a double booking — checked before writing, and guaranteed by the
  *   database's one-booking-per-start-time index for two people racing;
- * - supports reschedule and cancel through /get-started/manage/[uid].
+ * - supports reschedule and cancel through /BryanKleppe/manage/[uid].
+ *
+ * Each uid is the booking itself, encrypted (./token.ts), and a move or a
+ * cancellation gives it a new one. So a booking shows correctly from its link
+ * even on a server that never saw it, as happens in production without a
+ * database, where each server keeps its own file.
  *
  * - emails the booker a real calendar invitation, and the team a heads-up,
  *   for every booking, move and cancellation (see ./email.ts).
@@ -102,14 +107,17 @@ function toBooking(row: BookingRecord): Booking {
     agency: row.agency ?? undefined,
     clients: row.client_count ?? undefined,
     meetingUrl: process.env.BOOKING_MEETING_URL || undefined,
-    rescheduleUrl: `/get-started/manage/${row.uid}`,
-    cancelUrl: `/get-started/manage/${row.uid}?cancel=1`,
+    rescheduleUrl: `/BryanKleppe/manage/${row.uid}`,
+    cancelUrl: `/BryanKleppe/manage/${row.uid}?cancel=1`,
     invites: emailConfigured(),
   };
 }
 
 const taken = () =>
   new BookingError("That time was just taken. Pick another one.", "slot_taken");
+
+/** From the store, or failing that from the uid itself. */
+const lookup = async (uid: string) => (await findBooking(uid)) ?? openBooking(uid);
 
 export const placeholderProvider: BookingProvider = {
   name: "placeholder",
@@ -140,9 +148,7 @@ export const placeholderProvider: BookingProvider = {
     const start = new Date(request.start);
     if (!(await isOpen(start))) throw taken();
 
-    const row: BookingRecord = {
-      uid: `tb_${randomBytes(15).toString("base64url")}`,
-      visit_id: request.metadata.visit_id ?? null,
+    const fields = {
       start_at: start.toISOString(),
       end_at: new Date(start.getTime() + MEETING_MS).toISOString(),
       name: request.name,
@@ -151,6 +157,11 @@ export const placeholderProvider: BookingProvider = {
       client_count: request.clients,
       time_zone: request.timeZone,
       status: "booked",
+    };
+    const row: BookingRecord = {
+      ...fields,
+      uid: sealBooking(fields),
+      visit_id: request.metadata.visit_id ?? null,
     };
     try {
       await recordBooking({
@@ -168,39 +179,47 @@ export const placeholderProvider: BookingProvider = {
   },
 
   async getBooking(uid) {
-    const row = await findBooking(uid);
+    const row = await lookup(uid);
     return row ? toBooking(row) : null;
   },
 
   async reschedule(uid, startIso) {
-    const row = await findBooking(uid);
+    const row = await lookup(uid);
     if (!row) throw new BookingError("We couldn't find that booking.", "not_found");
     if (row.status === "cancelled") {
       throw new BookingError("That meeting was cancelled. Book a new time instead.", "invalid");
     }
     const start = new Date(startIso);
     if (!(await isOpen(start, uid))) throw taken();
-    const end = new Date(start.getTime() + MEETING_MS).toISOString();
+    const moved = {
+      ...row,
+      start_at: start.toISOString(),
+      end_at: new Date(start.getTime() + MEETING_MS).toISOString(),
+      status: "rescheduled",
+    };
+    moved.uid = sealBooking(moved);
     try {
       await updateBookingStatus({
         booking_uid: uid,
         new_status: "rescheduled",
-        new_start: start.toISOString(),
-        new_end: end,
+        new_start: moved.start_at,
+        new_end: moved.end_at,
+        new_uid: moved.uid,
       });
     } catch (error) {
       if (error instanceof SlotConflictError) throw taken();
       throw error;
     }
-    return toBooking({ ...row, start_at: start.toISOString(), end_at: end, status: "rescheduled" });
+    return toBooking(moved);
   },
 
   async cancel(uid) {
-    const row = await findBooking(uid);
+    const row = await lookup(uid);
     if (!row) throw new BookingError("We couldn't find that booking.", "not_found");
-    if (row.status !== "cancelled") {
-      await updateBookingStatus({ booking_uid: uid, new_status: "cancelled" });
-    }
-    return toBooking({ ...row, status: "cancelled" });
+    if (row.status === "cancelled") return toBooking(row);
+    const cancelled = { ...row, status: "cancelled" };
+    cancelled.uid = sealBooking(cancelled);
+    await updateBookingStatus({ booking_uid: uid, new_status: "cancelled", new_uid: cancelled.uid });
+    return toBooking(cancelled);
   },
 };

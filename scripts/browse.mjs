@@ -14,6 +14,7 @@
  *
  * Options
  *   --size WxH        viewport, default 1440x900
+ *   --scale N         device pixel ratio, default 1; 2 for retina-sharp shots
  *   --selector CSS    scroll this element to the middle of the viewport first;
  *                     screenshots then crop to it
  *   --wait MS         settle time after load and scroll, default 800
@@ -42,6 +43,7 @@ const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     size: { type: "string", default: "1440x900" },
+    scale: { type: "string", default: "1" },
     selector: { type: "string" },
     wait: { type: "string", default: "800" },
     eval: { type: "string" },
@@ -188,7 +190,7 @@ try {
   await page.send("Emulation.setDeviceMetricsOverride", {
     width,
     height,
-    deviceScaleFactor: 1,
+    deviceScaleFactor: Number(opts.scale),
     mobile: false,
   });
   if (opts["reduced-motion"]) {

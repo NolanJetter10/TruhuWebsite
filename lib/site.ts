@@ -11,7 +11,7 @@ export const SITE = {
 /** The footer's closing ask, carried over from the live site's bumper. */
 export const FOOTER_CTA = {
   title: "Ready to reach every employee?",
-  cta: { href: "/get-started", label: "Get Started" },
+  cta: { href: "/BryanKleppe", label: "Get Started" },
 } as const;
 
 /**

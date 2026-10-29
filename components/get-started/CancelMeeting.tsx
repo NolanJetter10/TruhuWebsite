@@ -30,7 +30,9 @@ export function CancelMeeting({
         method: "POST",
       });
       if (res.ok) {
-        router.push(`/get-started/confirmed?b=${encodeURIComponent(uid)}`);
+        // The booking can come back under a new uid; show that one.
+        const body = (await res.json().catch(() => ({}))) as { uid?: string };
+        router.push(`/BryanKleppe/confirmed?b=${encodeURIComponent(body.uid ?? uid)}`);
         return;
       }
     } catch {}

@@ -86,9 +86,9 @@ Khurram, Xander, Satchel and Carolyn. Original: `sources/2026-10-06-team-feedbac
 ### FB-010 · Show off the finished guides and benefits sites
 - From: Khurram · Oct 6
 - Said: "Highlight some beautiful guides, sites"
-- Status: open
-- Where: No gallery of finished work on the home page. /advisor has the before/after guide viewer.
-- Log:
+- Status: partial
+- Where: /advisor: the before/after guide viewer, and the outputs tour, which shows Kindlerye's real guide, flipbook, benefits site, chatbot, narration and flyer, live (`OutputShowcase.tsx`). /BryanKleppe: Bryan's AI pulls up Kindlerye's reworked guide, flyer, microsite and flipbook when a visitor asks (L-010). Nothing on the home page yet.
+- Log: L-004, L-010
 
 ### FB-011 · Translations into many languages in seconds
 - From: Khurram · Oct 6
@@ -101,8 +101,8 @@ Khurram, Xander, Satchel and Carolyn. Original: `sources/2026-10-06-team-feedbac
 - From: Khurram · Oct 6
 - Said: "Talk about multiple ways to present - fills, videos, presentations" ("fills" is probably flipbooks)
 - Status: partial
-- Where: Home: three added chips on the "With TruHu" output card. /advisor: tabs for guide, flipbook, website, chatbot and narrated video.
-- Log:
+- Where: Home: three added chips on the "With TruHu" output card. /advisor: tabs for guide, flipbook, website, chatbot, narrated video and flyer, each showing the real deliverable for Kindlerye, live. /BryanKleppe: the guide as a full-page flipbook in the product's own viewer, plus the page-by-page guide, flyer and microsite, on request (L-010).
+- Log: L-004, L-010
 
 ### FB-013 · Feature the AI design assistant
 - From: Khurram · Oct 6
@@ -122,15 +122,15 @@ Khurram, Xander, Satchel and Carolyn. Original: `sources/2026-10-06-team-feedbac
 - From: Khurram · Oct 6
 - Said: "highlight benefits assistant - that's part of our 'outcome is way way better and not just faster and cheaper to build'". "Ben assistant will end up being a key highlight"
 - Status: partial
-- Where: Home: one sentence in the `SOLUTION` lede. /advisor: the "Benefits chatbot" tab.
-- Log:
+- Where: Home: one sentence in the `SOLUTION` lede. /advisor: the "Benefits chatbot" tab embeds the real Benefits Assistant on Kindlerye's site, so visitors can ask it questions.
+- Log: L-004
 
 ### FB-016 · Narration, and asking questions partway through it
 - From: Khurram · Oct 6
 - Said: "narration and ability to ask questions in the middle of the narration are things we can actually claim to be pioneers on"
 - Status: partial
-- Where: Not on the home page. /advisor: the "Narrated video" tab ("in a TruHu first, employees can stop it partway through, ask a question…").
-- Log:
+- Where: Not on the home page. /advisor: the "Narrated video" tab ("In a TruHu first, employees can stop it to ask a question…") embeds Kindlerye's live guide, where "Explain my Guide" narrates and turns the pages, with "Ask a question" in the same bar (the asking itself not yet tried here).
+- Log: L-004
 
 ### FB-017 · Study Outmarket's benefits page: a product demo that shows what's under the hood
 - From: Satchel · Oct 6
@@ -336,9 +336,9 @@ Nolan's notes from talks with Satchel, Carolyn, Xander, Bryan and Khurram, plus 
 ### FB-044 · Per-broker landing pages with a persona picker and a sandbox
 - From: Bryan · Sep 14 · 02-bryan-sales-meeting-advisor-positioning.md
 - Said: "Company-specific landing pages for each broker (e.g., Gallagher)": a persona selector on entry, upload last year's benefit guide, pull the logo from the company URL, book 20 minutes with Bryan or Satchel.
-- Status: open
-- Where: Not started. Probably its own project rather than a home page change.
-- Log:
+- Status: partial
+- Where: /BryanKleppe lets a visitor upload last year's guide or plan documents when they ask Bryan's AI for a guide, for the team to build one from, and opens the calendar to book with Bryan (L-009). No per-broker pages, persona picker or logo pull yet; probably its own project.
+- Log: L-009
 
 ### FB-045 · Position TruHu as responsible AI that brokers trust to save time and raise quality
 - From: Nolan · Sep 14 · 05-khurram-website-meeting.md (his notes going into the Khurram meeting)
@@ -365,5 +365,5 @@ Nolan's notes from talks with Satchel, Carolyn, Xander, Bryan and Khurram, plus 
 - From: Nolan · Sep 14 · 01-nolan-marketing-batches.md
 - Said: "Customer case studies, customer logos, interactive demo, video… simple and clean to show we are legit."
 - Status: partial
-- Where: The logo wall and the running demos are live, and /resources/case-studies exists. The videos are placeholders.
-- Log:
+- Where: The logo wall and the running demos are live, and /resources/case-studies exists. The /advisor outputs tour is an interactive demo of real deliverables (L-004). /BryanKleppe has a live video call with Bryan's AI avatar, in his face and cloned voice (L-008), which can open the calendar, a guide upload and Kindlerye's sample deliverables on request (L-009, L-010). The videos are placeholders.
+- Log: L-004, L-008, L-009, L-010

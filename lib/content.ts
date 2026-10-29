@@ -406,6 +406,15 @@ export type FaqCategory = {
 
 /* --------------------------------------------------------------- /advisor */
 
+/** Kindlerye Baking Co. is a made-up employer, so its materials can be shown
+ *  to anyone. These are its real deliverables, published live by TruHu; the
+ *  outputs tour embeds them. */
+const KINDLERYE = {
+  guide: "https://advisor-api.truhu.dev/p/kindlerye-baking-co-guide?lang=en",
+  website: "https://advisor-api.truhu.dev/p/kindlerye-baking-co-website?lang=en",
+  flyer: "https://advisor-api.truhu.dev/p/kindlerye-baking-co-guide-7d0e3e?lang=en",
+} as const;
+
 export const ADVISOR_PAGE = {
   hero: {
     eyebrow: "TruHu Advisor",
@@ -479,76 +488,63 @@ export const ADVISOR_PAGE = {
   },
   /** The tabbed tour of what Advisor builds. Keys pick the demo in `OutputShowcase`.
    *  Called a chatbot and a video outright: "Q&A" read as a static FAQ page.
-   *  The chatbot keeps the key `qna`, which the home page's flow shares. */
+   *  The chatbot keeps the key `qna`, which the home page's flow shares.
+   *
+   *  Each tab is one paragraph: `lead` in bold, then `body`, which carries
+   *  what used to be a blurb and three bullets. `hint` says what to try in
+   *  the live deliverable at `live`, which every tab shows for Kindlerye. */
   outputs: {
     titleLead: "Bring the premium experience to each and every client,",
     titleAccent: "the way they want it.",
+    sample: "Real TruHu output for Kindlerye Baking Co., a sample employer.",
     tabs: [
       {
         key: "guide",
         name: "Benefits guide",
-        title: "A complete guide, in their brand.",
-        blurb: "Every plan, cost and contact, laid out from the client's own documents. Print it, send the PDF, or share it as a link.",
-        points: [
-          "Plan and cost tables filled from the source documents",
-          "The client's logo, colors and fonts",
-          "Change anything by asking the AI design assistant",
-        ],
+        lead: "A complete guide, in their brand.",
+        body: "Every plan, cost and contact, filled in from the client's own documents and set in their logo, colors and fonts. Change anything by asking the AI design assistant, then print it, send the PDF or share a link.",
+        hint: "Scroll through the guide, or jump to a section.",
+        live: KINDLERYE.guide,
       },
       {
         key: "flipbook",
         name: "Digital flipbook",
-        title: "A guide that turns its pages.",
-        blurb: "The benefits guide as a book employees page through on any screen, from the cover to the contacts. Send it as a link: nothing to download, no app and no login.",
-        points: [
-          "Turns its pages like the printed guide",
-          "Opens on a phone, tablet or computer",
-          "The same pages and brand as the guide",
-        ],
+        lead: "A guide that turns its pages.",
+        body: "The same pages and brand as the guide, as a book employees page through on a phone, tablet or computer. Send it as a link: nothing to download, no app and no login.",
+        hint: "Turn the pages with the arrows, or jump in from the contents.",
+        live: KINDLERYE.guide,
       },
       {
         key: "website",
         name: "Benefits website",
-        title: "A benefits hub for every employer.",
-        blurb: "Each client gets their own benefits site under their brand. Employees open it from a link or a QR code: no app and no login.",
-        points: [
-          "Medical, dental, vision and more in one place",
-          "Built for the phone first",
-          "A built-in chatbot answers questions from their plans",
-        ],
+        lead: "A benefits hub for every employer.",
+        body: "Each client gets a phone-first benefits site in their brand, with medical, dental, vision and more in one place and a chatbot that answers from their plans. Employees open it from a link or a QR code: no app and no login.",
+        hint: "Click through Medical, Dental, Vision and the rest.",
+        live: KINDLERYE.website,
       },
       {
         key: "qna",
         name: "Benefits chatbot",
-        title: "An AI chatbot that knows their plans.",
-        blurb: "Every benefits site comes with an AI chatbot employees can ask about their coverage, any time. It answers from their employer's own plan documents, so questions that would have gone to HR or your team get answered on the spot.",
-        points: [
-          "Answers drawn only from that client's plan documents",
-          "Shows the document behind every answer",
-          "Right on the benefits site: no app, no login",
-        ],
+        lead: "An AI chatbot that knows their plans.",
+        body: "Right on the benefits site, employees ask about their coverage any time and get answers drawn only from their employer's plan documents, with the document behind every answer. Questions that would have gone to HR or your team get answered on the spot.",
+        hint: "Open the Benefits Assistant at the bottom right and ask it anything.",
+        live: KINDLERYE.website,
       },
       {
         key: "video",
         name: "Narrated video",
-        title: "A video that answers back.",
-        blurb: "Any guide plays as a narrated presentation, with speaking notes written and voiced for you. And in a TruHu first, employees can stop it partway through, ask a question, and hear the answer from their own plans.",
-        points: [
-          "Stop it to ask a question, then pick up where it left off",
-          "Speaking notes and voice generated from the guide",
-          "Share it as a link, or play it at the enrollment meeting",
-        ],
+        lead: "A video that answers back.",
+        body: "Any guide plays as a narrated presentation, written and voiced for you, to share as a link or play at the enrollment meeting. In a TruHu first, employees can stop it to ask a question, hear the answer from their own plans, and pick up where they left off.",
+        hint: "Press Explain my Guide to hear it, then Ask a question at any point.",
+        live: KINDLERYE.guide,
       },
       {
         key: "flyer",
         name: "Benefit flyer",
-        title: "A flyer that sends people online.",
-        blurb: "A one-page flyer for the break room, the handbook or the enrollment meeting, with a QR code that opens the client's benefits site.",
-        points: [
-          "Key dates and what's new this year",
-          "Scan the QR code to open the benefits site",
-          "Ready to print or post",
-        ],
+        lead: "A flyer that sends people online.",
+        body: "Key dates and what's new this year, ready to print or post in the break room, the handbook or the enrollment meeting, with a QR code that opens the client's benefits site.",
+        hint: "Page through the flyer.",
+        live: KINDLERYE.flyer,
       },
     ],
   },
@@ -1816,7 +1812,7 @@ export const DEMO_PAGE = {
   ],
 } as const;
 
-/* ------------------------------------------------------------ /get-started */
+/* ----------------------------------------------------------- /BryanKleppe */
 
 /**
  * The booking page campaigns point at: who you will meet, what you get, proof
@@ -1838,10 +1834,8 @@ export const GET_STARTED_PAGE = {
       "Book 10 minutes with Bryan Kleppe. See a finished enrollment guide, benefits microsite and AI Counselor built for a client like yours, live on screen.",
   },
   hero: {
-    eyebrow: "10-minute live demo",
-    titleLead: "See it built for",
-    titleAccent: "a client like yours.",
-    lede: "Ten minutes on screen with someone who has spent his career on the broker's side of the table. Pick a time and have one client in mind.",
+    titleLead: "Take 10 minutes with Bryan,",
+    titleAccent: "and see what he builds for you:",
   },
   host: {
     label: "Who you'll meet",
@@ -1856,12 +1850,124 @@ export const GET_STARTED_PAGE = {
      * "/images/team/bryan-kleppe.webp". Set to null to show his initials. */
     photo: "/images/placeholders/headshot.svg" as string | null,
   },
+  /** Takes the host card's place on the page: an AI assistant to ask before
+   * booking. `host` above still names who the calendar books with. */
+  chat: {
+    /** Sits on the row with the Video / Chat switch, above the box. */
+    label: "Chat with Bryan to see how he can help",
+    offline: "Chat is unavailable right now. Pick a time on the calendar and ask Bryan live.",
+    views: { video: "Video", chat: "Chat", chatDuringCall: "End the call to type instead" },
+    /** The typed chat (Ensemble's widget). */
+    widget: {
+      title: "Bryan Kleppe (AI)",
+      placeholder: "What would you like to know?",
+      greeting:
+        "I'm Bryan's AI assistant. I can help you get a guide built, book an appointment, check out what TruHu's deliverables actually look like, or just ask a general question.",
+    },
+    /** The video call with Bryan's AI avatar (BryanCall). */
+    call: {
+      aiLabel: "AI avatar",
+      start: "Talk to Bryan's AI",
+      again: "Call again",
+      connecting: "Connecting…",
+      end: "End call",
+      mute: "Mute microphone",
+      unmute: "Unmute microphone",
+      greeting:
+        "I'm Bryan's AI assistant, and I look and sound just like him! I can help you get a guide built, book an appointment, check out what TruHu's deliverables actually look like, or just ask a general question.",
+      sorry: "Sorry, I lost my train of thought. Could you say that again?",
+      ended: "Call ended. Pick a time on the calendar to talk to the real Bryan.",
+      denied: "Allow your microphone to talk with Bryan, or switch to Chat to type.",
+      failed: "The video call isn't available right now. Switch to Chat to type your question.",
+    },
+    /** What the agent can open (components/get-started/flows.ts). Bryan's
+     * lines are said word for word: spoken in a call, and shown at the top of
+     * the popup and in the typed chat. `open` labels the chat card's button.
+     * The sample deliverables are Kindlerye's, a made-up demo employer
+     * (lib/kindlerye.ts). */
+    flows: {
+      speaker: "Bryan (AI)",
+      close: "Close",
+      calendar: {
+        line: "Great, I'll expand the calendar so you can pick.",
+        open: "Open the calendar",
+      },
+      guide: {
+        line: "Sure, drop in the files here and we'll have the guide built out for you in no time.",
+        emailLine: "Great! Now enter your email so we can get the completed guide over your way.",
+        open: "Open the upload",
+        drop: "Drop files here, or click to choose",
+        types: "PDF, Word, PowerPoint, PNG or JPG, up to 25 MB each",
+        note: "Plan documents or last year's guide. Please don't upload employee data.",
+        addMore: "Add more files",
+        remove: "Remove",
+        retry: "Try again",
+        tooBig: "Over 25 MB",
+        wrongType: "Not a PDF, Word, PowerPoint or image",
+        tooMany: "Up to 10 files per guide",
+        failed: "Didn't upload",
+        email: "Work email",
+        submit: "Send me the guide",
+        pending: "Sending…",
+        invalidEmail: "Enter a valid work email.",
+        error: "That didn't go through. Try again in a moment.",
+        doneTitle: "Got it, thanks.",
+        /** `{email}` is replaced with the address they gave. */
+        done: "TruHu's team will build your guide from these files and email it to {email}.",
+        /** Said once the email is in; the popup closes when he's finished. */
+        doneLine:
+          "I got your email and someone from the team will follow up when your materials are ready. In the meantime, is there anything else I can do for you?",
+      },
+      sampleGuide: {
+        line: "Here's a benefits guide we rebuilt for Kindlerye, a sample company. Flip through the pages.",
+        open: "See the guide",
+        /** The viewer (DeliverableViewer); `{n}` and `{total}` are filled in. */
+        pageOf: "Page {n} of {total}",
+        jump: "Go to a page",
+        zoomIn: "Zoom in",
+        zoomOut: "Zoom out",
+        zoomed: "Zoomed view of page {n}",
+      },
+      flipbook: {
+        line: "Here's Kindlerye's guide as a flipbook, the way their employees read it online.",
+        open: "Open the flipbook",
+        /** The viewer's frame, for screen readers. */
+        frameTitle: "Kindlerye's benefits guide, as a flipbook",
+      },
+      microsite: {
+        line: "Here's the benefits site we built for Kindlerye, a sample company. Open it and look around.",
+        open: "Open the microsite",
+        /** The card (MicrositeCard); `{page}` is filled in. The previews are
+         * the Oct 26 draft, the live link the version published Oct 19–20, so
+         * nothing here says the two are the same. */
+        body: "TruHu builds it from the plan documents. Employees open it on any phone, with no app or login.",
+        note: "Kindlerye Baking Co. is a sample company with made-up names and numbers. These previews are a newer draft, so the live site can differ.",
+        site: "Kindlerye Baking Co. benefits",
+        pages: { home: "Overview", medical: "Medical", dental: "Dental", vision: "Vision" },
+        pagesLabel: "Pages to preview",
+        preview: "Preview of Kindlerye's benefits site",
+        alt: "The {page} page of Kindlerye's benefits site",
+        scroll: "Scroll",
+        newTab: "(opens in a new tab)",
+      },
+      flyer: {
+        line: "Here's the open enrollment flyer we made for Kindlerye, a sample company.",
+        open: "See the flyer",
+        /** The viewer (DeliverableViewer); `{n}` and `{total}` are filled in. */
+        pageOf: "Page {n} of {total}",
+        jump: "Go to a page",
+        zoomIn: "Zoom in",
+        zoomOut: "Zoom out",
+        zoomed: "Zoomed view of page {n}",
+      },
+    },
+  },
   outcomes: {
     label: "What you'll get out of it",
     items: [
-      "A finished guide, microsite and AI Counselor for a client like yours, built while you watch.",
+      "A finished guide, microsite and AI Counselor built for your client, during the 10-minute meeting.",
       "A clear read on how fast your team could roll it out across your book.",
-      "A sample to keep and show a client.",
+      "A path to get building faster and better today.",
     ],
     format: ["10 minutes", "Live", "On screen"],
     notIt: "Not a hard sales pitch. If it isn't a fit, I'll tell you.",
@@ -1949,7 +2055,7 @@ export const GET_STARTED_PAGE = {
     heldFor: "Your time is held. Bryan will send the video link to",
     heldTail: "before the call. Add it to your calendar below in the meantime.",
     cancelledLede: "Your spot is released. If another time works better, pick one below.",
-    rebook: { href: "/get-started#calendar", label: "Pick a new time" },
+    rebook: { href: "/BryanKleppe#calendar", label: "Pick a new time" },
     fallbackLede:
       "You're all set. Bryan will be in touch by email with the details before the call.",
     with: "with Bryan Kleppe",
@@ -1978,7 +2084,7 @@ export const GET_STARTED_PAGE = {
     ],
     back: { href: "/advisor", label: "See how TruHu Advisor works" },
   },
-  /** /get-started/manage/[uid]: the reschedule and cancel links land here. */
+  /** /BryanKleppe/manage/[uid]: the reschedule and cancel links land here. */
   manage: {
     meta: { title: "Your meeting" },
     title: "Your meeting with Bryan",

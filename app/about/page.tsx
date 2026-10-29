@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image, { type StaticImageData } from "next/image";
 import { CloseCta } from "@/components/layout/CloseCta";
 import { Words, wordCount } from "@/components/ui/Words";
 import {
@@ -8,8 +9,19 @@ import {
   stagger,
 } from "@/components/ui/primitives";
 import { ABOUT_PAGE } from "@/lib/content";
+import team01 from "@/public/images/team/01.webp";
+import team02 from "@/public/images/team/02.webp";
+import team03 from "@/public/images/team/03.webp";
 
 const { hero, mission, beliefs, team, close } = ABOUT_PAGE;
+
+/** One photo per team slot, by position. Pete's, the first, is still to come. */
+const TEAM_PHOTOS: (StaticImageData | undefined)[] = [
+  undefined,
+  team01,
+  team02,
+  team03,
+];
 
 export const metadata: Metadata = {
   title: "About",
@@ -98,15 +110,28 @@ export default function AboutPage() {
           <ul className="stagger mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: team.slots }, (_, i) => {
               const person = team.people[i];
+              const photo = TEAM_PHOTOS[i];
               return (
                 <li
                   key={i}
                   style={stagger(i)}
                   className="card-shape border border-line bg-white p-5"
                 >
-                  <div className="card-shape-sm grid aspect-[4/5] place-items-center border border-dashed border-slate-300 bg-paper text-sm text-slate-400">
-                    Photo
-                  </div>
+                  {photo ? (
+                    // The name sits right below, so the photo adds nothing
+                    // for a screen reader.
+                    <Image
+                      src={photo}
+                      alt=""
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 18rem, (min-width: 640px) 50vw, 100vw"
+                      className="card-shape-sm aspect-[4/5] h-auto w-full object-cover"
+                    />
+                  ) : (
+                    <div className="card-shape-sm grid aspect-[4/5] place-items-center border border-dashed border-slate-300 bg-paper text-sm text-slate-400">
+                      Photo
+                    </div>
+                  )}
                   {/* Filled and empty slots share heights so the row lines up. */}
                   {person ? (
                     <>

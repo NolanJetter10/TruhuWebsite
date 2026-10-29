@@ -21,7 +21,8 @@ export async function POST(
     forgetSlots();
     const origin = new URL(request.url).origin;
     after(() => sendBookingEmails("cancelled", booking, origin));
-    return Response.json({ ok: true });
+    // A cancelled booking can have a new uid (lib/booking/token.ts).
+    return Response.json({ ok: true, uid: booking.uid });
   } catch (error) {
     if (error instanceof BookingError) {
       return Response.json(

@@ -26,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/security", 0.6),
     page("/pricing", 0.7),
     page("/demo", 0.8),
-    page("/get-started", 0.9),
+    page("/BryanKleppe", 0.9),
     // `/resources` itself only redirects, so it is deliberately absent.
     page("/resources/blog", 0.7),
     page("/resources/case-studies", 0.7),

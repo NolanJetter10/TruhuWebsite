@@ -130,10 +130,11 @@ export default function AdvisorPage() {
       </Section>
 
       {/* What it builds ----------------------------------------------------
-          Every output the pipeline ends in, one tab each, shown as the
-          finished thing in a client's brand. */}
+          Every output the pipeline ends in, one tab each, shown as the real
+          deliverable for a sample employer. Wider than the usual container,
+          since the deliverable is the point and the copy is one paragraph. */}
       <Section tone="white" id="outputs" labelledBy="outputs-heading">
-        <Container>
+        <Container className="max-w-[1320px]!">
           <SectionHeading
             id="outputs-heading"
             align="center"
@@ -143,10 +144,11 @@ export default function AdvisorPage() {
                 <span className="t-gradient-dark">{outputs.titleAccent}</span>
               </>
             }
-            className="reveal"
+            // Wide enough to hold the title to two lines.
+            className="reveal max-w-5xl!"
           />
 
-          <div className="reveal mt-10">
+          <div className="reveal mt-8">
             <OutputShowcase />
           </div>
         </Container>

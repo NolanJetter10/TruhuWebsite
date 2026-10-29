@@ -1434,7 +1434,18 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Booking widget (/get-started). Each step of the widget arrives with the
+   Ensemble chat (/BryanKleppe). The widget ships with a 384px minimum height
+   and sits at the bottom of its box, so a shorter box clips the greeting. The
+   page sizes the box to the viewport; let the widget follow it.
+--------------------------------------------------------------------------- */
+
+#truhu-chat .chat-widget {
+  min-height: 0;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Booking widget (/BryanKleppe). Each step of the widget arrives with the
    hero's settle; loading slots shimmer rather than spin.
 --------------------------------------------------------------------------- */
 

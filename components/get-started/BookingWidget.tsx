@@ -100,12 +100,22 @@ export function BookingWidget({
   hostName,
   hostPhoto,
   reschedule,
+  section = "calendar",
+  tall = false,
 }: {
   copy: Copy;
   hostName: string;
   hostPhoto?: string | null;
   /** Move this booking instead of making a new one: pick a time, confirm. */
   reschedule?: { uid: string };
+  /**
+   * The widget's id and `data-section`. A second copy on the page (the
+   * popup's) needs its own, so its ids don't collide and the funnel can
+   * tell the two apart.
+   */
+  section?: string;
+  /** Sized for the centered popup the calendar grows into (FlowPanel). */
+  tall?: boolean;
 }) {
   const router = useRouter();
   const detected = useSyncExternalStore(noSubscribe, detectZone, noZone);
@@ -135,7 +145,9 @@ export function BookingWidget({
   const autoAdvanced = useRef(false);
   const nameInput = useRef<HTMLInputElement>(null);
   const slotButton = useRef<HTMLButtonElement | null>(null);
-  const formId = "booking-form";
+  const root = useRef<HTMLDivElement>(null);
+  const idp = section === "calendar" ? "bk" : `bk-${section}`;
+  const formId = section === "calendar" ? "booking-form" : `${section}-form`;
 
   const cacheKey = zone && month ? `${zone}|${month}` : null;
   const data = cacheKey ? months[cacheKey] : undefined;
@@ -201,7 +213,7 @@ export function BookingWidget({
     track("change_time");
     requestAnimationFrame(() => {
       const button = previous
-        ? document.querySelector<HTMLButtonElement>(`[data-slot="${previous}"]`)
+        ? root.current?.querySelector<HTMLButtonElement>(`[data-slot="${previous}"]`)
         : null;
       (button ?? slotButton.current)?.focus({ preventScroll: true });
     });
@@ -231,10 +243,15 @@ export function BookingWidget({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ start }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        code?: string;
+        uid?: string;
+      };
       if (res.ok) {
         flushNow();
-        router.push(`/get-started/confirmed?b=${encodeURIComponent(uid)}&moved=1`);
+        // A moved booking can have a new uid; show that one.
+        router.push(`/BryanKleppe/confirmed?b=${encodeURIComponent(body.uid ?? uid)}&moved=1`);
         return;
       }
       setPending(false);
@@ -278,7 +295,7 @@ export function BookingWidget({
       setErrors(found);
       track("form_invalid", Object.keys(found).join(","));
       const first = Object.keys(found)[0];
-      document.getElementById(`bk-${first}`)?.focus();
+      document.getElementById(`${idp}-${first}`)?.focus();
       return;
     }
 
@@ -326,8 +343,8 @@ export function BookingWidget({
       thirdPartyEvent("funnel_booked");
       router.push(
         body.uid
-          ? `/get-started/confirmed?b=${encodeURIComponent(body.uid)}`
-          : "/get-started/confirmed",
+          ? `/BryanKleppe/confirmed?b=${encodeURIComponent(body.uid)}`
+          : "/BryanKleppe/confirmed",
       );
       return; // Stay pending while the confirmation loads.
     }
@@ -365,8 +382,9 @@ export function BookingWidget({
 
   return (
     <div
-      id="calendar"
-      data-section="calendar"
+      ref={root}
+      id={section}
+      data-section={section}
       data-track-ignore
       className="card-shape-lg relative overflow-hidden border border-white/10 bg-white text-ink shadow-[0_40px_90px_-40px_rgba(2,8,18,0.85),0_0_0_1px_rgba(255,255,255,0.04)]"
     >
@@ -499,7 +517,15 @@ export function BookingWidget({
                   </button>
                 </div>
               ) : (
-                <ul className="bk-times mt-3 grid max-h-[18.5rem] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-1">
+                <ul
+                  className={cx(
+                    "bk-times mt-3 grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-1",
+                    // In the overlay: as long as it needs on a phone, where the
+                    // overlay scrolls; as in the column on anything wider, where
+                    // the overlay draws the whole calendar bigger.
+                    tall ? "sm:max-h-[18.5rem]" : "max-h-[18.5rem]",
+                  )}
+                >
                   {!data
                     ? Array.from({ length: 6 }, (_, i) => (
                         <li key={i} className="bk-shimmer h-10 rounded-full" />
@@ -526,10 +552,10 @@ export function BookingWidget({
           {/* Zone ------------------------------------------------------- */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line px-5 py-3.5 text-[0.8125rem] text-slate-600 sm:px-6">
             <Globe aria-hidden className="size-4 text-slate-400" />
-            <label htmlFor="bk-zone">{copy.zoneLabel}</label>
+            <label htmlFor={`${idp}-zone`}>{copy.zoneLabel}</label>
             <span className="relative">
               <select
-                id="bk-zone"
+                id={`${idp}-zone`}
                 value={zone ?? ""}
                 onChange={(e) => chooseZone(e.target.value)}
                 className="cursor-pointer appearance-none rounded-full bg-paper py-1 pr-7 pl-3 font-semibold text-ink outline-none hover:bg-blue-100 focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -592,6 +618,7 @@ export function BookingWidget({
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Field
               ref={nameInput}
+              idp={idp}
               name="name"
               label={copy.form.name}
               autoComplete="name"
@@ -601,6 +628,7 @@ export function BookingWidget({
               onFocus={onFocusField}
             />
             <Field
+              idp={idp}
               name="email"
               type="email"
               label={copy.form.email}
@@ -611,6 +639,7 @@ export function BookingWidget({
               onFocus={onFocusField}
             />
             <Field
+              idp={idp}
               name="agency"
               label={copy.form.agency}
               autoComplete="organization"
@@ -620,18 +649,18 @@ export function BookingWidget({
               onFocus={onFocusField}
             />
             <div>
-              <label htmlFor="bk-clients" className="text-[0.8125rem] font-semibold">
+              <label htmlFor={`${idp}-clients`} className="text-[0.8125rem] font-semibold">
                 {copy.form.clients}
               </label>
               <span className="relative mt-1.5 block">
                 <select
-                  id="bk-clients"
+                  id={`${idp}-clients`}
                   name="clients"
                   value={fields.clients}
                   onChange={(e) => onField("clients", e.target.value)}
                   onFocus={() => onFocusField("clients")}
                   aria-invalid={errors.clients ? true : undefined}
-                  aria-describedby={errors.clients ? "bk-clients-error" : undefined}
+                  aria-describedby={errors.clients ? `${idp}-clients-error` : undefined}
                   className={cx(
                     "w-full cursor-pointer appearance-none rounded-xl border bg-white px-3.5 py-2.5 text-[0.9375rem] outline-none transition-colors focus:border-blue-500",
                     errors.clients ? "border-red-600" : "border-line",
@@ -655,7 +684,7 @@ export function BookingWidget({
                 </span>
               </span>
               {errors.clients ? (
-                <p id="bk-clients-error" className="t-caption mt-1 text-red-600">
+                <p id={`${idp}-clients-error`} className="t-caption mt-1 text-red-600">
                   {errors.clients}
                 </p>
               ) : null}
@@ -664,8 +693,8 @@ export function BookingWidget({
 
           {/* Honeypot. Hidden from people, irresistible to naive bots. */}
           <div aria-hidden className="absolute -left-[9999px]">
-            <label htmlFor="bk-website">Website</label>
-            <input id="bk-website" name="website" tabIndex={-1} autoComplete="off" />
+            <label htmlFor={`${idp}-website`}>Website</label>
+            <input id={`${idp}-website`} name="website" tabIndex={-1} autoComplete="off" />
           </div>
           </>
           )}
@@ -851,6 +880,7 @@ function DayCell({
 
 function Field({
   ref,
+  idp,
   name,
   label,
   type = "text",
@@ -861,6 +891,8 @@ function Field({
   onFocus,
 }: {
   ref?: React.Ref<HTMLInputElement>;
+  /** The widget's id prefix. */
+  idp: string;
   name: FieldName;
   label: string;
   type?: string;
@@ -872,12 +904,12 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={`bk-${name}`} className="text-[0.8125rem] font-semibold">
+      <label htmlFor={`${idp}-${name}`} className="text-[0.8125rem] font-semibold">
         {label}
       </label>
       <input
         ref={ref}
-        id={`bk-${name}`}
+        id={`${idp}-${name}`}
         name={name}
         type={type}
         autoComplete={autoComplete}
@@ -885,14 +917,14 @@ function Field({
         onChange={(e) => onChange(name, e.target.value)}
         onFocus={() => onFocus(name)}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `bk-${name}-error` : undefined}
+        aria-describedby={error ? `${idp}-${name}-error` : undefined}
         className={cx(
           "mt-1.5 w-full rounded-xl border bg-white px-3.5 py-2.5 text-[0.9375rem] outline-none transition-colors placeholder:text-slate-400 focus:border-blue-500",
           error ? "border-red-600" : "border-line",
         )}
       />
       {error ? (
-        <p id={`bk-${name}-error`} className="t-caption mt-1 text-red-600">
+        <p id={`${idp}-${name}-error`} className="t-caption mt-1 text-red-600">
           {error}
         </p>
       ) : null}

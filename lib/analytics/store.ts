@@ -1,7 +1,9 @@
 import "server-only";
 
 import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
+import { hostResolves } from "@/lib/reachable";
 
 /**
  * The website's side of the analytics database: funnel writes, and the
@@ -12,10 +14,12 @@ import path from "node:path";
  * the merge rules (running totals only ever go up, a booking marks its visit,
  * one live booking per start time) live in the database rather than here.
  *
- * Without them, in development, the same calls are appended to a local file
- * that the dashboard replays with the same rules, so the whole loop runs on a
- * laptop with no accounts. In production without them, writes are dropped
- * with one warning rather than failing the page.
+ * Without them, the same calls are appended to a local file instead, so the
+ * whole booking flow works with no accounts. In development that's the file
+ * the dashboard replays with the same rules; in production it's the server's
+ * temporary disk, which each Vercel instance has its own copy of and which
+ * empties now and then, enough for people to try the site but not a record.
+ * A project whose host no longer resolves counts as none (lib/reachable.ts).
  *
  * The keys are read per call rather than at import, so adding them to
  * .env.local takes effect without restarting the dev server.
@@ -32,19 +36,28 @@ function supabase() {
   return url && key ? { url, key } : null;
 }
 
-export function analyticsBackend(): "supabase" | "file" | "none" {
-  if (supabase()) return "supabase";
-  return process.env.NODE_ENV === "production" ? "none" : "file";
+export function analyticsBackend(): "supabase" | "file" {
+  return supabase() ? "supabase" : "file";
+}
+
+/** Supabase, unless its host doesn't resolve, when the local file stands in. */
+async function remote() {
+  const db = supabase();
+  if (db && !(await hostResolves(db.url, "analytics"))) return null;
+  return db;
 }
 
 const devFile = () =>
   process.env.ANALYTICS_DEV_FILE ??
-  path.join(
-    /* turbopackIgnore: true */ process.cwd(),
-    "analytics dashboard",
-    ".data",
-    "analytics.ndjson",
-  );
+  (process.env.NODE_ENV === "production"
+    ? // The only place a Vercel function can write.
+      path.join(/* turbopackIgnore: true */ tmpdir(), "truhu-analytics.ndjson")
+    : path.join(
+        /* turbopackIgnore: true */ process.cwd(),
+        "analytics dashboard",
+        ".data",
+        "analytics.ndjson",
+      ));
 
 function headers(key: string, extra: Record<string, string> = {}) {
   return {
@@ -56,10 +69,8 @@ function headers(key: string, extra: Record<string, string> = {}) {
   };
 }
 
-let warned = false;
-
 async function call(fn: string, args: Row) {
-  const db = supabase();
+  const db = await remote();
   if (db) {
     const res = await fetch(`${db.url}/rest/v1/rpc/${fn}`, {
       method: "POST",
@@ -76,22 +87,12 @@ async function call(fn: string, args: Row) {
     return;
   }
 
-  if (analyticsBackend() === "file") {
-    if (fn === "record_booking" || fn === "update_booking_status") {
-      await checkFileConflict(fn, args);
-    }
-    const file = devFile();
-    await mkdir(path.dirname(file), { recursive: true });
-    await appendFile(file, `${JSON.stringify({ op: fn, args, ts: new Date().toISOString() })}\n`);
-    return;
+  if (fn === "record_booking" || fn === "update_booking_status") {
+    await checkFileConflict(fn, args);
   }
-
-  if (!warned) {
-    warned = true;
-    console.warn(
-      "[analytics] SUPABASE_URL / SUPABASE_SECRET_KEY are not set; funnel events are being dropped.",
-    );
-  }
+  const file = devFile();
+  await mkdir(path.dirname(file), { recursive: true });
+  await appendFile(file, `${JSON.stringify({ op: fn, args, ts: new Date().toISOString() })}\n`);
 }
 
 /* ---------------------------------------------------------------- writes */
@@ -150,8 +151,7 @@ function normalise(row: BookingRecord): BookingRecord {
   return { ...row, start_at: iso(row.start_at)!, end_at: iso(row.end_at) };
 }
 
-async function select<T>(query: string): Promise<T[]> {
-  const db = supabase()!;
+async function select<T>(db: { url: string; key: string }, query: string): Promise<T[]> {
   const res = await fetch(`${db.url}/rest/v1/${query}`, {
     headers: headers(db.key, { accept: "application/json" }),
     cache: "no-store",
@@ -162,30 +162,30 @@ async function select<T>(query: string): Promise<T[]> {
 
 /** Bookings that still hold their time, starting in [from, to). */
 export async function activeBookings(from: string, to: string): Promise<BookingRecord[]> {
-  if (supabase()) {
+  const db = await remote();
+  if (db) {
     const rows = await select<BookingRecord>(
+      db,
       `bookings?select=${BOOKING_COLUMNS}&status=neq.cancelled` +
         `&start_at=gte.${encodeURIComponent(from)}&start_at=lt.${encodeURIComponent(to)}`,
     );
     return rows.map(normalise);
   }
-  if (analyticsBackend() === "file") {
-    return [...(await fileBookings()).values()].filter(
-      (b) => b.status !== "cancelled" && b.start_at >= from && b.start_at < to,
-    );
-  }
-  return [];
+  return [...(await fileBookings()).values()].filter(
+    (b) => b.status !== "cancelled" && b.start_at >= from && b.start_at < to,
+  );
 }
 
 export async function findBooking(uid: string): Promise<BookingRecord | null> {
-  if (supabase()) {
+  const db = await remote();
+  if (db) {
     const rows = await select<BookingRecord>(
+      db,
       `bookings?select=${BOOKING_COLUMNS}&uid=eq.${encodeURIComponent(uid)}&limit=1`,
     );
     return rows[0] ? normalise(rows[0]) : null;
   }
-  if (analyticsBackend() === "file") return (await fileBookings()).get(uid) ?? null;
-  return null;
+  return (await fileBookings()).get(uid) ?? null;
 }
 
 /* ----------------------------------------------- the local file's bookings */

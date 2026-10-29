@@ -32,7 +32,7 @@ export function SiteHeader() {
               >
                 Login
               </a>
-              <CTAButton href="/get-started" size="sm">
+              <CTAButton href="/BryanKleppe" size="sm">
                 Get started
               </CTAButton>
             </div>
