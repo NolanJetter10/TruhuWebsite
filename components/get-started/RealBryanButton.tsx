@@ -15,36 +15,52 @@ const GLOW_REST = "0 0 14px 0 rgba(56, 182, 255, 0.35)";
 const GLOW_PEAK = "0 0 28px 5px rgba(56, 182, 255, 0.75)";
 
 /**
- * "Talk to the real Bryan", over the bottom of a live call (BryanCall). It
- * opens the booking calendar, and Bryan says a line of his own for it in
- * place of the calendar's usual one, cutting off whatever he was saying.
+ * Where the button sits:
+ * - "circle": in the Call look, under his photo in place of his name, once the
+ *   call is live.
+ * - "overlay": in the Video look, over the bottom of a live call. The corner
+ *   window (11rem by 9.6rem) has no room for it on a phone, so it's left out
+ *   there until the popup closes.
+ * - "book": before a call, beside "Talk to Bryan's AI", worded as a booking and
+ *   still, since nothing is happening yet.
+ */
+export type RealBryanPlacement = "circle" | "overlay" | "book";
+
+/** Not shown while the calendar it opens is already open. */
+export function useRealBryanShown() {
+  const flows = useFlows();
+  return flows !== null && flows.flow !== "calendar";
+}
+
+/**
+ * "Talk to the real Bryan", the way from his AI to him: it opens the booking
+ * calendar, and Bryan says a line of his own for it in place of the calendar's
+ * usual one, cutting off whatever he was saying.
  *
  * Blue, the colour of the page's booking buttons, so it reads as a way to the
  * person rather than another call control beside the green start and red end.
- * It rises in once the call is live, then breathes: a slow swell of its glow
- * and size, which stays still for anyone who asks for reduced motion. Hidden
- * while the calendar is already open; smaller in the floating corner window.
+ * During a call it rises in once the call is live, then breathes: a slow swell
+ * of its glow and size, which stays still for anyone who asks for reduced
+ * motion. Smaller in the floating corner window.
  */
 export function RealBryanButton({
+  placement,
   compact = false,
-  cramped = false,
+  disabled = false,
 }: {
+  placement: RealBryanPlacement;
   compact?: boolean;
-  /**
-   * A corner window with no room for another row on a phone (the Video
-   * look's, 11rem by 9.6rem): left out below `sm`, where it would push the
-   * caption up under the window's label. It's back once the popup closes.
-   */
-  cramped?: boolean;
+  disabled?: boolean;
 }) {
   const flows = useFlows();
   const ref = useRef<HTMLButtonElement>(null);
-  const shown = flows !== null && flows.flow !== "calendar";
+  const shown = useRealBryanShown();
+  const book = placement === "book";
 
   // Played on each showing, so it comes up again after the calendar closes.
   useEffect(() => {
     const button = ref.current;
-    if (!shown || !button || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (book || !shown || !button || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const rise = button.animate(
       [
         { opacity: 0, translate: "0 0.75rem", scale: "0.94" },
@@ -64,26 +80,34 @@ export function RealBryanButton({
       rise.cancel();
       breathe.cancel();
     };
-  }, [shown]);
+  }, [book, shown]);
 
   if (!flows || !shown) return null;
-  const { label, line } = flows.copy.realBryan;
+  const { label, book: bookLabel, line } = flows.copy.realBryan;
 
-  return (
-    <div className={`flex justify-center ${compact ? "mb-1.5" : "mb-3"} ${cramped ? "max-sm:hidden" : ""}`}>
-      <button
-        ref={ref}
-        type="button"
-        onClick={() => flows.open("calendar", "realBryan", line)}
-        className={`sheen flex items-center rounded-full bg-blue-400 font-semibold whitespace-nowrap text-ink-950 shadow-[0_0_14px_0_rgba(56,182,255,0.35)] transition-colors hover:bg-[#6cc9ff] ${
-          compact
-            ? "gap-1.5 px-3 py-1 text-[0.75rem] sm:text-[0.8125rem]"
+  const button = (
+    <button
+      ref={ref}
+      type="button"
+      disabled={disabled}
+      onClick={() => flows.open("calendar", book ? "book" : "realBryan", line)}
+      className={`sheen flex items-center justify-center rounded-full bg-blue-400 font-semibold text-ink-950 shadow-[0_0_14px_0_rgba(56,182,255,0.35)] transition-colors hover:bg-[#6cc9ff] disabled:cursor-wait disabled:opacity-70 ${
+        book ? "max-w-[14rem] text-left text-balance" : "whitespace-nowrap"
+      } ${
+        compact
+          ? "gap-1.5 px-3 py-1 text-[0.75rem] sm:text-[0.8125rem]"
+          : book
+            ? "gap-2 px-4 py-2.5 text-[0.875rem] leading-tight"
             : "gap-2 px-5 py-2.5 text-[0.9375rem]"
-        }`}
-      >
-        <CalendarCheck weight="fill" className={compact ? "size-3.5 sm:size-4" : "size-5"} />
-        {label}
-      </button>
-    </div>
+      }`}
+    >
+      <CalendarCheck weight="fill" className={`shrink-0 ${compact ? "size-3.5 sm:size-4" : "size-5"}`} />
+      {book ? bookLabel : label}
+    </button>
+  );
+
+  if (placement !== "overlay") return button;
+  return (
+    <div className={`flex justify-center ${compact ? "mb-1.5 max-sm:hidden" : "mb-3"}`}>{button}</div>
   );
 }

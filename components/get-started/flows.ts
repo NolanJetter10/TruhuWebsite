@@ -132,6 +132,29 @@ export const flowOf = (widgetType: unknown): Flow | null =>
     : null;
 
 /**
+ * Words that mean a question might be asking for one of the six popups, taken
+ * from what the widgets are for (see FLOW_SCHEMAS). Stems, so "schedul" covers
+ * schedule and scheduling. A miss costs a restart; a false hit costs almost
+ * nothing, because holding the agent's first words only waits for the end of
+ * its first block of text (see BryanCall's answer()).
+ */
+const FLOW_WORDS =
+  /\b(book|schedul|calendar|appointment|meet|set up|call|time|free|slot|availab|talk|speak|upload|send|paperwork|document|file|build|make|sample|example|deliverable|demo|show|see|view|preview|look|check out|guide|flyer|flier|handout|one-pager|microsite|website|site|flip)/i;
+
+/** A reply this short is usually a "yes" to Bryan's offer to book or show something. */
+const SHORT_REPLY_WORDS = 4;
+
+/**
+ * Whether what the visitor said might make the agent send a flow widget: they
+ * use one of the popup words, or it's a short reply that could be a "yes". The
+ * call holds the agent's first words for these, so Bryan never says words the
+ * widget is about to replace.
+ */
+export function mightOpenFlow(text: string): boolean {
+  return text.trim().split(/\s+/).length <= SHORT_REPLY_WORDS || FLOW_WORDS.test(text);
+}
+
+/**
  * The flow a reply's `data-ui` event asks for, or null. Ensemble's own table
  * and chart widgets come through the same event and are ignored here.
  */

@@ -1901,11 +1901,14 @@ export const GET_STARTED_PAGE = {
         line: "Great, I'll expand the calendar so you can pick.",
         open: "Open the calendar",
       },
-      /** The button over a live call (RealBryanButton). It opens the calendar,
-       * and Bryan says `line` instead of the calendar's own. */
+      /** The button to the real Bryan (RealBryanButton). It opens the calendar,
+       * and Bryan says `line` instead of the calendar's own. `label` is on it
+       * under his photo during a live call; `book` is the same button beside
+       * "Talk to Bryan's AI" before one. */
       realBryan: {
         label: "Talk to the real Bryan",
-        line: "Great! Let's get you scheduled with the real deal!",
+        book: "Book an appointment with the real deal",
+        line: "Let's get you scheduled with the real deal!",
       },
       guide: {
         line: "Sure, drop in the files here and we'll have the guide built out for you in no time.",

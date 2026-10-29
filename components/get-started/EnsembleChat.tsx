@@ -18,8 +18,8 @@ const THREAD_KEY = "truhu-chat-thread";
 const CONTAINER_ID = "truhu-chat";
 /** The avatar's still from Anam (upscaled), for the Video view before it plays. */
 const POSTER = "/images/team/bryan-kleppe-avatar.webp";
-/** Bryan's own photo, cropped from a call and not upscaled, for the Call view. */
-const PHOTO = "/images/team/bryan-kleppe.webp";
+/** Bryan's headshot, at its own size (not upscaled), for the Call view. */
+const PHOTO = "/images/team/bryan-kleppe-headshot.webp";
 /** Tokens live ten minutes; reuse one for eight. */
 const TOKEN_REUSE_MS = 8 * 60_000;
 

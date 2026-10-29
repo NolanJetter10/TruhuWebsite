@@ -15,8 +15,11 @@ import type { GET_STARTED_PAGE } from "@/lib/content";
 import type { Flow } from "./flows";
 
 export type FlowCopy = (typeof GET_STARTED_PAGE)["chat"]["flows"];
-/** "realBryan" is the visitor pressing "Talk to the real Bryan" over the call. */
-export type FlowSource = "call" | "chat" | "realBryan";
+/**
+ * "realBryan" is the visitor pressing "Talk to the real Bryan" in a live call,
+ * "book" pressing "Book an appointment with the real deal" before one.
+ */
+export type FlowSource = "call" | "chat" | "realBryan" | "book";
 /** "done" is the page closing a finished flow, not the visitor. */
 export type CloseReason = "button" | "escape" | "backdrop" | "done";
 
@@ -115,11 +118,9 @@ export function FlowProvider({ copy, children }: { copy: FlowCopy; children: Rea
         setFlow(next);
         // The agent hears that the visitor asked for the person, not only
         // that the calendar opened.
-        log(
-          from === "realBryan"
-            ? `The visitor pressed "${copy.realBryan.label}". ${OPENED[next]}`
-            : OPENED[next],
-        );
+        const pressed =
+          from === "realBryan" ? copy.realBryan.label : from === "book" ? copy.realBryan.book : null;
+        log(pressed ? `The visitor pressed "${pressed}". ${OPENED[next]}` : OPENED[next]);
         track("flow_open", next, { from });
       }
       void say(line ?? copy[next].line);
