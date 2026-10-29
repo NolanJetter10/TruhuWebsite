@@ -1,6 +1,6 @@
 # Bryan's call: stop the start-and-restart
 
-Revised 2026-10-29 after Nolan's notes on the first draft, and approved for building ("get the plan aligned with these notes and then get a sonnet subagent to go implement"). The first draft is in the L-014 commit.
+Revised 2026-10-29 after Nolan's notes on the first draft, and approved for building ("get the plan aligned with these notes and then get a sonnet subagent to go implement"). The first draft is in the L-014 commit. Built the same day: see L-017 for what was measured, what was built and how it was checked. Still to do: Nolan's real call.
 
 ## What you're hearing
 
