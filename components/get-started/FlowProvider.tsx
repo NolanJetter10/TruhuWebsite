@@ -15,7 +15,8 @@ import type { GET_STARTED_PAGE } from "@/lib/content";
 import type { Flow } from "./flows";
 
 export type FlowCopy = (typeof GET_STARTED_PAGE)["chat"]["flows"];
-export type FlowSource = "call" | "chat";
+/** "realBryan" is the visitor pressing "Talk to the real Bryan" over the call. */
+export type FlowSource = "call" | "chat" | "realBryan";
 /** "done" is the page closing a finished flow, not the visitor. */
 export type CloseReason = "button" | "escape" | "backdrop" | "done";
 
@@ -31,8 +32,8 @@ type Flows = {
   flow: Flow | null;
   /** Bryan's line at the top of the open popup. */
   line: string;
-  /** Opens a popup and has Bryan say its line. */
-  open: (flow: Flow, from: FlowSource) => void;
+  /** Opens a popup and has Bryan say its line, or `line` in its place. */
+  open: (flow: Flow, from: FlowSource, line?: string) => void;
   close: (how: CloseReason) => void;
   /**
    * Shows a line at the top of the popup, and speaks it if a call is live.
@@ -108,14 +109,20 @@ export function FlowProvider({ copy, children }: { copy: FlowCopy; children: Rea
   }, []);
 
   const open = useCallback(
-    (next: Flow, from: FlowSource) => {
+    (next: Flow, from: FlowSource, line?: string) => {
       if (flowRef.current !== next) {
         flowRef.current = next;
         setFlow(next);
-        log(OPENED[next]);
+        // The agent hears that the visitor asked for the person, not only
+        // that the calendar opened.
+        log(
+          from === "realBryan"
+            ? `The visitor pressed "${copy.realBryan.label}". ${OPENED[next]}`
+            : OPENED[next],
+        );
         track("flow_open", next, { from });
       }
-      void say(copy[next].line);
+      void say(line ?? copy[next].line);
     },
     [copy, log, say],
   );

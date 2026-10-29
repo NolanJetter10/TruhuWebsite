@@ -8,6 +8,7 @@ The record of what changes on truhu.ai, why, and which piece of advice each chan
 | `FEEDBACK.md` | Every piece of advice, one item each (`FB-012`): who said it, their words, its status, where it stands in the code, and the log entries that touched it. |
 | `LOG.md` | Append-only record of work: what changed, why, which FB items it answers, the commits. |
 | `sources/` | Full originals of feedback, as received. |
+| `plans/` | Plans waiting on Nolan's OK, and the record of what he approved. |
 
 Where things stand, in one command:
 

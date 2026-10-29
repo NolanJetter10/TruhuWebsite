@@ -1856,7 +1856,14 @@ export const GET_STARTED_PAGE = {
     /** Sits on the row with the Video / Chat switch, above the box. */
     label: "Chat with Bryan to see how he can help",
     offline: "Chat is unavailable right now. Pick a time on the calendar and ask Bryan live.",
-    views: { video: "Video", chat: "Chat", chatDuringCall: "End the call to type instead" },
+    /** Call (his photo with a ring that moves as he speaks, the default) and
+     * Video (his avatar) are two looks of the same call. */
+    views: {
+      call: "Call",
+      video: "Video",
+      chat: "Chat",
+      chatDuringCall: "End the call to type instead",
+    },
     /** The typed chat (Ensemble's widget). */
     widget: {
       title: "Bryan Kleppe (AI)",
@@ -1864,8 +1871,10 @@ export const GET_STARTED_PAGE = {
       greeting:
         "I'm Bryan's AI assistant. I can help you get a guide built, book an appointment, check out what TruHu's deliverables actually look like, or just ask a general question.",
     },
-    /** The video call with Bryan's AI avatar (BryanCall). */
+    /** The call with Bryan's AI (BryanCall). `name` is under his photo in the
+     * Call view, `aiLabel` on the avatar in the Video view. */
     call: {
+      name: "Bryan Kleppe (AI)",
       aiLabel: "AI avatar",
       start: "Talk to Bryan's AI",
       again: "Call again",
@@ -1878,7 +1887,7 @@ export const GET_STARTED_PAGE = {
       sorry: "Sorry, I lost my train of thought. Could you say that again?",
       ended: "Call ended. Pick a time on the calendar to talk to the real Bryan.",
       denied: "Allow your microphone to talk with Bryan, or switch to Chat to type.",
-      failed: "The video call isn't available right now. Switch to Chat to type your question.",
+      failed: "The call isn't available right now. Switch to Chat to type your question.",
     },
     /** What the agent can open (components/get-started/flows.ts). Bryan's
      * lines are said word for word: spoken in a call, and shown at the top of
@@ -1891,6 +1900,12 @@ export const GET_STARTED_PAGE = {
       calendar: {
         line: "Great, I'll expand the calendar so you can pick.",
         open: "Open the calendar",
+      },
+      /** The button over a live call (RealBryanButton). It opens the calendar,
+       * and Bryan says `line` instead of the calendar's own. */
+      realBryan: {
+        label: "Talk to the real Bryan",
+        line: "Great! Let's get you scheduled with the real deal!",
       },
       guide: {
         line: "Sure, drop in the files here and we'll have the guide built out for you in no time.",

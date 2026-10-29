@@ -18,6 +18,8 @@ What's being worked on. Keep it short; finished work moves to the log.
 
 Newest first. Each line says who decided and where it came from.
 
+- 2026-10-29 · /BryanKleppe opens on Call, not Video: Bryan's own photo in a circle with a ring that moves with his voice, the Video and Chat views beside it. During a live call a "Talk to the real Bryan" button opens the calendar while he says "Great! Let's get you scheduled with the real deal!" (Nolan; L-014)
+
 - 2026-10-29 · /BryanKleppe ships to the company as a working prototype before its back end is wired: bookings, the guide upload and the emails all complete in the UI without a database, file storage or email service, and nothing they collect is kept until those are set up. (Nolan; L-013)
 - 2026-10-29 · /BryanKleppe leads with Bryan's AI: the headline is "Take 10 minutes with Bryan, and see what he builds for you:" (two lines), the box takes all the height the screen has left, and the label bar, eyebrow tag, lede and call note are gone. Every popup opens in the middle of the screen while Bryan floats in the bottom-right corner; the calendar grows into its popup from its own spot. Both Video and typed Chat stay. (Nolan; L-011)
 - 2026-10-28 · On /BryanKleppe, Bryan's AI shows Kindlerye (the made-up demo employer) as its samples: the reworked guide, flyer and microsite in the popup, and the guide as a flipbook over the whole page in the benefits-guides viewer. The assets live in this repo (public/kindlerye/, public/flipbook/). Its intro is Nolan's line: "I'm Bryan's AI assistant, and I look and sound just like him! …" (Nolan; L-010)

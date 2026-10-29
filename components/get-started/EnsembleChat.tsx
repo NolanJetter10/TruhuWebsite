@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ArrowSquareOut, ChatCircleText, VideoCamera } from "@phosphor-icons/react";
+import { ArrowRight, ArrowSquareOut, ChatCircleText, Phone, VideoCamera } from "@phosphor-icons/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BryanCall, type CallCopy } from "@/components/get-started/BryanCall";
@@ -16,7 +16,10 @@ const SDK_SRC =
 const AGENT_ID = "x9gUTsQSjGMeEpqDSATf";
 const THREAD_KEY = "truhu-chat-thread";
 const CONTAINER_ID = "truhu-chat";
+/** The avatar's still from Anam (upscaled), for the Video view before it plays. */
 const POSTER = "/images/team/bryan-kleppe-avatar.webp";
+/** Bryan's own photo, cropped from a call and not upscaled, for the Call view. */
+const PHOTO = "/images/team/bryan-kleppe.webp";
 /** Tokens live ten minutes; reuse one for eight. */
 const TOKEN_REUSE_MS = 8 * 60_000;
 
@@ -36,12 +39,13 @@ declare global {
 type Copy = {
   label: string;
   offline: string;
-  views: { video: string; chat: string; chatDuringCall: string };
+  views: { call: string; video: string; chat: string; chatDuringCall: string };
   widget: { title: string; placeholder: string; greeting: string };
   call: CallCopy;
 };
 
-type View = "video" | "chat";
+/** Call and Video are two looks of the same call; Chat is the typed chat. */
+type View = "call" | "video" | "chat";
 type ViewOption = { id: View; label: string; Icon: typeof VideoCamera };
 
 /**
@@ -57,8 +61,13 @@ type Mode = "docked" | "floating" | "docking";
  */
 const PIP_FRAME =
   "fixed top-auto left-auto right-[calc(0.75rem+env(safe-area-inset-right))] bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[90] m-0 flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-ink-900 p-0 text-white shadow-[0_24px_60px_-18px_rgba(2,8,18,0.9)] sm:right-[calc(1.5rem+env(safe-area-inset-right))] sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]";
-/** The video as a 3:2 picture under the 2.25rem bar; the chat big enough to type in. */
+/**
+ * Under the 2.25rem bar: the call a small tile with room for his photo, the
+ * caption and the buttons; the video a 3:2 picture; the chat big enough to
+ * type in.
+ */
 const PIP_SIZE: Record<View, string> = {
+  call: "w-[12rem] h-[15rem] sm:w-[16rem] sm:h-[18rem]",
   video: "w-[11rem] h-[9.5833rem] sm:w-[20rem] sm:h-[15.5833rem]",
   chat: "w-[min(17rem,calc(100vw-1.5rem))] h-[min(21rem,calc(100dvh-7rem))] sm:w-[22rem] sm:h-[min(30rem,calc(100dvh-3rem))]",
 };
@@ -127,9 +136,10 @@ function threadId() {
 
 /**
  * Ask Bryan's AI before booking, drawn inside the page rather than as a
- * floating bubble. One box, two views on the same Ensemble agent and thread:
- * a video call with his AI avatar (BryanCall, the default) and the typed chat
- * (Ensemble's widget, whose own call button is off). The microphone is only
+ * floating bubble. One box, three views on the same Ensemble agent and thread:
+ * a call with his AI (BryanCall) drawn two ways, Call (his photo with a ring
+ * that moves as he speaks, the default) and Video (his Anam avatar), and the
+ * typed chat (Ensemble's widget, whose own call button is off). The microphone is only
  * requested when a visitor starts a call, since a browser won't open it or
  * play audio before a click. After a call the widget reloads, so the typed
  * chat carries on from what was said.
@@ -141,7 +151,7 @@ function threadId() {
  */
 export function EnsembleChat({ copy }: { copy: Copy }) {
   const [status, setStatus] = useState<"loading" | "ready" | "offline">("loading");
-  const [view, setView] = useState<View>("video");
+  const [view, setView] = useState<View>("call");
   const [inCall, setInCall] = useState(false);
   const [generation, setGeneration] = useState(0);
 
@@ -242,6 +252,7 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
   }, [status, events]);
 
   const views: { id: View; label: string; Icon: typeof VideoCamera }[] = [
+    { id: "call", label: copy.views.call, Icon: Phone },
     { id: "video", label: copy.views.video, Icon: VideoCamera },
     { id: "chat", label: copy.views.chat, Icon: ChatCircleText },
   ];
@@ -253,7 +264,7 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
   const [introDone, setIntroDone] = useState(false);
   const pipRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
-  const drawnRef = useRef<{ mode: Mode; view: View }>({ mode: "docked", view: "video" });
+  const drawnRef = useRef<{ mode: Mode; view: View }>({ mode: "docked", view: "call" });
   const fromRef = useRef<DOMRect | null>(null);
   const animationsRef = useRef<Animation[]>([]);
 
@@ -344,7 +355,7 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
         if (event.target === event.currentTarget) setIntroDone(true);
       }}
     >
-      {/* No visible label: the box speaks for itself, and the Video / Chat
+      {/* No visible label: the box speaks for itself, and the Call / Video / Chat
           switch sits in its top-right corner. */}
       <h2 id="chat-heading" className="sr-only">
         {copy.label}
@@ -385,11 +396,12 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
                 inCall={inCall}
                 lockedTitle={copy.views.chatDuringCall}
                 onPick={pickFloating}
+                iconsWhenNarrow
               />
             </div>
             <div className="relative min-h-0 flex-1 bg-white">
               {mode === "docked" && (
-                <div className="absolute top-3 right-3 z-10 w-[10.5rem] rounded-full bg-ink-950/70 shadow-sm backdrop-blur-sm">
+                <div className="absolute top-3 right-3 z-10 w-[14rem] rounded-full bg-ink-950/70 shadow-sm backdrop-blur-sm">
                   <PipSwitch
                     views={views}
                     view={view}
@@ -399,11 +411,15 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
                   />
                 </div>
               )}
-              {/* Both stay mounted; the hidden one keeps its size and state. */}
-              <div className={`absolute inset-0 ${view === "video" ? "" : "invisible"}`}>
+              {/* Both stay mounted; the hidden one keeps its size and state.
+                  Call and Video are one BryanCall drawn two ways, so
+                  switching between them carries a live call on. */}
+              <div className={`absolute inset-0 ${view === "chat" ? "invisible" : ""}`}>
                 <BryanCall
                   copy={copy.call}
+                  look={view === "video" ? "video" : "call"}
                   poster={POSTER}
+                  photo={PHOTO}
                   chatToken={chatToken}
                   threadId={threadId}
                   compact={mode !== "docked"}
@@ -427,9 +443,9 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
 }
 
 /**
- * The Video / Chat switch on the floating window's bar, so the visitor can
- * change views while a popup covers the column. The pressed one says which
- * view the window shows.
+ * The Call / Video / Chat switch, in the box's corner and on the floating
+ * window's bar, so the visitor can change views while a popup covers the
+ * column. The pressed one says which view the box shows.
  */
 function PipSwitch({
   views,
@@ -437,12 +453,15 @@ function PipSwitch({
   inCall,
   lockedTitle,
   onPick,
+  iconsWhenNarrow = false,
 }: {
   views: ViewOption[];
   view: View;
   inCall: boolean;
   lockedTitle: string;
   onPick: (view: View) => void;
+  /** Icons only on a phone, where the floating window is too narrow for three labels. */
+  iconsWhenNarrow?: boolean;
 }) {
   return (
     <div className="flex w-full rounded-full bg-white/[0.07] p-0.5">
@@ -461,7 +480,7 @@ function PipSwitch({
             }`}
           >
             <Icon weight={view === id ? "fill" : "regular"} className="size-3.5" />
-            {label}
+            <span className={iconsWhenNarrow ? "max-sm:sr-only" : undefined}>{label}</span>
           </button>
         );
       })}

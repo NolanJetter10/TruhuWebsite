@@ -6,10 +6,25 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { pageContext, useFlows } from "./FlowProvider";
 import { flowWidgetRegistration, parseFlow } from "./flows";
+import { RealBryanButton } from "./RealBryanButton";
+import { createVoiceLevel, type VoiceLevel } from "./voiceLevel";
 
 const VIDEO_ID = "bryan-call-video";
+/** Above this level the ring counts him as speaking, when motion is reduced. */
+const SPEAKING = 0.12;
+/** How long the still ring stays on through a pause between words (ms). */
+const SPEAKING_HOLD = 350;
+
+/**
+ * How the call is drawn: "call" is Bryan's photo in a circle with a ring that
+ * moves with his voice, like Teams or Discord; "video" is his Anam avatar.
+ * Both are the same session, so switching never drops the call.
+ */
+export type CallLook = "call" | "video";
 
 export type CallCopy = {
+  /** Under his photo in the call look. */
+  name: string;
   aiLabel: string;
   start: string;
   again: string;
@@ -65,7 +80,7 @@ const tail = (text: string) =>
   text.length > 160 ? `…${text.slice(-160).replace(/^\S*\s/, "")}` : text;
 
 /**
- * The video call with Bryan's AI avatar. Anam draws him, hears the visitor and
+ * The call with Bryan's AI. Anam draws him, hears the visitor and
  * speaks in his cloned voice; the words come from the same Ensemble agent, on
  * the same thread, as the typed chat. Each time the visitor finishes speaking,
  * their words go to the agent in spoken mode (plain sentences), and Bryan says
@@ -82,10 +97,17 @@ const tail = (text: string) =>
  * sends one, the page takes the turn: Bryan is cut off, says the flow's fixed
  * line, and the popup opens. While the call is live, the popup can also have
  * him say a line of its own (FlowProvider's `say`).
+ *
+ * It has two looks of the one session (`look`): the call look, his own photo
+ * in a circle whose ring moves with the loudness of his voice, and the video
+ * look, Anam's avatar. The <video> plays in both, since his voice comes
+ * through it, so switching looks mid-call changes only what's drawn.
  */
 export function BryanCall({
   copy,
+  look,
   poster,
+  photo,
   chatToken,
   threadId,
   onCallStart,
@@ -93,7 +115,11 @@ export function BryanCall({
   compact = false,
 }: {
   copy: CallCopy;
+  look: CallLook;
+  /** The avatar's still, shown in the video look until the stream plays. */
   poster: string;
+  /** Bryan's own photo, for the call look's circle. */
+  photo: string;
   /**
    * Drawn small, as when it floats in the corner over a popup: smaller
    * captions and buttons, and the long note left to screen readers.
@@ -123,6 +149,20 @@ export function BryanCall({
   const speakingRef = useRef(new Set<{ before: Set<string>; done: () => void }>());
   /** Every utterance id Bryan has spoken this call. */
   const spokenRef = useRef(new Set<string>());
+  /**
+   * Goes up each time the page has Bryan say a line of its own (the popup's
+   * speaker), which ends the answer he was giving. An answer says no more
+   * once this has moved on from where it stood when the answer began. A count
+   * rather than a mark on the turn, because a reply is usually read to its end
+   * (and the turn let go) while its last lines are still waiting to be said.
+   */
+  const cutOffRef = useRef(0);
+  /** How loud Bryan is, read from the call's audio (voiceLevel.ts). */
+  const meterRef = useRef<VoiceLevel | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  /** His photo's circle, whose ring reads --voice and --pulse. */
+  const avatarRef = useRef<HTMLDivElement>(null);
 
   const flows = useFlows();
   const setSpeaker = flows?.setSpeaker;
@@ -138,9 +178,67 @@ export function BryanCall({
     };
   }, [setSpeaker]);
 
+  useEffect(() => {
+    const meter = meterRef;
+    return () => {
+      meter.current?.stop();
+      meter.current = null;
+    };
+  }, []);
+
+  // The call look centres his photo in the room the bottom controls leave,
+  // which changes with the caption and the buttons under it.
+  useEffect(() => {
+    const root = rootRef.current;
+    const overlay = overlayRef.current;
+    if (!root || !overlay || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() =>
+      root.style.setProperty("--below", `${overlay.offsetHeight}px`),
+    );
+    observer.observe(overlay, { box: "border-box" });
+    return () => observer.disconnect();
+  }, []);
+
+  // The ring follows his voice, written to the circle's style each frame
+  // rather than through React. With reduced motion it doesn't swell: it
+  // shows, still, while he speaks, and holds through the gaps between words.
+  useEffect(() => {
+    const avatar = avatarRef.current;
+    if (status !== "live" || look !== "call" || !avatar) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let frame = 0;
+    let heldUntil = 0;
+    let drawn = "";
+    const draw = (now: number) => {
+      const level = meterRef.current?.level() ?? 0;
+      let voice = level;
+      let pulse = level;
+      if (reduced.matches) {
+        if (level > SPEAKING) heldUntil = now + SPEAKING_HOLD;
+        voice = now < heldUntil ? 1 : 0;
+        pulse = 0;
+      }
+      const next = `${voice.toFixed(3)} ${pulse.toFixed(3)}`;
+      if (next !== drawn) {
+        drawn = next;
+        avatar.style.setProperty("--voice", voice.toFixed(3));
+        avatar.style.setProperty("--pulse", pulse.toFixed(3));
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(frame);
+      avatar.style.removeProperty("--voice");
+      avatar.style.removeProperty("--pulse");
+    };
+  }, [status, look]);
+
   function finish(next: Status) {
     if (endedRef.current) return;
     endedRef.current = true;
+    meterRef.current?.stop();
+    meterRef.current = null;
     setSpeaker?.(null);
     for (const waiter of [...speakingRef.current]) waiter.done();
     turnRef.current?.controller.abort();
@@ -194,6 +292,9 @@ export function BryanCall({
     setCaption("");
     setMuted(false);
     onCallStart?.();
+    // Made here, in the click, since browsers only run Web Audio after one.
+    meterRef.current?.stop();
+    meterRef.current = createVoiceLevel();
     // The typed chat registers the flows too, at page load; this covers a
     // chat that never loaded. A miss only means no popups on this call.
     if (flows) void agentPost("api/chat/widgets", flowWidgetRegistration()).catch(() => {});
@@ -248,9 +349,11 @@ export function BryanCall({
         let talking = false;
         /** The agent sent a flow widget, and the page has the rest of the turn. */
         let handed = false;
+        /** Where cutOffRef stood when this answer began. */
+        const cutOff = cutOffRef.current;
 
         const pump = () => {
-          if (talking || signal.aborted || handed || !ready) return;
+          if (talking || signal.aborted || handed || cutOffRef.current !== cutOff || !ready) return;
           const line = ready;
           ready = "";
           talking = true;
@@ -293,7 +396,9 @@ export function BryanCall({
           }
           queue(written);
         } catch {
-          if (!signal.aborted && !handed && clientRef.current === client) void speak(copy.sorry);
+          if (!signal.aborted && !handed && cutOffRef.current === cutOff && clientRef.current === client) {
+            void speak(copy.sorry);
+          }
         } finally {
           if (turnRef.current === turn) turnRef.current = null;
         }
@@ -313,11 +418,20 @@ export function BryanCall({
           } catch {
             // Nothing playing to cut off.
           }
+          // The rest of the answer he was giving goes unsaid, and the line he
+          // was on stops waiting. Its request runs on: a flow the agent sends
+          // arrives here mid-reply, and that reply is still read to its end.
+          cutOffRef.current += 1;
+          for (const waiter of [...speakingRef.current]) waiter.done();
           await speak(line);
         });
         void speak(copy.greeting);
       });
       client.addListener(AnamEvent.VIDEO_PLAY_STARTED, () => setPlaying(true));
+      // His voice, for the call look's ring. It plays from the <video>.
+      client.addListener(AnamEvent.AUDIO_STREAM_STARTED, (stream) =>
+        meterRef.current?.listen(stream),
+      );
       client.addListener(AnamEvent.MIC_PERMISSION_DENIED, () => finish("denied"));
       client.addListener(AnamEvent.CONNECTION_CLOSED, (reason) =>
         finish(reason === ConnectionClosedCode.MICROPHONE_PERMISSION_DENIED ? "denied" : "ended"),
@@ -379,49 +493,139 @@ export function BryanCall({
           : null;
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-ink-950">
-      <Image
-        src={poster}
-        alt=""
-        fill
-        sizes="(min-width: 1024px) 40rem, 100vw"
-        className={`object-cover transition-opacity duration-500 ${playing ? "opacity-0" : "opacity-100"}`}
-        priority
-      />
+    <div
+      ref={rootRef}
+      className={`relative h-full w-full overflow-hidden ${
+        look === "call" ? "bg-radial-[at_50%_38%] from-ink-800 via-ink-900 to-ink-950 to-80%" : "bg-ink-950"
+      }`}
+    >
+      {look === "video" && (
+        <Image
+          src={poster}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 40rem, 100vw"
+          className={`object-cover transition-opacity duration-500 ${playing ? "opacity-0" : "opacity-100"}`}
+          loading="eager"
+        />
+      )}
+      {/* Anam's stream, picture and voice. The call look only uses its sound,
+          so there it stays mounted and playing, hidden by opacity. */}
       <video
         id={VIDEO_ID}
         autoPlay
         playsInline
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${playing ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+          look === "video" && playing ? "opacity-100" : "opacity-0"
+        }`}
       />
 
-      <span
-        className={`absolute rounded-full bg-ink-950/70 font-semibold tracking-wide text-white uppercase backdrop-blur-sm ${
-          compact ? "top-2 left-2 px-2 py-0.5 text-[0.625rem]" : "top-3 left-3 px-2.5 py-1 text-[0.6875rem]"
-        }`}
-      >
-        {copy.aiLabel}
-      </span>
+      {look === "call" ? (
+        // His photo in a circle, centred in the room above the controls.
+        // Sized from that room (container units), so it fits the big box and
+        // the corner window alike.
+        <div
+          className={`absolute inset-x-0 top-0 flex flex-col items-center justify-center [container-type:size] ${
+            compact ? "gap-2 px-2 pt-2" : "gap-4 px-4 pt-12"
+          } ${status === "idle" ? "" : "transition-[bottom] duration-500 ease-out-expo"}`}
+          style={{ bottom: `var(--below, ${compact ? "3rem" : "5rem"})` }}
+        >
+          <div
+            ref={avatarRef}
+            className={`relative shrink-0 rounded-full ${
+              compact
+                ? "size-[clamp(2.25rem,min(100cqh_-_2.625rem,55cqw),6.5rem)]"
+                : "size-[clamp(3rem,min(100cqh_-_4rem,60cqw),12.5rem)]"
+            }`}
+          >
+            {/* A glow that swells with his voice... */}
+            <span
+              aria-hidden
+              className={`absolute inset-0 rounded-full bg-green-400/55 motion-reduce:transition-opacity motion-reduce:duration-200 ${
+                compact ? "blur-md" : "blur-xl"
+              }`}
+              style={{
+                opacity: "var(--voice, 0)",
+                transform: "scale(calc(1.06 + var(--pulse, 0) * 0.32))",
+              }}
+            />
+            {/* ...and the speaking ring, as on Teams or Discord. */}
+            <span
+              aria-hidden
+              className={`absolute rounded-full border-green-400 motion-reduce:transition-opacity motion-reduce:duration-200 ${
+                compact ? "-inset-1 border-2" : "-inset-1.5 border-[3px]"
+              }`}
+              style={{
+                opacity: "min(1, calc(var(--voice, 0) * 2.5))",
+                transform: "scale(calc(1 + var(--pulse, 0) * 0.07))",
+              }}
+            />
+            {status === "connecting" && (
+              // Ringing, while the call connects.
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full border-2 border-white/40 motion-safe:animate-ping"
+              />
+            )}
+            <Image
+              src={photo}
+              alt=""
+              fill
+              sizes={compact ? "104px" : "200px"}
+              className="rounded-full object-cover ring-2 ring-white/10"
+              loading="eager"
+            />
+          </div>
+          <p
+            className={`font-semibold whitespace-nowrap text-white ${
+              compact ? "text-[0.6875rem] leading-4" : "text-[0.9375rem] leading-5"
+            }`}
+          >
+            {copy.name}
+          </p>
+        </div>
+      ) : (
+        <span
+          className={`absolute rounded-full bg-ink-950/70 font-semibold tracking-wide text-white uppercase backdrop-blur-sm ${
+            compact ? "top-2 left-2 px-2 py-0.5 text-[0.625rem]" : "top-3 left-3 px-2.5 py-1 text-[0.6875rem]"
+          }`}
+        >
+          {copy.aiLabel}
+        </span>
+      )}
 
       <div
-        className={`absolute inset-x-0 bottom-0 bg-linear-to-t from-ink-950/90 via-ink-950/55 to-transparent ${
-          compact ? "px-2 pt-8 pb-2" : "px-4 pt-14 pb-4 sm:px-5"
+        ref={overlayRef}
+        className={`absolute inset-x-0 bottom-0 ${
+          look === "video" ? "bg-linear-to-t from-ink-950/90 via-ink-950/55 to-transparent" : ""
+        } ${
+          compact
+            ? `px-2 pb-2 ${look === "video" ? "pt-8" : "pt-1"}`
+            : `px-4 pb-4 sm:px-5 ${look === "video" ? "pt-14" : "pt-3"}`
         }`}
       >
         {live ? (
           <>
             {caption && (
-              // Compact, it keeps its last two lines, which are what Bryan is saying now.
+              // Compact, it keeps its last two lines, which are what Bryan is
+              // saying now. In the call look it keeps a fixed height (three
+              // lines docked), so his photo above doesn't bob as lines change.
               <p
                 className={`text-center leading-snug text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)] ${
                   compact
-                    ? "mb-1.5 flex max-h-[2lh] flex-col justify-end overflow-hidden text-[0.75rem] sm:text-[0.8125rem]"
-                    : "mb-3 text-[0.9375rem]"
+                    ? `mb-1.5 flex flex-col justify-end overflow-hidden text-[0.75rem] sm:text-[0.8125rem] ${
+                        look === "call" ? "h-[2lh]" : "max-h-[2lh]"
+                      }`
+                    : `mb-3 text-[0.9375rem] ${
+                        look === "call" ? "flex h-[3lh] flex-col justify-end overflow-hidden" : ""
+                      }`
                 }`}
               >
                 {caption}
               </p>
             )}
+            {/* Under the caption, so it holds still as the caption grows. */}
+            <RealBryanButton compact={compact} cramped={compact && look === "video"} />
             <div className={`flex items-center justify-center ${compact ? "gap-2" : "gap-3"}`}>
               <button
                 type="button"
