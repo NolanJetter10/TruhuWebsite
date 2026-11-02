@@ -4,10 +4,12 @@ import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { hostResolves } from "@/lib/reachable";
+import type { EndedBy } from "./schema";
 
 /**
- * The website's side of the analytics database: funnel writes, and the
- * booking rows the placeholder scheduler books against.
+ * The website's side of the analytics database: funnel writes, leads, call
+ * and chat histories, and the booking rows the placeholder scheduler books
+ * against.
  *
  * With SUPABASE_URL and SUPABASE_SECRET_KEY set, every write is one call to a
  * Postgres function defined in `analytics dashboard/supabase/schema.sql`, so
@@ -26,6 +28,65 @@ import { hostResolves } from "@/lib/reachable";
  */
 
 type Row = Record<string, unknown>;
+
+/** A row of `leads`, as record_lead takes it. */
+export type LeadRow = {
+  id: string;
+  visit_id: string | null;
+  visitor_id: string | null;
+  created_at: string;
+  path: "samples" | "build" | "rebuild";
+  email: string;
+  client_url?: string | null;
+  upload_id?: string | null;
+  file_count?: number | null;
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+};
+
+/** One line of a conversation, stamped by the server. */
+export type TranscriptEntry = { role: "visitor" | "bryan"; text: string; at: string };
+
+/** A row of `conversations`, as record_conversation takes it. */
+export type ConversationRow = {
+  id: string;
+  visit_id: string | null;
+  visitor_id: string | null;
+  mode: "call" | "chat";
+  started_at: string;
+  ended_at: string | null;
+  duration_ms: number;
+  ended_by: EndedBy | null;
+  turns: number;
+  flows: string[];
+  transcript: TranscriptEntry[];
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The visit and campaign a request from the page carries (the browser's
+ * `trackingContext()`), as row fields. Untrusted: ids that aren't UUIDs are
+ * dropped, since the database casts them, and every string is capped.
+ */
+export function contextFields(context: unknown) {
+  const c = (context && typeof context === "object" ? context : {}) as Record<string, unknown>;
+  const id = (value: unknown) =>
+    typeof value === "string" && UUID.test(value) ? value.toLowerCase() : null;
+  const text = (value: unknown, max: number) =>
+    typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null;
+  return {
+    visit_id: id(c.visitId),
+    visitor_id: id(c.visitorId),
+    source: text(c.source, 120),
+    medium: text(c.medium, 120),
+    campaign: text(c.campaign, 160),
+  };
+}
 
 /** Another live booking already holds that start time. */
 export class SlotConflictError extends Error {}
@@ -108,6 +169,24 @@ export function ingest(visit: Row, events: Row[]) {
  */
 export function recordBooking(booking: Row) {
   return call("record_booking", { booking });
+}
+
+/**
+ * A request from one of Bryan's paths (samples, build or rebuild), with an id
+ * made by the server. Marks its visit converted. Repeating an id changes
+ * nothing.
+ */
+export function recordLead(lead: LeadRow) {
+  return call("record_lead", { lead });
+}
+
+/**
+ * A call or chat with Bryan's AI, posted whole each time it grows. The
+ * database keeps the fuller of two writes (see record_conversation), so a
+ * late or repeated one never undoes a newer one.
+ */
+export function recordConversation(convo: ConversationRow) {
+  return call("record_conversation", { convo });
 }
 
 /** A cancellation or a move. Moving onto a taken time throws SlotConflictError. */

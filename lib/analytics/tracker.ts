@@ -6,6 +6,7 @@ import {
   type Beacon,
   type BeaconEvent,
   type FunnelKey,
+  type Path,
   type Touch,
 } from "./schema";
 import { thirdPartyEvent } from "./third-party";
@@ -69,7 +70,7 @@ function readJson<T>(store: "local" | "session", key: string): T | null {
   }
 }
 
-function uuid() {
+export function uuid() {
   // randomUUID needs a secure context; plain-http previews fall through.
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const b = crypto.getRandomValues(new Uint8Array(16));
@@ -217,6 +218,8 @@ type VisitState = {
   engagedMs: number;
   maxScroll: number;
   step: number;
+  /** Bryan's paths started in this visit, so each is logged once. */
+  paths?: Path[];
 };
 
 class Tracker {
@@ -234,7 +237,6 @@ class Tracker {
   private section?: string;
   private exit?: string;
   private lastActivity = Date.now();
-  private calendarInView = false;
   private flushTimer?: number;
   private ticker?: number;
   private heartbeat?: number;
@@ -296,15 +298,20 @@ class Tracker {
     this.stamps.set(event, Date.now());
     this.queue.push(event);
     this.flushSoon();
+    // The middle of the funnel follows from what happened, so no component
+    // ever names a step: opening any flow is interest, and the first real
+    // step into one of Bryan's paths is a start.
+    if (type === "flow_open") this.reach("interested");
+    else if (type === "path_start") this.reach("started");
   }
 
-  /** Advance the funnel. Steps only ever go forward. */
-  reach(key: FunnelKey) {
-    let target = STEP[key];
-    // "Saw the calendar" only counts once the visit is a real one, so a
-    // desktop bounce with the calendar above the fold is not credited with it.
-    if (key === "calendar" && this.state.step < STEP.engaged) return;
-    if (key === "engaged" && this.calendarInView) target = STEP.calendar;
+  /**
+   * Advance the funnel. Steps only ever go forward, and the browser goes no
+   * further than `started`: `converted` is the server's, set when a lead or
+   * a booking is saved.
+   */
+  private reach(key: Exclude<FunnelKey, "landed" | "converted">) {
+    const target = STEP[key];
     if (target <= this.state.step) return;
     const from = this.state.step;
     this.state.step = target;
@@ -313,9 +320,12 @@ class Tracker {
     thirdPartyEvent(`funnel_${key}`, { from_step: from });
   }
 
-  calendarVisible(visible: boolean) {
-    this.calendarInView = visible;
-    if (visible) this.reach("calendar");
+  /** Logs the first real step into one of Bryan's paths, once per visit. */
+  startPath(path: Path, flow?: string) {
+    const started = (this.state.paths ??= []);
+    if (started.includes(path)) return;
+    started.push(path);
+    this.event("path_start", path, flow ? { flow } : undefined);
   }
 
   setSection(name: string) {
@@ -531,20 +541,53 @@ export function startTracking(page: string, { resumeOnly = false } = {}) {
   };
 }
 
+type TrackListener = (type: string, name?: string, props?: BeaconEvent["props"]) => void;
+const listeners = new Set<TrackListener>();
+
+/**
+ * Logs something the visitor did. A `flow_open` also moves the visit to
+ * `interested`; see Tracker.event.
+ */
 export function track(type: string, name?: string, props?: BeaconEvent["props"]) {
   current?.event(type, name, props);
+  for (const listener of listeners) listener(type, name, props);
 }
 
-export function reachStep(key: FunnelKey) {
-  current?.reach(key);
+/**
+ * Hears every event tracked from here on, for code that follows the visit as
+ * it happens: the conversation recorder notes which flows a call opened.
+ * Returns the unsubscribe.
+ */
+export function onTrack(listener: TrackListener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * The visitor's first real step into one of Bryan's paths (see PATHS): viewed
+ * a sample, typed in a form, added a file or picked a time. Logged once per
+ * path per visit, for the dashboard's paths table, and moves the visit to
+ * `started`.
+ */
+export function startPath(path: Path, flow?: string) {
+  current?.startPath(path, flow);
+}
+
+/**
+ * A lead or booking the server has just saved, told to Clarity and GA4:
+ * GA4's `generate_lead` (mark it as a key event there) and a Clarity tag that
+ * keeps the recording in full. Nothing goes to /api/track: the server set
+ * the visit's `converted` step when it saved the row.
+ */
+export function converted(path: Path) {
+  thirdPartyEvent("generate_lead", { method: path }, { upgrade: "converted" });
+  thirdPartyEvent("funnel_converted", { path });
 }
 
 export function setSection(name: string) {
   current?.setSection(name);
-}
-
-export function setCalendarVisible(visible: boolean) {
-  current?.calendarVisible(visible);
 }
 
 /** Sends whatever is queued now, as a beacon that survives navigation. */

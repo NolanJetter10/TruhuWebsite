@@ -1,26 +1,34 @@
-# TruHu funnel analytics
+# TruHu analytics: /BryanKleppe
 
-A live dashboard for **truhu.ai/get-started**, the booking page campaigns point
-at. It shows the following:
+A live dashboard for **truhu.ai/BryanKleppe**, Bryan's page that campaigns
+point at. It shows the following:
 
-- which campaigns visitors come from
-- how long they stay
-- how far each visit gets toward a booked demo
-- where the ones who don't book drop off
+- where visits come from (the tag on the link)
+- how many talk to AI Bryan, by call or chat, and what was said
+- which of Bryan's paths they take (samples, build a guide, rebuild last
+  year's guide, book a call) and how far they get
+- the leads and bookings that come out of it
+- where the ones who don't convert stop
 
 It lives in the website repo for now and is built to be lifted out into its own
 project unchanged.
 
 ```
- visitor on truhu.ai/get-started
-   │  page beacons every few seconds ─────▶ website /api/track ──────┐
-   │  books, moves or cancels a time ─────▶ website /api/booking ────┤
-   │      (placeholder scheduler now; Cal.com later)                 ▼
+ visitor on truhu.ai/BryanKleppe
+   │  page beacons every few seconds ─────▶ website /api/track ────────┐
+   │  calls and chats with AI Bryan ──────▶ website /api/conversation ─┤
+   │  samples or build request ───────────▶ website /api/leads ────────┤
+   │  last year's guide uploaded ─────────▶ website /api/guide ────────┤
+   │  books, moves or cancels a time ─────▶ website /api/booking ──────┤
+   │      (placeholder scheduler now; Cal.com later)                   ▼
    │                                                          Supabase Postgres
-   │                                                    visits · events · bookings
-   │                                                                 ▲
-   └──────────────────── this dashboard ── reads + live pulse ───────┘
+   │                                  visits · events · bookings · leads · conversations
+   │                                                                   ▲
+   └──────────────────── this dashboard ── reads + live pulse ─────────┘
 ```
+
+The full plan behind the paths, events and tables is
+[`site-log/plans/2026-11-02-bryan-paths-and-analytics.md`](../site-log/plans/2026-11-02-bryan-paths-and-analytics.md).
 
 The **database is the contract**. The website only writes and this app only
 reads, so either one can move, redeploy or break without taking the other down.
@@ -40,9 +48,13 @@ npm install
 npm run dev            # http://localhost:3001
 ```
 
-Open http://localhost:3000/get-started?utm_source=linkedin&utm_campaign=test in
-one window and the dashboard in another. The visit appears within a couple of
-seconds. To reset local test data, delete `.data/analytics.ndjson`.
+Open http://localhost:3000/BryanKleppe?tag=test in one window and the dashboard
+in another. The visit appears within a couple of seconds. To reset local test
+data, delete `.data/analytics.ndjson`.
+
+If `.env.local` has a `SUPABASE_URL` whose address no longer exists (a deleted
+project, or a typo), both apps use the local file instead while on your
+computer, and the dashboard's badge says **Local file**.
 
 ## Connect the database (Supabase)
 
@@ -58,10 +70,13 @@ This is the one setup step needed now. It takes about five minutes.
    - If Supabase warns about "destructive operations", confirm. The script only
      creates tables and sets permissions; it deletes nothing.
    - You should see *Success. No rows returned.*
-5. Click **Table Editor** in the sidebar. You should see three tables:
-   `bookings`, `events` and `visits`.
+5. Click **Table Editor** in the sidebar. You should see five tables:
+   `bookings`, `conversations`, `events`, `leads` and `visits`.
 
-The script is safe to run again whenever it changes.
+The script is safe to run again whenever it changes. **If you ran it before
+leads and calls were tracked, run it again:** that adds `leads` and
+`conversations`. Until
+then the dashboard works without them and says which tables are missing.
 
 **2. Copy two values out of Supabase.**
 
@@ -113,7 +128,7 @@ in the website). From the visitor's side it behaves like the real thing:
 - Once email is on (next section), the booker gets a real **calendar
   invitation** that Gmail and Outlook show with Accept / Decline. Your team
   gets a heads-up email with their details.
-- The confirmation and the email link to `/get-started/manage/<booking id>`,
+- The confirmation and the email link to `/BryanKleppe/manage/<booking id>`,
   where the visitor can move or cancel. A move updates the invitation on
   their calendar, a cancellation removes it, and the freed time opens up
   again.
@@ -146,11 +161,12 @@ service with a free tier. There are two stages.
    ```
 
    `BOOKING_NOTIFY_TO` is who gets the "new demo booked" heads-up. Separate
-   several addresses with commas. Guide requests from /BryanKleppe (the
-   visitor's email and links to their files) go to `GUIDE_NOTIFY_TO` if it's
-   set, and to `BOOKING_NOTIFY_TO` if not. The files themselves go to the
-   private `guide-uploads` bucket, which `supabase/schema.sql` creates.
-4. Book a time at http://localhost:3000/get-started **using the same email you
+   several addresses with commas. Requests from Bryan's other paths (samples,
+   build a guide, and rebuild last year's guide with links to the visitor's
+   files) go to `GUIDE_NOTIFY_TO` if it's set, and to `BOOKING_NOTIFY_TO` if
+   not. Uploaded files go to the private `guide-uploads` bucket, which
+   `supabase/schema.sql` creates.
+4. Book a time at http://localhost:3000/BryanKleppe **using the same email you
    signed up to Resend with**. The invite arrives from `onboarding@resend.dev`.
 
 Until a domain is verified, Resend only delivers to the address the account was
@@ -181,22 +197,24 @@ directory, and the confirmation page stops claiming an invite went out.
 
 ## Session recordings and site analytics (Clarity + GA4)
 
-This dashboard is the live view of the `/get-started` funnel and its bookings.
-Two free tools add what it can't show:
+This dashboard is the live view of `/BryanKleppe`: its funnel, Bryan's paths,
+leads, bookings and calls. Two free tools add what it can't show:
 
 - **[Microsoft Clarity](https://clarity.microsoft.com)** records sessions so you
   can watch real visits, and draws heatmaps of clicks and scrolling.
   - Every recording carries the visitor's `campaign`, `source` and `medium` as
     custom tags.
-  - Funnel steps are Clarity events (`funnel_calendar`, `funnel_time`, …).
-  - Bookings are `generate_lead`.
-  - So you can filter to, say, "visits from `q4-broker-outreach` that picked a
-    time but didn't book".
-  - Each visit's Clarity *custom user ID* is the visitor ID this dashboard
-    shows. Hover a row in "Clicked but didn't book" to copy it.
+  - Funnel steps are Clarity events (`funnel_engaged`, `funnel_interested`,
+    `funnel_started`, `funnel_converted`).
+  - Leads and bookings are `generate_lead`.
+  - So you can filter to, say, "visits from `q4-broker-outreach` that started a
+    path but didn't convert".
+  - Each visit's Clarity *custom user ID* is its visitor ID, the one this
+    dashboard's tables are built from.
 - **[Google Analytics 4](https://analytics.google.com)** covers traffic and
-  campaigns across the whole site. It reads the `utm_` tags itself. A booking
-  is sent as `generate_lead`, the event GA4 uses for leads.
+  campaigns across the whole site. It reads the `utm_` tags itself. A lead or
+  a booking is sent as `generate_lead`, the event GA4 uses for leads, with the
+  path it came from.
 
 Both load on every page of the site, with this consent logic:
 
@@ -243,8 +261,8 @@ are tagged `environment = development`, so you can filter them out.
    ```
 
 7. Go to **Admin → Data display → Key events → New key event**, enter
-   `generate_lead` and save. Bookings now count as conversions in every
-   campaign report.
+   `generate_lead` and save. Leads and bookings now count as conversions in
+   every campaign report.
 
 From your laptop, events show in GA4's **Admin → DebugView** within seconds.
 Live-site traffic fills the normal reports over the following day.
@@ -322,12 +340,23 @@ password, and none of them is indexed by search engines.
 
 ## Tagging campaign links
 
-Every link you put out should carry its own tags. Untagged clicks all land in
-one bucket. Use the **Campaign link builder** at the bottom of the dashboard, or
-add the tags by hand:
+Every link you put out should carry its own tag. Untagged clicks all land in
+one bucket ("Direct"). Use the **Link builder** at the bottom of the dashboard
+(click it to open), or add the tag by hand.
+
+**The quick way: one tag.** Add `?tag=` and a name for where the link is going:
 
 ```
-https://truhu.ai/get-started?utm_source=linkedin&utm_medium=paid&utm_campaign=q4-broker-outreach&utm_content=video-ad-a
+https://truhu.ai/BryanKleppe?tag=spring-webinar
+```
+
+That name shows in the dashboard's **Sources** table and its source filter.
+`?c=name` does the same thing.
+
+**The full way: UTM tags**, when you also want the source and medium:
+
+```
+https://truhu.ai/BryanKleppe?utm_source=linkedin&utm_medium=paid&utm_campaign=q4-broker-outreach&utm_content=video-ad-a
 ```
 
 | Tag | Meaning | Examples |
@@ -337,8 +366,9 @@ https://truhu.ai/get-started?utm_source=linkedin&utm_medium=paid&utm_campaign=q4
 | `utm_campaign` | the name you'll filter by | `q4-broker-outreach` |
 | `utm_content` | which ad or email | `video-ad-a` |
 
-Keep values lowercase with hyphens. `?c=name` works as a short alias for
-`utm_campaign` in links you type by hand.
+`?tag=`, `?c=` and `utm_campaign` all fill the same field, the campaign. A link
+with no campaign is grouped by its source instead, and one with neither is
+"Direct". Keep values lowercase with hyphens.
 
 A link to any page on the site still counts. The tags are remembered in the
 visitor's browser for 90 days, so a click through from the home page credits
@@ -346,40 +376,82 @@ the right campaign.
 
 ## What's measured
 
+The dashboard, top to bottom: the headline numbers, the funnel beside a live
+feed, Bryan's paths, sources, leads, bookings, calls, then visits by day, the
+trailer and where non-converters stopped. Hover any heading or column name for
+its definition. The confirmation and manage pages count as the same visit.
+
+**Headline numbers.**
+
+| Number | What it counts |
+|---|---|
+| Visits | visits to /BryanKleppe |
+| Talked to Bryan | visits with a call or chat with AI Bryan, and their share of visits |
+| Leads | requests sent from samples, build or rebuild |
+| Booked | calls booked with Bryan, cancellations left out |
+| Conversion | visits with a lead or a booking, divided by visits |
+
 **The funnel.** Each visit records the furthest step it reached:
 
 | Step | Counts when |
 |---|---|
 | Landed | the page loaded |
 | Engaged | 10 s of active time, a scroll, or a click |
-| Saw the calendar | an engaged visit had the calendar on screen |
-| Picked a time | a slot was clicked |
-| Started details | name, email, agency or client count was touched |
-| Hit confirm | the form was submitted |
-| Booked | the booking was saved (set server-side, never by the browser) |
+| Interested | any popup opened (the chooser, a sample, the build form, the upload, the trailer, the calendar) |
+| Started | the visitor viewed a sample, typed in a form, added a file or picked a time |
+| Converted | a lead or a booking was saved (set by the server, never by the browser) |
 
-**Time on page** is *active* time: the tab is in view and there was some sign
-of a person in the last 30 seconds. A tab left open over lunch doesn't count.
+*Active time* means the tab is in view and there was some sign of a person in
+the last 30 seconds. A tab left open over lunch doesn't count.
 
-**Drop-off** has three views:
+**Bryan's paths.** Each row counts visits:
 
-- the furthest step reached by non-bookers
-- the block on screen when they left
-- any link they left by
+| Path | Opened when | Converted when |
+|---|---|---|
+| Samples | the sample picker or any sample opened | a work email was sent from the picker |
+| Build a guide | the build form opened | the request (work email and the client's website) was sent |
+| Rebuild last year's guide | the guide upload opened | last year's guide was uploaded with a work email |
+| Book a call | the trailer or the calendar opened | a booking was saved |
+
+*Started* is the first real step on that path, as in the funnel, and *Rate* is
+converted divided by opened. Beside the table, **Opened from** counts what
+opened each popup: Bryan's call, the chat, the call-card button ("Build a guide
+now"), the three links under the chat, the chooser, the sample picker, or the
+end of the trailer.
+
+**Sources** groups visits by campaign (see tagging above): visits, how many
+talked to Bryan, were interested and converted, and the rate. Click a row to
+filter the whole dashboard to it.
+
+**Leads** lists each request newest first: when, which path, the work email,
+the client's website (build) or how many files (rebuild), and the source.
+
+**Calls** lists every call and typed chat with AI Bryan: when, call or chat,
+how long, how many things the visitor said, which popups opened during it, how
+it ended (the visitor ended it, left the page, an error, the microphone was
+refused, or it dropped), and the source. Click a row to read the transcript. A
+call still going shows **Live**, and its transcript fills in as it goes.
+
+**Trailer** counts the visits that played it and how many reached 25, 50, 75
+and 100%. **Stopped at** is the furthest funnel step of the visits that didn't
+convert.
 
 **Also recorded:**
 
-- which blocks each visitor actually looked at
+- which blocks and popups each visitor looked at
 - scroll depth
 - clicks on links and buttons
 - day, time and time-zone changes in the calendar
 - form errors
 - device, browser and OS
 - coarse location from Vercel's edge (city, region, country)
+- what was said in each call or chat with AI Bryan (the transcript)
 
 **Not recorded:**
 
-- anything typed into the form before it's submitted
+- anything typed into a form (booking, samples, build or upload) before it's
+  sent; once sent, the booking or lead keeps what the form asked for
+- what's typed into a form during a call, which never reaches the transcript
 - IP addresses
 - cookies
 
@@ -391,13 +463,13 @@ nothing is stored in their browser between visits.
 (every second in local mode) and tells the page to refresh the moment anything
 changes.
 
-## Retargeting "clicked but didn't book"
+## Retargeting visitors who didn't convert
 
-The dashboard lists these visits and counts them by campaign, but they're
-anonymous until they book. To actually show them ads, add your ad platform's
-pixel (LinkedIn Insight Tag, Meta Pixel), build an audience of
-"visited /get-started" minus "visited /get-started/confirmed", and load the
-pixel only after consent. That's a decision for the site, not this dashboard.
+The dashboard counts these visits by step and by source, but they're anonymous
+until they leave an email or book. To actually show them ads, add your ad
+platform's pixel (LinkedIn Insight Tag, Meta Pixel), build an audience of
+"visited /BryanKleppe" minus "sent `generate_lead`", and load the pixel only
+after consent. That's a decision for the site, not this dashboard.
 
 ## Moving it to its own repo
 
@@ -406,8 +478,10 @@ and nothing in it imports from the website. The two contracts with the website
 are:
 
 - the tables and functions in `supabase/schema.sql`
-- the funnel step numbers in `lib/funnel.ts`, which mirror `FUNNEL` in the
-  website's `lib/analytics/schema.ts`
+- the names in `lib/funnel.ts`: the page id, the funnel step numbers, the paths
+  and which popup belongs to which path. They mirror `TRACKED_PAGE`, `FUNNEL`
+  and `PATHS` in the website's `lib/analytics/schema.ts` and `PATH_OF_FLOW` in
+  `components/get-started/flows.ts`
 
 Change either on both sides.
 
@@ -416,10 +490,12 @@ Change either on both sides.
 | Path | What |
 |---|---|
 | `supabase/schema.sql` | Tables, the write functions the website calls, `pulse()` |
+| `lib/funnel.ts` | The names shared with the website: page, funnel, paths, popups |
 | `lib/store.ts` | Reads Supabase (or replays the local file) into rows |
 | `lib/aggregate.ts` | Rows → everything the dashboard draws |
 | `lib/auth.ts`, `proxy.ts` | The password gate |
-| `app/api/summary` | One summary per range / campaign / time zone |
+| `app/api/summary` | One summary per range / source / time zone |
+| `app/api/transcript` | One call's transcript, read when its row is opened |
 | `app/api/stream` | The live change signal |
 | `components/` | Dashboard, charts, link builder |
 
@@ -428,7 +504,10 @@ On the website side:
 | Path | What |
 |---|---|
 | `lib/analytics/tracker.ts` | The browser tracker |
-| `app/api/track` | Its endpoint |
+| `lib/analytics/conversation.ts` | Records each call and chat with AI Bryan |
+| `app/api/track` | The tracker's endpoint |
+| `app/api/leads`, `app/api/guide` | Samples and build requests; rebuild uploads |
+| `app/api/conversation` | The conversation recorder's endpoint |
 | `lib/analytics/store.ts` | The writer |
 | `lib/booking/` | Placeholder scheduler, Cal.com client, calendar links |
-| `app/get-started/` | The page and its confirmation |
+| `app/BryanKleppe/` | The page, its confirmation and the manage page |

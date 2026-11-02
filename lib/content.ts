@@ -1901,22 +1901,95 @@ export const GET_STARTED_PAGE = {
         line: "Great, I'll expand the calendar so you can pick.",
         open: "Open the calendar",
       },
-      /** The button to the real Bryan (RealBryanButton). It opens the calendar,
-       * and Bryan says `line` instead of the calendar's own. `label` is on it
-       * under his photo during a live call; `book` is the same button beside
-       * "Talk to Bryan's AI" before one. */
+      /** The button to the real Bryan. It opens the calendar, and Bryan says
+       * `line` instead of the calendar's own. `label` is on it under his
+       * photo during a live call (CallCardActions); `book` is the same button
+       * beside "Talk to Bryan's AI" before one (RealBryanButton). */
       realBryan: {
         label: "Talk to the real Bryan",
         book: "Book an appointment with the real deal",
         line: "Let's get you scheduled with the real deal!",
       },
+      /** On the call card beside "Talk to the real Bryan" while a call is
+       * live (CallCardActions). It opens the options. */
+      buildNow: {
+        label: "Build a guide now",
+      },
+      /** The three links under the chat (FlowLinks). Each opens the popup
+       * Bryan would open for the same ask. `label` names the list for screen
+       * readers. */
+      links: {
+        label: "Ways to get started",
+        samples: "Check out some sample TruHu deliverables",
+        build: "Build a guide now",
+        trailer: "Check out TruHu's trailer video",
+      },
+      /** The chooser (OptionsChooser). Its line is the card's title, so it is
+       * said once. Each choice opens its own popup. */
+      options: {
+        line: "How would you like to move forward?",
+        open: "Show me the options",
+        choices: {
+          guide: "Rebuild last year's guide",
+          samples: "Show me some generic samples of what TruHu can produce",
+          build: "Build a guide for your client",
+        },
+      },
+      /** The sample picker (SamplePicker): Kindlerye's four deliverables, open
+       * to anyone, and an optional work email to have them sent. */
+      samples: {
+        line: "Here's what TruHu built for Kindlerye, a sample company. Pick one to open.",
+        open: "See the samples",
+        label: "Samples to open",
+        items: { microsite: "Website", sampleGuide: "Guide", flipbook: "Flipbook", flyer: "Flyer" },
+        note: "Kindlerye Baking Co. is a sample company with made-up names and numbers.",
+        email: "Want them in your inbox? Enter your work email.",
+        submit: "Email me the samples",
+        pending: "Sending…",
+        invalidEmail: "Enter a valid work email.",
+        error: "That didn't go through. Try again in a moment.",
+        /** `{email}` is replaced with the address they gave. */
+        done: "Thanks. TruHu's team will email the samples to {email}.",
+        doneLine: "Got it, the team will send those samples over. Is there anything else I can do for you?",
+      },
+      /** A guide for the visitor's client, from the client's website
+       * (BuildGuideForm). No turnaround time or watermark is promised here
+       * until Bryan confirms them. */
+      build: {
+        line: "Give me your work email and your client's website, and we'll build a sample guide for them.",
+        open: "Build a guide for your client",
+        email: "Work email",
+        clientUrl: "Your client's website",
+        clientUrlPlaceholder: "clientcompany.com",
+        submit: "Build my client's guide",
+        pending: "Sending…",
+        invalidEmail: "Enter a valid work email.",
+        invalidUrl: "Enter your client's website, like clientcompany.com.",
+        error: "That didn't go through. Try again in a moment.",
+        doneTitle: "Got it, thanks.",
+        /** `{site}` and `{email}` are filled in. */
+        done: "TruHu's team will build a sample guide for {site} and email it to {email}.",
+        /** Said once the request is in; the popup closes when he's finished. */
+        doneLine:
+          "I got your request, and someone from the team will follow up when your client's guide is ready. In the meantime, is there anything else I can do for you?",
+      },
+      /** The trailer (TrailerFlow). It plays once Bryan has said `line`, and
+       * offers his calendar at the end. */
+      trailer: {
+        line: "Here's a quick look at what TruHu builds for brokers and their clients.",
+        open: "Watch the trailer",
+        title: "TruHu trailer",
+        book: "Pick a time with Bryan",
+        replay: "Watch again",
+      },
+      /** "Rebuild last year's guide": the upload (GuideUpload). */
       guide: {
-        line: "Sure, drop in the files here and we'll have the guide built out for you in no time.",
+        line: "Sure, drop in last year's guide and any plan documents, and we'll rebuild it for you.",
         emailLine: "Great! Now enter your email so we can get the completed guide over your way.",
-        open: "Open the upload",
-        drop: "Drop files here, or click to choose",
+        open: "Rebuild last year's guide",
+        drop: "Drop last year's guide here, or click to choose",
         types: "PDF, Word, PowerPoint, PNG or JPG, up to 25 MB each",
-        note: "Plan documents or last year's guide. Please don't upload employee data.",
+        note: "Last year's guide, plus any plan documents. Please don't upload employee data.",
         addMore: "Add more files",
         remove: "Remove",
         retry: "Try again",
@@ -1931,7 +2004,7 @@ export const GET_STARTED_PAGE = {
         error: "That didn't go through. Try again in a moment.",
         doneTitle: "Got it, thanks.",
         /** `{email}` is replaced with the address they gave. */
-        done: "TruHu's team will build your guide from these files and email it to {email}.",
+        done: "TruHu's team will rebuild your guide from these files and email it to {email}.",
         /** Said once the email is in; the popup closes when he's finished. */
         doneLine:
           "I got your email and someone from the team will follow up when your materials are ready. In the meantime, is there anything else I can do for you?",
@@ -1979,16 +2052,6 @@ export const GET_STARTED_PAGE = {
         zoomed: "Zoomed view of page {n}",
       },
     },
-  },
-  outcomes: {
-    label: "What you'll get out of it",
-    items: [
-      "A finished guide, microsite and AI Counselor built for your client, during the 10-minute meeting.",
-      "A clear read on how fast your team could roll it out across your book.",
-      "A path to get building faster and better today.",
-    ],
-    format: ["10 minutes", "Live", "On screen"],
-    notIt: "Not a hard sales pitch. If it isn't a fit, I'll tell you.",
   },
   proof: {
     label: "From a broker on TruHu",

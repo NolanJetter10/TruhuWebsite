@@ -365,5 +365,82 @@ Nolan's notes from talks with Satchel, Carolyn, Xander, Bryan and Khurram, plus 
 - From: Nolan · Sep 14 · 01-nolan-marketing-batches.md
 - Said: "Customer case studies, customer logos, interactive demo, video… simple and clean to show we are legit."
 - Status: partial
-- Where: The logo wall and the running demos are live, and /resources/case-studies exists. The /advisor outputs tour is an interactive demo of real deliverables (L-004). /BryanKleppe has a live video call with Bryan's AI avatar, in his face and cloned voice (L-008), which can open the calendar, a guide upload and Kindlerye's sample deliverables on request (L-009, L-010). The videos are placeholders.
-- Log: L-004, L-008, L-009, L-010
+- Where: The logo wall and the running demos are live, and /resources/case-studies exists. The /advisor outputs tour is an interactive demo of real deliverables (L-004). /BryanKleppe has a live video call with Bryan's AI avatar, in his face and cloned voice (L-008), which can open the calendar, a guide upload and Kindlerye's sample deliverables on request (L-009, L-010). /BryanKleppe now plays a real trailer (TruHu Trailer 5, L-018); the site's other videos are placeholders.
+- Log: L-004, L-008, L-009, L-010, L-018
+
+### FB-049 · Path 1: see our best work, instantly
+- From: Bryan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "Broker enters their work email and gets our best guide, a microsite and a Spanish version. Fast, not custom. May combine with #4."
+- Status: partial
+- Where: /BryanKleppe's sample picker (`samples` popup) shows Kindlerye's website, guide, flipbook and flyer straight away, with an optional work email that records a `samples` lead and tells the team (L-018). Not gated, and no Spanish version yet.
+- Log: L-018
+
+### FB-050 · Path 2: build a guide for your client, no call needed
+- From: Bryan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "Work email plus their client's website. We send a branded sample guide within 24 hours, watermarked "Sample." A credit card removes the watermark and unlocks the full suite."
+- Status: partial
+- Where: "Build a guide for your client" (`build` popup): work email plus the client's website, recorded as a `build` lead and emailed to the team, who build the sample by hand (L-018). No turnaround time, watermark or card step on the page until the team confirms them.
+- Log: L-018
+
+### FB-051 · Path 3: mimic last year's guide
+- From: Bryan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "Same as #2, but they drop in last year's approved guide and we match it. Also solves the EPIC template frustration we heard this week."
+- Status: partial
+- Where: "Rebuild last year's guide" opens the existing guide upload, re-worded for last year's guide; each upload is a `rebuild` lead (L-018). The team matches it by hand.
+- Log: L-018
+
+### FB-052 · The paid version collects this year's plan data through a guided Q&A
+- From: Bryan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "For #2 and #3, the paid version needs this year's plan data, rates and contributions—thinking a driven Q&A for all inputs we'd normally need for an Advisor Suite of solutions. The sample can run off the website alone."
+- Status: open
+- Where:
+- Log:
+
+### FB-053 · Path 4: Advisor plus Workforce, the full open-enrollment experience by text
+- From: Bryan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "Work email, cell and client URL. They get what their client's employees would see during OE, by text. Workforce also gives us better tracking."
+- Status: open
+- Where: Not in this round: Nolan asked to track paths 1, 2, 3 and 5.
+- Log:
+
+### FB-054 · Path 5: book a demo that doesn't feel like one
+- From: Bryan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "Hero guide, short trailer, then my calendar. Nolan, I think you have most of this."
+- Status: partial
+- Where: "Check out TruHu's trailer video" plays TruHu Trailer 5 and ends on "Pick a time with Bryan", which opens his calendar (L-018). No hero guide before it.
+- Log: L-018
+
+### FB-055 · Repoint the analytics dashboard at /BryanKleppe, minimal and tagged
+- From: Nolan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "we have to repoint that old analytics site at this new site … we should be able to ?tag the url to let us know specifically where things are coming from … we need to be able to track 1, 2, 3, and 5 … We are trying to provide the critical information with a minimalistic dashboard, no filler words at all please."
+- Status: done
+- Where: The dashboard (`analytics dashboard/`, :3001) tracks /BryanKleppe. It has tiles, the five-step funnel, Paths (samples, build, rebuild, book), Sources (with `?tag=`), Leads, Bookings and Calls; there are no subtitles (L-018). Untested against a live Supabase project.
+- Log: L-018
+
+### FB-056 · "How would you like to move forward?" instead of asking which materials
+- From: Nolan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "when someone shows any sort of interest in building a guide, we need three different bubbles to pop up over the center of the screen with a title text at the top that says: "how would you like to move forward?" - "rebuild last years' guide", "show me some generic samples of what truhu can produce" … "build a guide for your client"... then of course we provide the appropriate fields"
+- Status: done
+- Where: The `options` popup, which Bryan's AI opens on general interest in a guide (new `open_options` widget), as do "Build a guide now" on the call card and under the chat (L-018).
+- Log: L-018
+
+### FB-057 · "Build a guide now" beside "Talk to the real Bryan" on the call card
+- From: Nolan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "we need to add next to that "build a guide now" so that these sit symmetrically on the Bryan call card."
+- Status: done
+- Where: `CallCardActions` in BryanCall: "Talk to the real Bryan" (blue) and "Build a guide now" (green), same shape and motion, side by side; they stack in the corner window (L-018). Seen in a forced live state; not yet on a real call.
+- Log: L-018
+
+### FB-058 · Clickable options under the chat that reuse Bryan's flows
+- From: Nolan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "we can provide a few clickable options: "Check out some sample TruHu deliverables", "build a guide now", "check out TruHu's trailer video" … these put you into the same flow as talking to Bryan can as well. So it is crucial that we reuse and we don't recreate."
+- Status: done
+- Where: `FlowLinks` under the call card opens the same `samples`, `options` and `trailer` popups Bryan's AI opens, with `from: "links"` for the dashboard (L-018).
+- Log: L-018
+
+### FB-059 · Record call histories
+- From: Nolan · Nov 2 · 2026-11-02-bryan-paths.md
+- Said: "we need to track the call histories as well."
+- Status: check
+- Where: Each call and typed chat is a `conversations` row (length, turns, popups opened, how it ended, transcript) shown under Calls on the dashboard (L-018). Exercised from page code only; a real call hasn't been recorded yet.
+- Log: L-018

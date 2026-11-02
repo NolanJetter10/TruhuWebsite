@@ -158,3 +158,61 @@ Log start: d3a428f (Aug 14, 2026). Every commit after it is either named in an e
 - Commits: e9013a0 ("adding ai bryan", Nolan's commit), which also carries L-015 and L-016; this entry's site-log lines in the commit tagged L-017
 - Check: Built by a Sonnet subagent, reviewed here. Measured first, through the dev pass-through against the published agent, one fresh thread per ask: 24 popup asks, 12 ordinary questions and 4 "yes" follow-ups. A widget reply always runs text, `text-end`, then `data-ui` 330 to 538 ms later (median 431 ms), and nothing follows it. A lookup puts `tool-input-start` in the same millisecond as `text-end`, and a plain reply puts `finish-step` there, so the next event settles the hold. Words came before the widget in 23 of 27 widget replies, 7 to 14 words each. Live headless calls with a fake mic, about 11 in all: every held popup ask (all six popups, "slot", "Do you make flyers?", "Yes, let's do it.") sent only the fixed line to Anam, never the agent's words. A popup ask outside the word list still sent the agent's line first, then the fixed line 450 ms later, which is the old race. Time to first word for ordinary questions didn't change: the line goes to Anam at the `text-end` millisecond, held or not, and the before/after gap was call-to-call variation outside the page. A WAV of "Can you show me", a 1.6 s pause, then "a flyer?" split into two messages, and got one answer: the flyer popup with only its fixed line. Talking over a four-sentence answer stopped it, and none of the queued rest was sent. Hanging up mid-answer twice sent nothing more, with no 401 in the dev log. Look changes: screenshots at 1440x900, 390 wide and the corner window, console clean. `tsc --noEmit` clean, `eslint` clean on the changed files. Not checked: a real person's voice, Safari, Firefox, a real phone. An audible restart never reproduced in the baseline calls (Anam takes 0.8 to 1.3 s to start speaking, so the widget usually wins the race), so the fix is shown by what was sent to Anam, not by ear.
 - Next: Nolan to make a real call, including popup asks and one on laptop speakers. Noise or echo that Anam hears as speech (a cough, his own voice through the speakers) now ends the rest of Bryan's answer rather than sending the next line, so a call on speakers is the one to listen to. An aborted half-question still leaves its half-exchange on the Ensemble thread (the server finishes the reply), which the agent sees in its history. The hold could cover every question at no measured cost, which would also close the word-list misses. `endOfSpeechSensitivity` is untouched. The headshot is only 235px, so the 320px circle is slightly soft; a larger original would be sharper.
+
+## L-018 · 2026-11-02 · Claude Code (VS Code)
+- What: /BryanKleppe offers Bryan's paths and the analytics dashboard tracks them. Built by three Opus subagents (page, tracking, dashboard) against one contract, site-log/plans/2026-11-02-bryan-paths-and-analytics.md, then reviewed here.
+  - **Page.** Four new popups, all opened through the existing `flows.open()`:
+    - `options`: "How would you like to move forward?" with three bubbles, "Rebuild last year's guide", "Show me some generic samples of what TruHu can produce" and "Build a guide for your client".
+    - `samples`: Website, Guide, Flipbook and Flyer tiles, plus an optional work email.
+    - `build`: work email and the client's website.
+    - `trailer`: TruHu Trailer 5, re-encoded to 15 MB at public/videos/, ending on "Pick a time with Bryan".
+    - The guide upload is re-worded as the rebuild path.
+    - New agent widgets steer Bryan's AI away from asking which materials. On fresh threads, "can you build a guide for my client?" and "I'm interested in getting a guide made" open the chooser; "show me some examples" opens the picker.
+    - "Build a guide now" sits beside "Talk to the real Bryan" on the call card: one shared button component, side by side, stacking in the corner window.
+    - The outcomes text under the chat is replaced by three options, "Check out some sample TruHu deliverables", "Build a guide now" and "Check out TruHu's trailer video".
+    - While the trailer plays in a live call, the visitor's mic is held off (`MicHold` in FlowProvider), so Bryan doesn't answer the trailer's sound.
+  - **Tracking.**
+    - The page id is `/BryanKleppe`; `?tag=` is an alias for `utm_campaign`.
+    - The funnel is Landed → Engaged → Interested (any popup) → Started (`startPath`) → Converted (server only).
+    - New tables `leads` and `conversations`, with `record_lead` and `record_conversation`, and new endpoints `/api/leads` and `/api/conversation`.
+    - Guide uploads also count as leads, and leads send GA4's `generate_lead`.
+    - Calls and typed chats are recorded with their length, turns, the popups opened, how they ended and the transcript.
+    - Popup sections are now observed (a MutationObserver).
+  - **Dashboard.** Repointed at /BryanKleppe and cut to tiles, the funnel with a live feed, Paths (opened, started, converted, rate) and where opens came from, Sources, Leads, Bookings, and Calls with transcripts. A small row has visits by day, the trailer and where visitors stopped, and the link builder is collapsed with a `?tag=` mode. Removed: subtitles, time on page, devices, exits and the retargeting table.
+- Why: Nolan, Nov 2 (sources/2026-11-02-bryan-paths.md):
+  - "repoint that old analytics site at this new site … ?tag the url … track 1, 2, 3, and 5"
+  - three bubbles under "how would you like to move forward?"
+  - "build a guide now" beside the real-Bryan button
+  - clickable options under the chat that "put you into the same flow as talking to Bryan … reuse and we don't recreate"
+  - "track the call histories as well"
+  - Bryan's paths note, the same day.
+- Feedback: FB-049 (partial), FB-050 (partial), FB-051 (partial), FB-054 (partial), FB-055 (done), FB-056 (done), FB-057 (done), FB-058 (done), FB-059 (check), FB-048 (partial: a real trailer is on the page)
+- Files:
+  - Page: components/get-started/{flows.ts, FlowProvider.tsx, FlowPanel.tsx, GuideUpload.tsx, RealBryanButton.tsx, BryanCall.tsx, EnsembleChat.tsx, BookingWidget.tsx, FunnelTracker.tsx}; new components/get-started/{LeadForm, OptionsChooser, SamplePicker, BuildGuideForm, TrailerFlow, CallCardActions, FlowLinks}.tsx; app/BryanKleppe/{page, confirmed/page, manage/[uid]/page}.tsx; lib/content.ts (`GET_STARTED_PAGE`); public/videos/ (new).
+  - Tracking: lib/analytics/{schema, tracker, store, third-party}.ts and new conversation.ts; app/api/{track, guide}/route.ts; new app/api/{leads, conversation}/route.ts; lib/guide/email.ts.
+  - Dashboard: analytics dashboard/{supabase/schema.sql, lib/{funnel, store, aggregate}.ts, components/{Dashboard, charts, LinkBuilder}.tsx, app/{page, layout}.tsx, app/api/{summary, stream}/route.ts, new app/api/transcript/route.ts, README.md}.
+  - Site log: site-log/{plans/2026-11-02-bryan-paths-and-analytics.md, sources/2026-11-02-bryan-paths.md}.
+- Commits: not committed yet
+- Check:
+  - Type-check: `tsc --noEmit` is clean for the website and for the dashboard.
+  - Screenshots reviewed here at 1440×900 with scripts/browse.mjs, console clean: the page, which still fits one screen with the three options under the call card; the chooser; the sample picker; and the trailer playing and pausing. Also reviewed the agents' captures of the live-call button pair (the live state forced in React, since a real call can't run headless) and of the dashboard on real local data.
+  - Tracking agent: real requests on the dev server.
+    - A visit to `?tag=test-tag` landed with page `/BryanKleppe` and campaign `test-tag`, and stepped 2 then 3 as popups opened.
+    - `/api/leads` recorded samples and build leads; the client URL was normalised, and a bad URL, a bad email, a missing Origin and a filled honeypot were each handled.
+    - `/api/guide` recorded a rebuild lead.
+    - `/api/conversation` capped at 400 lines.
+    - The SQL ran twice cleanly on PGlite.
+  - Page agent: every flow walked headless, and seven questions sent to the real agent through the dev pass-through, each opening the intended popup.
+  - Dashboard agent: hand-counted fixture numbers matched, and the stream fired about 0.5 s after a lead was written.
+  - Not checked:
+    - A real Anam call: Bryan saying the new lines, the call's transcript, how calls end, and the mic hold.
+    - The typed chat's recording with a real reply.
+    - GA4 and Clarity receiving the events.
+    - Supabase itself: `.env.local`'s project host doesn't resolve, so everything ran in local-file mode.
+- Next:
+  - Nolan: one real call, opening the chooser, a sample and the trailer, then check its transcript on the dashboard.
+  - Re-run `analytics dashboard/supabase/schema.sql` on a live Supabase project and fix `SUPABASE_URL`.
+  - Decide on a recording notice on the call card, now that transcripts are kept.
+  - The trailer shows "6 hours → 30 minutes per guide", which needs a published source under the numbers rule.
+  - Bryan's "within 24 hours", the watermark, the Spanish version and path 4 are not built.
+  - The local file holds the agents' test leads and calls (`tester@example.com`, `page-agent-test@example.com`, the "beacon-test" calls). They are local only, and deleting the file resets the local data.

@@ -13,6 +13,7 @@ import { Avatar } from "@/components/get-started/Avatar";
 import { FunnelTracker } from "@/components/get-started/FunnelTracker";
 import { TextLink } from "@/components/ui/CTAButton";
 import { Container, Section } from "@/components/ui/primitives";
+import { TRACKED_PAGE } from "@/lib/analytics/schema";
 import { bookingProvider, MEETING } from "@/lib/booking";
 import { googleCalendarUrl, outlookCalendarUrl } from "@/lib/booking/calendar-links";
 import { formatLongDate, formatTime, zoneAbbreviation } from "@/lib/booking/time";
@@ -56,7 +57,7 @@ export default async function ConfirmedPage({
 
   return (
     <>
-      <FunnelTracker page="/get-started" resumeOnly />
+      <FunnelTracker page={TRACKED_PAGE} resumeOnly />
 
       <Section tone="dark" ambient pointer pointerFade size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-24">
         <Container>

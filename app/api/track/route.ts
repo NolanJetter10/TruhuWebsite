@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import type { Beacon, BeaconEvent } from "@/lib/analytics/schema";
+import { STEP, type Beacon, type BeaconEvent } from "@/lib/analytics/schema";
 import { ingest } from "@/lib/analytics/store";
 
 /**
@@ -149,7 +149,8 @@ export async function POST(request: Request) {
     returning_visitor: v.returning === true,
     engaged_ms: int(v.engagedMs, 0, 6 * 60 * 60 * 1000),
     max_scroll: int(v.maxScroll, 0, 100),
-    furthest_step: int(v.step, 0, 5), // `booked` (6) is only ever set by the server
+    // `converted` is only ever set by the server, as it saves a lead or booking.
+    furthest_step: int(v.step, 0, STEP.started),
     last_section: str(v.section, 60),
     exit_target: str(v.exit, 300),
   };

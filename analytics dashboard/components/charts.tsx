@@ -14,6 +14,8 @@ import type { Summary } from "@/lib/aggregate";
 
 export const fmt = new Intl.NumberFormat("en-US");
 export const pct = (x: number) => `${Math.round(x * 100)}%`;
+/** "visit" for 1, "visits" otherwise. */
+export const noun = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
 
 export function duration(sec: number) {
   if (sec < 60) return `${Math.round(sec)}s`;
@@ -85,7 +87,7 @@ export function FunnelChart({ steps }: { steps: Summary["funnel"] }) {
               ...anchor(box.current, e),
               title: `${step.label} — ${step.hint}`,
               rows: [
-                { label: "visits", value: fmt.format(step.count), key: "accent" },
+                { label: noun(step.count, "visit"), value: fmt.format(step.count), key: "accent" },
                 { label: "of everyone who landed", value: pct(step.ofTop) },
                 ...(i > 0 ? [{ label: "of the step before", value: pct(step.ofPrev) }] : []),
               ],
@@ -93,7 +95,7 @@ export function FunnelChart({ steps }: { steps: Summary["funnel"] }) {
           return (
             <li key={step.key}>
               {/* The loss between two steps, printed only where there is one. */}
-              <p className="grid h-4 grid-cols-[9.5rem_1fr] items-center gap-4 text-[0.6875rem] text-muted sm:grid-cols-[11rem_1fr]">
+              <p className="grid h-4 grid-cols-[5.5rem_1fr] items-center gap-3 text-[0.6875rem] text-muted sm:grid-cols-[7rem_1fr] sm:gap-4">
                 <span />
                 <span>{lost > 0 ? `−${fmt.format(lost)} · ${pct(1 - step.ofPrev)} dropped` : ""}</span>
               </p>
@@ -103,7 +105,7 @@ export function FunnelChart({ steps }: { steps: Summary["funnel"] }) {
                 onPointerLeave={() => setTip(null)}
                 onFocus={show}
                 onBlur={() => setTip(null)}
-                className="group grid grid-cols-[9.5rem_1fr_4.5rem] items-center gap-4 rounded-md outline-none sm:grid-cols-[11rem_1fr_5rem]"
+                className="group grid grid-cols-[5.5rem_1fr_4.5rem] items-center gap-3 rounded-md outline-none sm:grid-cols-[7rem_1fr_5rem] sm:gap-4"
               >
                 <span className="truncate text-sm font-medium text-ink">{step.label}</span>
                 <span className="relative h-6">
@@ -170,7 +172,7 @@ export function VisitsOverTime({
   const [active, setActive] = useState<number | null>(null);
   const [asTable, setAsTable] = useState(false);
 
-  const height = 200;
+  const height = 168;
   const axisBand = 22;
   const left = 34;
   const plotW = Math.max(100, width - left - 4);
@@ -187,10 +189,10 @@ export function VisitsOverTime({
       <div className="mb-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 text-xs text-ink-2">
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2.5 rounded-[2px] bg-accent" /> Booked
+            <span aria-hidden className="size-2.5 rounded-[2px] bg-accent" /> Converted
           </span>
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2.5 rounded-[2px] bg-quiet" /> Didn&apos;t book
+            <span aria-hidden className="size-2.5 rounded-[2px] bg-quiet" /> Other
           </span>
         </div>
         <button
@@ -203,13 +205,13 @@ export function VisitsOverTime({
       </div>
 
       {asTable ? (
-        <div className="max-h-[200px] overflow-auto">
+        <div className="max-h-[168px] overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-surface text-left text-xs text-muted">
               <tr>
                 <th className="py-1 font-medium">{unit === "hour" ? "Hour" : "Day"}</th>
                 <th className="py-1 text-right font-medium">Visits</th>
-                <th className="py-1 text-right font-medium">Booked</th>
+                <th className="py-1 text-right font-medium">Converted</th>
               </tr>
             </thead>
             <tbody className="tabular">
@@ -217,7 +219,7 @@ export function VisitsOverTime({
                 <tr key={s.key} className="border-t border-line">
                   <td className="py-1">{s.label}</td>
                   <td className="py-1 text-right">{s.visits}</td>
-                  <td className="py-1 text-right">{s.booked}</td>
+                  <td className="py-1 text-right">{s.converted}</td>
                 </tr>
               ))}
             </tbody>
@@ -225,7 +227,7 @@ export function VisitsOverTime({
         </div>
       ) : (
         <div>
-          <svg width={width} height={height} role="img" aria-label="Visits over time, split by whether the visit booked">
+          <svg width={width} height={height} role="img" aria-label="Visits over time, split by whether the visit converted">
             {[0, max / 2, max].map((tick) => (
               <g key={tick}>
                 <line x1={left} x2={left + plotW} y1={y(tick)} y2={y(tick)} stroke="var(--c-grid)" strokeWidth={1} />
@@ -239,8 +241,8 @@ export function VisitsOverTime({
             {series.map((s, i) => {
               const cx = left + band * i + band / 2;
               const x = cx - barW / 2;
-              const bookedH = (s.booked / max) * plotH;
-              const restH = Math.max(0, ((s.visits - s.booked) / max) * plotH - (s.booked ? gap : 0));
+              const doneH = (s.converted / max) * plotH;
+              const restH = Math.max(0, ((s.visits - s.converted) / max) * plotH - (s.converted ? gap : 0));
               const dim = active !== null && active !== i;
               const show = (e: { clientX?: number; clientY?: number; target: EventTarget }) => {
                 setActive(i);
@@ -248,23 +250,23 @@ export function VisitsOverTime({
                   ...anchor(ref.current, e),
                   title: unit === "hour" ? `Hour starting ${s.label}` : s.key,
                   rows: [
-                    { label: "visits", value: fmt.format(s.visits) },
-                    { label: "booked", value: fmt.format(s.booked), key: "accent" },
-                    { label: "didn't book", value: fmt.format(s.visits - s.booked), key: "quiet" },
+                    { label: noun(s.visits, "visit"), value: fmt.format(s.visits) },
+                    { label: "converted", value: fmt.format(s.converted), key: "accent" },
+                    { label: "other", value: fmt.format(s.visits - s.converted), key: "quiet" },
                   ],
                 });
               };
               return (
                 <g key={s.key} opacity={dim ? 0.55 : 1} style={{ transition: "opacity 150ms" }}>
-                  {s.booked > 0 ? (
+                  {s.converted > 0 ? (
                     <path
-                      d={columnPath(x, y(0) - bookedH, barW, bookedH, s.visits === s.booked ? 4 : 0)}
+                      d={columnPath(x, y(0) - doneH, barW, doneH, s.visits === s.converted ? 4 : 0)}
                       fill="var(--c-accent)"
                     />
                   ) : null}
                   {restH > 0 ? (
                     <path
-                      d={columnPath(x, y(0) - bookedH - (s.booked ? gap : 0) - restH, barW, restH, 4)}
+                      d={columnPath(x, y(0) - doneH - (s.converted ? gap : 0) - restH, barW, restH, 4)}
                       fill="var(--c-quiet)"
                     />
                   ) : null}
@@ -280,7 +282,7 @@ export function VisitsOverTime({
                     height={height - axisBand}
                     fill="transparent"
                     tabIndex={0}
-                    aria-label={`${s.label}: ${s.visits} visits, ${s.booked} booked`}
+                    aria-label={`${s.label}: ${s.visits} ${noun(s.visits, "visit")}, ${s.converted} converted`}
                     onPointerMove={show}
                     onFocus={show}
                     onPointerLeave={() => {
@@ -309,11 +311,12 @@ export function VisitsOverTime({
 export function BarList({
   items,
   empty,
-  unitLabel = "visits",
+  unit = "visit",
 }: {
   items: { label: string; count: number }[];
   empty: ReactNode;
-  unitLabel?: string;
+  /** Singular; the tooltip adds the "s". */
+  unit?: string;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<Tip>(null);
@@ -331,7 +334,7 @@ export function BarList({
               ...anchor(box.current, e),
               title: item.label,
               rows: [
-                { label: unitLabel, value: fmt.format(item.count), key: "accent" },
+                { label: noun(item.count, unit), value: fmt.format(item.count), key: "accent" },
                 { label: "of this list", value: pct(item.count / total) },
               ],
             });

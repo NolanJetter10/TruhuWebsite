@@ -1,5 +1,17 @@
-import { FUNNEL, SECTIONS } from "./funnel";
-import type { BookingRow, EventRow, Snapshot, Visit } from "./store";
+import {
+  CONVERTED,
+  ENDED,
+  FROM,
+  FUNNEL,
+  FLOWS,
+  PATHS,
+  PATH_LABEL,
+  SECTIONS,
+  TRACKED_PAGE,
+  flowLabel,
+  type PathKey,
+} from "./funnel";
+import type { EventRow, Snapshot, Visit } from "./store";
 
 /**
  * Raw rows in, one summary out: everything the dashboard draws, already
@@ -75,10 +87,19 @@ export function rangeStart(range: RangeKey, tz: string): string | null {
   return midnight(shiftDay(today, -DAYS_BACK[range]), tz).toISOString();
 }
 
+/** "2m 05s", for call lengths in the feed. */
+export function clock(sec: number) {
+  if (sec < 60) return `${Math.round(sec)}s`;
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return s ? `${m}m ${String(s).padStart(2, "0")}s` : `${m}m`;
+}
+
 /* -------------------------------------------------------------- campaigns */
 
 type Tagged = { campaign: string | null; source: string | null; medium?: string | null };
 
+/** `utm_campaign`, `?c=` and `?tag=` all land in `campaign`. */
 export function campaignKey(row: Tagged) {
   if (row.campaign) return `c:${row.campaign}`;
   if (row.source) return `s:${row.source}`;
@@ -88,33 +109,33 @@ export function campaignKey(row: Tagged) {
 function campaignLabel(row: Tagged) {
   if (row.campaign) return row.campaign;
   if (row.source) return row.medium ? `${row.source} (${row.medium})` : row.source;
-  return "Direct / untagged";
+  return "Direct";
 }
 
 function campaignDetail(row: Tagged) {
-  if (row.campaign) return [row.source, row.medium].filter(Boolean).join(" · ") || "tagged link";
-  if (row.source) return "no campaign tag";
-  return "typed in, bookmarked, or untagged link";
+  return row.campaign ? [row.source, row.medium].filter(Boolean).join(" · ") : "";
 }
 
 /* ---------------------------------------------------------------- summary */
+
+type Count = { label: string; count: number };
 
 export type Summary = {
   generatedAt: string;
   range: RangeKey;
   tz: string;
+  /** Tables the database doesn't have yet. */
+  missing: string[];
   campaignOptions: { key: string; label: string; visits: number }[];
   kpis: {
     visits: number;
-    visitors: number;
-    returning: number;
-    engaged: number;
-    sawCalendar: number;
-    bookedVisits: number;
-    bookings: number;
+    talked: number;
+    talkedRate: number;
+    leads: number;
+    booked: number;
     cancelled: number;
+    converted: number;
     conversion: number;
-    medianEngagedSec: number;
     liveNow: number;
   };
   funnel: {
@@ -125,25 +146,36 @@ export type Summary = {
     ofTop: number;
     ofPrev: number;
   }[];
-  biggestDrop: { from: string; to: string; lost: number; share: number } | null;
-  series: { key: string; label: string; visits: number; booked: number }[];
-  seriesUnit: "hour" | "day";
-  timeBuckets: { label: string; count: number }[];
-  campaigns: {
+  paths: {
+    key: PathKey;
+    label: string;
+    converts: string;
+    opened: number;
+    started: number;
+    converted: number;
+    rate: number | null;
+  }[];
+  openedFrom: Count[];
+  sources: {
     key: string;
     label: string;
     detail: string;
     visits: number;
-    engagedRate: number;
-    calendarRate: number;
-    booked: number;
-    conversion: number;
-    medianEngagedSec: number;
+    talked: number;
+    interested: number;
+    converted: number;
+    rate: number;
   }[];
-  stoppedAt: { label: string; count: number }[];
-  leftFrom: { label: string; count: number }[];
-  exits: { label: string; count: number }[];
-  devices: { label: string; count: number }[];
+  leads: {
+    id: string;
+    at: string;
+    path: string;
+    email: string;
+    detail: string | null;
+    href: string | null;
+    source: string;
+  }[];
+  leadsTotal: number;
   bookings: {
     uid: string;
     createdAt: string;
@@ -152,117 +184,164 @@ export type Summary = {
     email: string;
     agency: string | null;
     clients: string | null;
-    campaign: string;
+    source: string;
     status: string;
   }[];
-  retarget: {
-    visitor: string;
-    /** The full id, which is also the visit's Clarity "custom user ID". */
-    visitorId: string;
-    lastSeen: string;
-    campaign: string;
-    step: string;
-    engagedSec: number;
-    device: string;
-    place: string;
-    returning: boolean;
+  bookingsTotal: number;
+  calls: {
+    id: string;
+    at: string;
+    updatedAt: string;
+    mode: string;
+    seconds: number;
+    turns: number;
+    flows: string[];
+    ended: string;
+    live: boolean;
+    source: string;
   }[];
-  retargetTotal: number;
+  callsTotal: number;
+  series: { key: string; label: string; visits: number; converted: number }[];
+  seriesUnit: "hour" | "day";
+  trailer: { plays: number; reached: Count[] };
+  stoppedAt: Count[];
   feed: { id: number; at: string; text: string; who: string; tone: "step" | "win" | "exit" | "plain" }[];
-  live: { visitor: string; campaign: string; section: string; step: string; place: string; device: string }[];
-};
-
-const median = (values: number[]) => {
-  if (!values.length) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  live: { visitor: string; campaign: string; section: string; step: string; device: string }[];
 };
 
 const share = (part: number, whole: number) => (whole ? part / whole : 0);
 
-function countBy<T>(items: T[], key: (item: T) => string | null | undefined, limit = 8) {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    const k = key(item);
-    if (!k) continue;
-    counts.set(k, (counts.get(k) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
-}
-
-const place = (v: Visit) => [v.city, v.region, v.country].filter(Boolean).join(", ") || "—";
+/** Old rows can carry the earlier 7-step funnel; anything past 4 is converted. */
+const stepOf = (v: Visit) => Math.min(v.furthest_step, CONVERTED);
 
 const stepLabel = (step: number) => FUNNEL[Math.min(step, FUNNEL.length - 1)].label;
 
+const isPath = (value: unknown): value is PathKey =>
+  typeof value === "string" && PATHS.some((p) => p.key === value);
+
+/** The path a `flow_open` counts toward: `props.path`, else the flow's own. */
+function pathOfOpen(event: EventRow): PathKey | null {
+  const props = event.props ?? {};
+  if ("path" in props) return isPath(props.path) ? props.path : null;
+  return FLOWS[event.name ?? ""]?.path ?? null;
+}
+
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
+
+/** Every event the page sends, in a few words. */
 function describe(event: EventRow): { text: string; tone: Summary["feed"][number]["tone"] } | null {
   const name = event.name ?? "";
+  const props = (event.props ?? {}) as Record<string, unknown>;
+  const num = (key: string) => {
+    const n = Number(props[key]);
+    return Number.isFinite(n) ? n : null;
+  };
   switch (event.type) {
     case "view":
       return {
-        text: name.includes("confirmed") ? "Opened the confirmation page" : "Landed on the page",
+        text: name.includes("/confirmed")
+          ? "Opened confirmation"
+          : name.includes("/manage")
+            ? "Opened manage page"
+            : "Landed",
         tone: "plain",
       };
     case "section":
-      return { text: `Read “${SECTIONS[name] ?? name}”`, tone: "plain" };
+      return { text: `Viewing ${SECTIONS[name] ?? name}`, tone: "plain" };
     case "scroll":
-      return { text: `Scrolled ${name}% down`, tone: "plain" };
-    case "step": {
-      const step = FUNNEL.find((f) => f.key === name);
-      return step ? { text: `Reached: ${step.label}`, tone: "step" } : null;
-    }
-    case "day":
-      return { text: `Looked at times on ${name}`, tone: "plain" };
-    case "time": {
-      const props = event.props as { day?: string } | null;
-      return { text: `Picked a time${props?.day ? ` on ${props.day}` : ""}`, tone: "step" };
-    }
-    case "change_time":
-      return { text: "Went back to change the time", tone: "plain" };
-    case "field":
-      return { text: `Started the ${name} field`, tone: "plain" };
-    case "form_invalid":
-      return { text: `Form error on: ${name}`, tone: "exit" };
-    case "submit":
-      return { text: "Hit confirm", tone: "step" };
-    case "booked":
-      return { text: "Booked a demo", tone: "win" };
-    case "booking_error":
-      return { text: `Booking error (${name})`, tone: "exit" };
-    case "booking_cancelled":
-      return { text: "Cancelled their booking", tone: "exit" };
-    case "booking_rescheduled":
-      return { text: "Rescheduled their booking", tone: "plain" };
+      return { text: `Scrolled ${name}%`, tone: "plain" };
     case "click":
       return { text: `Clicked “${name}”`, tone: "plain" };
     case "exit":
       return { text: `Left for ${name}`, tone: "exit" };
     case "hide":
-      return { text: "Switched tabs or closed the page", tone: "exit" };
+      return { text: "Left the tab", tone: "exit" };
     case "return":
-      return { text: "Came back to the tab", tone: "plain" };
+      return { text: "Back on the tab", tone: "plain" };
+    case "step":
+      // Interested and Started arrive with the flow_open / path_start that
+      // set them, which say more.
+      return name === "engaged" ? { text: "Engaged", tone: "step" } : null;
+    case "flow_open": {
+      const from = typeof props.from === "string" ? (FROM[props.from] ?? props.from) : null;
+      return { text: `Opened ${flowLabel(name)}${from ? ` · ${from}` : ""}`, tone: "step" };
+    }
+    case "flow_close":
+      return { text: `Closed ${flowLabel(name)}`, tone: "plain" };
+    case "path_start":
+      return { text: `Started ${PATH_LABEL[name] ?? name}`, tone: "step" };
+    case "lead":
+      return { text: `Lead · ${PATH_LABEL[name] ?? name}`, tone: "win" };
+    case "lead_error":
+      return { text: `Lead error (${name})`, tone: "exit" };
+    case "call_start":
+      return { text: name === "chat" ? "Chat started" : "Call started", tone: "step" };
+    case "call_end": {
+      const parts = [name === "chat" ? "Chat ended" : "Call ended"];
+      const seconds = num("seconds");
+      const turns = num("turns");
+      if (seconds !== null) parts.push(clock(seconds));
+      if (turns) parts.push(plural(turns, "turn"));
+      const by = typeof props.ended_by === "string" ? ENDED[props.ended_by] : undefined;
+      if (by) parts.push(by);
+      return { text: parts.join(" · "), tone: "plain" };
+    }
+    case "trailer_play":
+      return { text: "Played trailer", tone: "step" };
+    case "trailer_progress":
+      return { text: `Trailer ${name}%`, tone: name === "100" ? "step" : "plain" };
+    case "day":
+      return { text: `Viewed ${name}`, tone: "plain" };
+    case "time":
+      return { text: `Picked a time${props.day ? ` · ${props.day}` : ""}`, tone: "step" };
+    case "change_time":
+      return { text: "Changed time", tone: "plain" };
     case "tz":
-      return { text: `Changed time zone to ${name}`, tone: "plain" };
+      return { text: `Time zone ${name}`, tone: "plain" };
     case "month":
-      return { text: `Browsed to ${name}`, tone: "plain" };
+      return { text: `Month ${name}`, tone: "plain" };
+    case "field":
+      return { text: `Typed ${name}`, tone: "plain" };
+    case "form_invalid":
+      return { text: `Form error: ${name}`, tone: "exit" };
+    case "submit":
+      return { text: "Hit confirm", tone: "step" };
+    case "booking_error":
+      return { text: `Booking error (${name})`, tone: "exit" };
     case "booking_offline":
-      return { text: "Saw the booking-offline fallback", tone: "exit" };
-    default:
+      return { text: "Calendar offline", tone: "exit" };
+    case "booked":
+      return { text: "Booked a call", tone: "win" };
+    case "booking_cancelled":
+      return { text: "Cancelled booking", tone: "exit" };
+    case "booking_rescheduled":
+      return { text: "Rescheduled", tone: "plain" };
+    case "reschedule_submit":
+      return { text: "Moving booking", tone: "plain" };
+    case "cancel_submit":
+      return { text: "Cancelling booking", tone: "plain" };
+    case "guide_files":
+      return { text: `Added ${plural(Number(name) || 0, "file")}`, tone: "plain" };
+    case "guide_sent":
+      return { text: "Sent guide files", tone: "step" };
+    case "guide_error":
+      return { text: `Upload error (${name})`, tone: "exit" };
+    case "guide_refused":
+      return { text: `${plural(Number(name) || 0, "file")} refused`, tone: "exit" };
+    case "deliverable_page":
+      return { text: `${flowLabel(name)} p.${num("page") ?? "?"}`, tone: "plain" };
+    case "deliverable_zoom":
+      return { text: `Zoomed ${flowLabel(name)} p.${num("page") ?? "?"}`, tone: "plain" };
+    case "microsite_open":
+      return { text: "Opened live microsite", tone: "plain" };
+    case "slots":
+      // The calendar loading its times: the page, not the visitor.
       return null;
+    default:
+      // Never drop a new event silently: say its raw name.
+      return { text: `${event.type.replace(/_/g, " ")}${name ? ` · ${name}` : ""}`, tone: "plain" };
   }
 }
-
-const TIME_BUCKETS: [number, string][] = [
-  [10, "Under 10s"],
-  [30, "10–30s"],
-  [60, "30s–1m"],
-  [120, "1–2m"],
-  [300, "2–5m"],
-  [Infinity, "5m+"],
-];
 
 export function summarize(
   snap: Snapshot,
@@ -283,25 +362,60 @@ export function summarize(
     .sort((a, b) => b.visits - a.visits);
 
   const visits = snap.visits.filter(inCampaign);
+  const visitIds = new Set(visits.map((v) => v.id));
   const bookingRows = snap.bookings.filter(inCampaign);
+  const leadRows = snap.leads.filter(inCampaign);
+  const conversationRows = snap.conversations.filter(inCampaign);
   const live = snap.live.filter(inCampaign);
+  const events = snap.pathEvents.filter((e) => visitIds.has(e.visit_id));
+
+  /* Who did what, per visit ------------------------------------------------ */
+  const talked = new Set<string>();
+  for (const c of snap.conversations) if (c.visit_id && visitIds.has(c.visit_id)) talked.add(c.visit_id);
+
+  const opened = new Map<PathKey, Set<string>>(PATHS.map((p) => [p.key, new Set()]));
+  const started = new Map<PathKey, Set<string>>(PATHS.map((p) => [p.key, new Set()]));
+  const converted = new Map<PathKey, Set<string>>(PATHS.map((p) => [p.key, new Set()]));
+  const from = new Map<string, number>();
+  const trailerPlays = new Set<string>();
+  const trailerMarks = new Map<string, Set<string>>(["25", "50", "75", "100"].map((m) => [m, new Set()]));
+
+  for (const e of events) {
+    if (e.type === "flow_open") {
+      const path = pathOfOpen(e);
+      if (path) opened.get(path)!.add(e.visit_id);
+      const source = typeof e.props?.from === "string" ? e.props.from : "unknown";
+      from.set(source, (from.get(source) ?? 0) + 1);
+    } else if (e.type === "path_start") {
+      if (isPath(e.name)) started.get(e.name)!.add(e.visit_id);
+    } else if (e.type === "call_start") {
+      talked.add(e.visit_id);
+    } else if (e.type === "trailer_play") {
+      trailerPlays.add(e.visit_id);
+    } else if (e.type === "trailer_progress") {
+      trailerMarks.get(e.name ?? "")?.add(e.visit_id);
+    }
+  }
+  // Leads convert their own path; a booking converts "book".
+  for (const l of snap.leads) {
+    if (l.visit_id && visitIds.has(l.visit_id) && isPath(l.path)) converted.get(l.path)!.add(l.visit_id);
+  }
+  for (const v of visits) if (v.booked) converted.get("book")!.add(v.id);
 
   /* KPIs ----------------------------------------------------------------- */
-  const reached = (step: number) => visits.filter((v) => v.furthest_step >= step).length;
-  const bookedVisits = visits.filter((v) => v.booked).length;
+  const reached = (step: number) => visits.filter((v) => stepOf(v) >= step).length;
+  const convertedVisits = reached(CONVERTED);
   const activeBookings = bookingRows.filter((b) => b.status !== "cancelled");
 
   const kpis: Summary["kpis"] = {
     visits: visits.length,
-    visitors: new Set(visits.map((v) => v.visitor_id)).size,
-    returning: visits.filter((v) => v.returning_visitor).length,
-    engaged: reached(1),
-    sawCalendar: reached(2),
-    bookedVisits,
-    bookings: activeBookings.length,
+    talked: talked.size,
+    talkedRate: share(talked.size, visits.length),
+    leads: leadRows.length,
+    booked: activeBookings.length,
     cancelled: bookingRows.length - activeBookings.length,
-    conversion: share(bookedVisits, visits.length),
-    medianEngagedSec: Math.round(median(visits.map((v) => v.engaged_ms / 1000))),
+    converted: convertedVisits,
+    conversion: share(convertedVisits, visits.length),
     liveNow: live.length,
   };
 
@@ -319,18 +433,24 @@ export function summarize(
     };
   });
 
-  let biggestDrop: Summary["biggestDrop"] = null;
-  for (let i = 1; i < funnel.length; i++) {
-    const lost = funnel[i - 1].count - funnel[i].count;
-    if (lost > 0 && (!biggestDrop || lost > biggestDrop.lost)) {
-      biggestDrop = {
-        from: funnel[i - 1].label,
-        to: funnel[i].label,
-        lost,
-        share: share(lost, funnel[i - 1].count),
-      };
-    }
-  }
+  /* Paths ------------------------------------------------------------------ */
+  const paths: Summary["paths"] = PATHS.map((p) => {
+    const o = opened.get(p.key)!.size;
+    const c = converted.get(p.key)!.size;
+    return {
+      key: p.key,
+      label: p.label,
+      converts: p.converts,
+      opened: o,
+      started: started.get(p.key)!.size,
+      converted: c,
+      rate: o ? c / o : null,
+    };
+  });
+
+  const openedFrom = [...from.entries()]
+    .map(([key, count]) => ({ label: FROM[key] ?? key, count }))
+    .sort((a, b) => b.count - a.count);
 
   /* Over time ------------------------------------------------------------ */
   const seriesUnit: Summary["seriesUnit"] = range === "today" ? "hour" : "day";
@@ -339,13 +459,13 @@ export function summarize(
     const nowHour = wall(Date.now(), tz).h;
     for (let h = 0; h <= nowHour; h++) {
       const label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
-      series.push({ key: String(h), label, visits: 0, booked: 0 });
+      series.push({ key: String(h), label, visits: 0, converted: 0 });
     }
     for (const v of visits) {
       const bucket = series[wall(v.started_at, tz).h];
       if (!bucket) continue;
       bucket.visits++;
-      if (v.booked) bucket.booked++;
+      if (stepOf(v) >= CONVERTED) bucket.converted++;
     }
   } else {
     const today = dayKey(Date.now(), tz);
@@ -366,7 +486,7 @@ export function summarize(
     for (let i = back; i >= 0; i--) {
       const key = shiftDay(today, -i);
       const [, m, d] = key.split("-").map(Number);
-      const entry = { key, label: `${m}/${d}`, visits: 0, booked: 0 };
+      const entry = { key, label: `${m}/${d}`, visits: 0, converted: 0 };
       index.set(key, entry);
       series.push(entry);
     }
@@ -374,18 +494,11 @@ export function summarize(
       const bucket = index.get(dayKey(v.started_at, tz));
       if (!bucket) continue;
       bucket.visits++;
-      if (v.booked) bucket.booked++;
+      if (stepOf(v) >= CONVERTED) bucket.converted++;
     }
   }
 
-  /* Time on page ---------------------------------------------------------- */
-  const timeBuckets = TIME_BUCKETS.map(([, label]) => ({ label, count: 0 }));
-  for (const v of visits) {
-    const sec = v.engaged_ms / 1000;
-    timeBuckets[TIME_BUCKETS.findIndex(([max]) => sec < max)].count++;
-  }
-
-  /* Campaigns ------------------------------------------------------------- */
+  /* Sources ---------------------------------------------------------------- */
   const groups = new Map<string, Visit[]>();
   for (const v of visits) {
     const key = campaignKey(v);
@@ -393,37 +506,51 @@ export function summarize(
     if (rows) rows.push(v);
     else groups.set(key, [v]);
   }
-  const campaigns = [...groups.entries()]
+  const sources = [...groups.entries()]
     .map(([key, rows]) => {
-      const booked = rows.filter((v) => v.booked).length;
+      const done = rows.filter((v) => stepOf(v) >= CONVERTED).length;
       return {
         key,
         label: campaignLabel(rows[0]),
         detail: campaignDetail(rows[0]),
         visits: rows.length,
-        engagedRate: share(rows.filter((v) => v.furthest_step >= 1).length, rows.length),
-        calendarRate: share(rows.filter((v) => v.furthest_step >= 2).length, rows.length),
-        booked,
-        conversion: share(booked, rows.length),
-        medianEngagedSec: Math.round(median(rows.map((v) => v.engaged_ms / 1000))),
+        talked: rows.filter((v) => talked.has(v.id)).length,
+        interested: rows.filter((v) => stepOf(v) >= 2).length,
+        converted: done,
+        rate: share(done, rows.length),
       };
     })
-    .sort((a, b) => b.visits - a.visits || b.booked - a.booked);
+    .sort((a, b) => b.visits - a.visits || b.converted - a.converted);
 
-  /* Where non-bookers stopped -------------------------------------------- */
-  const didNotBook = visits.filter((v) => !v.booked);
+  /* Where non-converters stopped ----------------------------------------- */
+  const notConverted = visits.filter((v) => stepOf(v) < CONVERTED);
   const stoppedAt = FUNNEL.slice(0, -1).map((f) => ({
     label: f.label,
-    count: didNotBook.filter((v) => v.furthest_step === f.step).length,
+    count: notConverted.filter((v) => stepOf(v) === f.step).length,
   }));
-  const leftFrom = countBy(didNotBook, (v) =>
-    v.last_section ? (SECTIONS[v.last_section] ?? v.last_section) : null,
-  );
-  const exits = countBy(didNotBook, (v) => v.exit_target);
-  const devices = countBy(visits, (v) => v.device);
 
-  /* Bookings -------------------------------------------------------------- */
-  const bookings = bookingRows.slice(0, 50).map((b: BookingRow) => ({
+  /* Leads, bookings, calls ------------------------------------------------- */
+  const leads = leadRows.slice(0, 50).map((l) => {
+    let detail: string | null = null;
+    let href: string | null = null;
+    if (l.client_url) {
+      href = /^https?:\/\//i.test(l.client_url) ? l.client_url : `https://${l.client_url}`;
+      detail = l.client_url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+    } else if (l.file_count != null) {
+      detail = plural(l.file_count, "file");
+    }
+    return {
+      id: l.id,
+      at: l.created_at,
+      path: PATH_LABEL[l.path] ?? l.path,
+      email: l.email,
+      detail,
+      href,
+      source: campaignLabel(l),
+    };
+  });
+
+  const bookings = bookingRows.slice(0, 50).map((b) => ({
     uid: b.uid,
     createdAt: b.created_at,
     startAt: b.start_at,
@@ -431,24 +558,26 @@ export function summarize(
     email: b.email,
     agency: b.agency,
     clients: b.client_count,
-    campaign: campaignLabel(b),
+    source: campaignLabel(b),
     status: b.status,
   }));
 
-  /* Clicked but didn't book ------------------------------------------------ */
-  const warm = didNotBook
-    .filter((v) => v.furthest_step >= 2)
-    .sort((a, b) => b.furthest_step - a.furthest_step || b.last_seen_at.localeCompare(a.last_seen_at));
-  const retarget = warm.slice(0, 25).map((v) => ({
-    visitor: v.visitor_id.slice(0, 6),
-    visitorId: v.visitor_id,
-    lastSeen: v.last_seen_at,
-    campaign: campaignLabel(v),
-    step: stepLabel(v.furthest_step),
-    engagedSec: Math.round(v.engaged_ms / 1000),
-    device: v.device ?? "—",
-    place: place(v),
-    returning: v.returning_visitor,
+  const liveVisits = new Set(snap.live.map((v) => v.id));
+  const now = Date.now();
+  const calls = conversationRows.slice(0, 50).map((c) => ({
+    id: c.id,
+    at: c.started_at,
+    updatedAt: c.updated_at,
+    mode: c.mode,
+    seconds: Math.round(c.duration_ms / 1000),
+    turns: c.turns,
+    flows: c.flows.map(flowLabel),
+    ended: c.ended_by ? (ENDED[c.ended_by] ?? c.ended_by) : "",
+    live:
+      !c.ended_at &&
+      (now - new Date(c.updated_at).getTime() < 90_000 ||
+        (c.visit_id !== null && liveVisits.has(c.visit_id))),
+    source: campaignLabel(c),
   }));
 
   /* Live ------------------------------------------------------------------- */
@@ -458,7 +587,7 @@ export function summarize(
   const recent = [...snap.recent].sort((a, b) => b.at.localeCompare(a.at) || b.id - a.id);
   for (const event of recent) {
     const visit = snap.feedVisits[event.visit_id];
-    if (!visit || visit.page !== "/get-started" || !inCampaign(visit)) continue;
+    if (!visit || visit.page !== TRACKED_PAGE || !inCampaign(visit)) continue;
     const described = describe(event);
     if (!described) continue;
     feed.push({
@@ -467,35 +596,39 @@ export function summarize(
       ...described,
       who: [campaignLabel(visit), visit.device, visit.city].filter(Boolean).join(" · "),
     });
-    if (feed.length >= 30) break;
+    if (feed.length >= 40) break;
   }
 
   return {
     generatedAt: new Date().toISOString(),
     range,
     tz,
+    missing: snap.missing,
     campaignOptions,
     kpis,
     funnel,
-    biggestDrop,
+    paths,
+    openedFrom,
+    sources,
+    leads,
+    leadsTotal: leadRows.length,
+    bookings,
+    bookingsTotal: bookingRows.length,
+    calls,
+    callsTotal: conversationRows.length,
     series,
     seriesUnit,
-    timeBuckets,
-    campaigns,
+    trailer: {
+      plays: trailerPlays.size,
+      reached: [...trailerMarks.entries()].map(([mark, ids]) => ({ label: `${mark}%`, count: ids.size })),
+    },
     stoppedAt,
-    leftFrom,
-    exits,
-    devices,
-    bookings,
-    retarget,
-    retargetTotal: warm.length,
     feed,
     live: live.map((v) => ({
       visitor: v.visitor_id.slice(0, 6),
       campaign: campaignLabel(v),
       section: v.last_section ? (SECTIONS[v.last_section] ?? v.last_section) : "—",
-      step: stepLabel(v.furthest_step),
-      place: place(v),
+      step: stepLabel(stepOf(v)),
       device: v.device ?? "—",
     })),
   };

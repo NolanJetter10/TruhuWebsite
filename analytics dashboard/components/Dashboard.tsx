@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useCallback,
   useEffect,
   useRef,
@@ -9,13 +10,15 @@ import {
   type ReactNode,
 } from "react";
 import { RANGES, type RangeKey, type Summary } from "@/lib/aggregate";
-import { BarList, FunnelChart, Meter, VisitsOverTime, duration, fmt, pct } from "./charts";
+import { TRACKED_PAGE } from "@/lib/funnel";
+import { BarList, FunnelChart, Meter, VisitsOverTime, duration, fmt, noun, pct } from "./charts";
 import { LinkBuilder } from "./LinkBuilder";
 
 /**
- * The whole dashboard: one filter row (range, campaign) scoping everything
- * under it, then the headline numbers, the funnel beside the live feed, and
- * the breakdowns.
+ * The whole dashboard: one filter row (range, source) scoping everything
+ * under it, then the headline numbers, the funnel beside the live feed,
+ * Bryan's paths, sources, and the leads, bookings and calls themselves.
+ * Labels are a word or three; definitions live in `title` tooltips.
  *
  * Live: an EventSource on /api/stream says when the data moved, and the
  * summary is re-fetched quietly — the frame never blanks. A filter change
@@ -50,13 +53,14 @@ function ago(iso: string, now: number) {
 function when(iso: string, tz: string) {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: tz,
-    weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(iso));
 }
+
+const NONE = "None yet";
 
 export function Dashboard({
   backend: initialBackend,
@@ -86,6 +90,7 @@ export function Dashboard({
   const [dimmed, setDimmed] = useState(false);
   const [link, setLink] = useState<Link>("connecting");
   const [beat, setBeat] = useState(0);
+  const [openCall, setOpenCall] = useState<string | null>(null);
   const now = useNow();
   const request = useRef(0);
 
@@ -162,6 +167,7 @@ export function Dashboard({
   }
 
   const k = data?.kpis;
+  const finished = data?.trailer.reached.find((r) => r.label === "100%")?.count ?? 0;
 
   return (
     <div className="min-h-dvh">
@@ -176,10 +182,7 @@ export function Dashboard({
             >
               T
             </span>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold">Get started funnel</p>
-              <p className="text-[0.6875rem] text-muted">truhu.ai/get-started</p>
-            </div>
+            <h1 className="text-sm font-semibold">{TRACKED_PAGE}</h1>
           </div>
           <LivePill link={link} beat={beat} />
           <span className="text-xs text-muted">
@@ -191,9 +194,10 @@ export function Dashboard({
                 href={`https://clarity.microsoft.com/projects/view/${encodeURIComponent(clarityId)}/dashboard`}
                 target="_blank"
                 rel="noreferrer"
+                title="Session recordings and heatmaps"
                 className="text-xs font-medium text-accent-text hover:underline"
               >
-                Recordings (Clarity) ↗
+                Clarity ↗
               </a>
             ) : null}
             {gaConfigured ? (
@@ -201,12 +205,22 @@ export function Dashboard({
                 href="https://analytics.google.com/"
                 target="_blank"
                 rel="noreferrer"
+                title="Google Analytics 4"
                 className="text-xs font-medium text-accent-text hover:underline"
               >
-                Google Analytics ↗
+                GA4 ↗
               </a>
             ) : null}
-            <span className="rounded-full border border-line px-2.5 py-1 text-[0.6875rem] font-medium text-ink-2">
+            <span
+              title={
+                backend === "supabase"
+                  ? "Reading Supabase"
+                  : backend === "file"
+                    ? "No database connected: reading .data/analytics.ndjson. Add SUPABASE_URL and SUPABASE_SECRET_KEY to the website's .env.local to switch."
+                    : "No database configured"
+              }
+              className="rounded-full border border-line px-2.5 py-1 text-[0.6875rem] font-medium text-ink-2"
+            >
               {backend === "supabase" ? "Supabase" : backend === "file" ? "Local file" : "No database"}
             </span>
             {!openAccess ? (
@@ -221,24 +235,19 @@ export function Dashboard({
       </header>
 
       <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
-        {backend === "file" ? (
-          <Notice tone="info">
-            Local mode: no database connected yet, so this shows test data from{" "}
-            <code>.data/analytics.ndjson</code>. Add <code>SUPABASE_URL</code> and{" "}
-            <code>SUPABASE_SECRET_KEY</code> to the website&apos;s <code>.env.local</code> and this
-            switches to Supabase on its own.
-          </Notice>
-        ) : null}
         {backend === "none" ? (
           <Notice tone="warn">
-            No database configured. Set <code>SUPABASE_URL</code> and{" "}
-            <code>SUPABASE_SECRET_KEY</code>.
+            No database: set <code>SUPABASE_URL</code> and <code>SUPABASE_SECRET_KEY</code>.
           </Notice>
         ) : null}
         {openAccess ? (
           <Notice tone="warn">
-            No <code>DASHBOARD_PASSWORD</code> set, so this is open. Fine on your laptop; set one
-            before deploying.
+            Open: no <code>DASHBOARD_PASSWORD</code> set.
+          </Notice>
+        ) : null}
+        {data?.missing.length ? (
+          <Notice tone="warn">
+            Missing tables: {data.missing.join(", ")}. Run <code>supabase/schema.sql</code> again.
           </Notice>
         ) : null}
 
@@ -252,7 +261,7 @@ export function Dashboard({
                 role="radio"
                 aria-checked={range === key}
                 onClick={() => chooseRange(key)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 ${
                   range === key ? "bg-ink text-surface" : "text-ink-2 hover:bg-raised"
                 }`}
               >
@@ -261,13 +270,14 @@ export function Dashboard({
             ))}
           </div>
           <label className="flex items-center gap-2 text-sm text-ink-2">
-            <span className="sr-only sm:not-sr-only">Campaign</span>
+            <span className="sr-only">Source</span>
             <select
               value={campaign}
               onChange={(e) => chooseCampaign(e.target.value)}
+              title="utm_campaign, ?c= or ?tag=; else the source"
               className="max-w-64 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
             >
-              <option value="">All campaigns</option>
+              <option value="">All sources</option>
               {data?.campaignOptions.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label} ({option.visits})
@@ -287,75 +297,54 @@ export function Dashboard({
               Clear
             </button>
           ) : null}
-          <span className="text-xs text-muted sm:ml-auto">Times in {tz.replace(/_/g, " ")}</span>
+          <span className="text-xs text-muted sm:ml-auto">{tz.replace(/_/g, " ")}</span>
         </div>
 
-        {error ? (
-          <Notice tone="error">
-            Couldn&apos;t load the numbers: {error}
-          </Notice>
-        ) : null}
+        {error ? <Notice tone="error">{error}</Notice> : null}
 
         {!data || !k ? (
-          <p className="py-24 text-center text-sm text-muted">Loading the funnel…</p>
+          <p className="py-24 text-center text-sm text-muted">Loading…</p>
         ) : (
           <div className={`space-y-4 transition-opacity duration-200 ${dimmed ? "opacity-55" : ""}`}>
             {/* Headline numbers ---------------------------------------- */}
-            <section aria-label="Headline numbers" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-              <div className="rounded-xl border border-line bg-surface p-5 sm:col-span-2">
-                <p className="text-sm text-ink-2">Demos booked</p>
-                <p className="mt-1 text-[3.25rem] leading-none font-semibold tracking-tight">
-                  {fmt.format(k.bookings)}
-                </p>
-                <p className="mt-3 text-sm text-ink-2">
-                  <span className="font-semibold text-ink">{pct(k.conversion)}</span> of visits booked
-                  {k.cancelled ? <span className="text-muted"> · {k.cancelled} cancelled</span> : null}
-                </p>
-              </div>
-              <Tile label="Visits" value={fmt.format(k.visits)}>
-                {fmt.format(k.visitors)} people · {fmt.format(k.returning)} returning
-              </Tile>
-              <Tile label="Engaged" value={pct(k.visits ? k.engaged / k.visits : 0)}>
-                {fmt.format(k.engaged)} stayed 10s+ or interacted
-              </Tile>
-              <Tile label="Saw the calendar" value={pct(k.visits ? k.sawCalendar / k.visits : 0)}>
-                {fmt.format(k.sawCalendar)} visits
-              </Tile>
-              <Tile label="Median time on page" value={duration(k.medianEngagedSec)}>
-                active time, tab in view
-              </Tile>
+            <section aria-label="Headline numbers" className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <Tile label="Visits" hint={`Visits to ${TRACKED_PAGE}`} value={fmt.format(k.visits)} />
+              <Tile
+                label="Talked to Bryan"
+                hint="Visits with an AI Bryan call or chat"
+                value={fmt.format(k.talked)}
+                sub={`${pct(k.talkedRate)} of visits`}
+              />
+              <Tile label="Leads" hint="Work emails left on Samples, Build or Rebuild" value={fmt.format(k.leads)} />
+              <Tile
+                label="Booked"
+                hint="Calls booked with Bryan, cancellations excluded"
+                value={fmt.format(k.booked)}
+                sub={k.cancelled ? `${fmt.format(k.cancelled)} cancelled` : undefined}
+              />
+              <Tile
+                label="Conversion"
+                hint="Visits with a lead or booking ÷ visits"
+                value={pct(k.conversion)}
+                sub={`${fmt.format(k.converted)} ${noun(k.converted, "visit")}`}
+                strong
+                wide
+              />
             </section>
-
-            {k.visits === 0 ? (
-              <Notice tone="info">
-                No visits to /get-started in this range yet. Open the page (or a tagged link from
-                the builder at the bottom) and this fills in live.
-              </Notice>
-            ) : null}
 
             {/* Funnel + live --------------------------------------------- */}
             <div className="grid gap-4 lg:grid-cols-3">
-              <Card
-                className="lg:col-span-2"
-                title="Funnel"
-                subtitle="How far each visit got. A step counts every visit that reached at least that point."
-                aside={
-                  data.biggestDrop ? (
-                    <span className="rounded-full bg-critical-wash px-2.5 py-1 text-xs text-ink">
-                      Biggest drop: <strong>{data.biggestDrop.from}</strong> →{" "}
-                      <strong>{data.biggestDrop.to}</strong> ({pct(data.biggestDrop.share)},{" "}
-                      {fmt.format(data.biggestDrop.lost)} visits)
-                    </span>
-                  ) : null
-                }
-              >
+              <Card className="lg:col-span-2" title="Funnel" hint="Visits that reached at least each step">
                 <FunnelChart steps={data.funnel} />
               </Card>
 
               <Card
                 title="Live"
-                subtitle={`${fmt.format(k.liveNow)} on the page right now`}
-                aside={<LivePill link={link} beat={beat} compact />}
+                aside={
+                  <span className="text-xs text-muted tabular" title="Heard from in the last 45 seconds">
+                    {fmt.format(k.liveNow)} now
+                  </span>
+                }
               >
                 {data.live.length ? (
                   <ul className="mb-4 space-y-1.5">
@@ -371,9 +360,8 @@ export function Dashboard({
                     ))}
                   </ul>
                 ) : null}
-                <p className="mb-2 text-xs font-medium text-muted">Activity</p>
                 {data.feed.length ? (
-                  <ol className="max-h-[22rem] space-y-0.5 overflow-y-auto pr-1">
+                  <ol className="max-h-[17rem] space-y-0.5 overflow-y-auto pr-1">
                     {data.feed.map((item) => (
                       <li key={item.id} className="arrive grid grid-cols-[3.5rem_1fr] gap-2 rounded-md px-1.5 py-1 text-xs">
                         <span className="text-muted tabular">{ago(item.at, now).replace(" ago", "")}</span>
@@ -401,200 +389,299 @@ export function Dashboard({
                     ))}
                   </ol>
                 ) : (
-                  <p className="py-6 text-center text-sm text-muted">Nothing yet.</p>
+                  <Empty />
                 )}
               </Card>
             </div>
 
-            {/* Over time + time on page ---------------------------------- */}
+            {/* Paths + where opens came from ----------------------------- */}
             <div className="grid gap-4 lg:grid-cols-3">
-              <Card
-                className="lg:col-span-2"
-                title={data.seriesUnit === "hour" ? "Visits by hour" : "Visits by day"}
-                subtitle="Each column is the visits that started then; the blue part booked."
-              >
-                <VisitsOverTime series={data.series} unit={data.seriesUnit} />
-              </Card>
-              <Card title="Time actively on the page" subtitle="Seconds with the tab in view and someone there.">
-                <BarList items={data.timeBuckets} empty="No visits yet." />
-              </Card>
-            </div>
-
-            {/* Campaigns ------------------------------------------------- */}
-            <Card
-              title="Campaigns"
-              subtitle="Grouped by utm_campaign, or by source when a link has no campaign. Click a row to filter everything to it."
-            >
-              <div className="-mx-1 overflow-x-auto">
-                <table className="w-full min-w-[720px] text-sm">
+              <Card className="lg:col-span-2" title="Paths" hint="Bryan's ways forward, counted in visits">
+                <Table minWidth={480}>
                   <thead>
                     <tr className="text-left text-xs text-muted">
-                      <th className="px-1 py-2 font-medium">Campaign</th>
-                      <th className="px-1 py-2 text-right font-medium">Visits</th>
-                      <th className="px-1 py-2 text-right font-medium">Engaged</th>
-                      <th className="px-1 py-2 text-right font-medium">Saw calendar</th>
-                      <th className="px-1 py-2 text-right font-medium">Booked</th>
-                      <th className="px-1 py-2 text-right font-medium">Conversion</th>
-                      <th className="px-1 py-2 text-right font-medium">Median time</th>
+                      <Th>Path</Th>
+                      <Th right hint="Visits that opened a popup on this path">Opened</Th>
+                      <Th right hint="Visits that viewed a sample, typed in a form, added a file or picked a time">
+                        Started
+                      </Th>
+                      <Th right hint="Visits that left a lead or booked on this path">Converted</Th>
+                      <Th right hint="Converted ÷ Opened">Rate</Th>
                     </tr>
                   </thead>
                   <tbody className="tabular">
-                    {data.campaigns.map((row) => (
-                      <tr
-                        key={row.key}
-                        onClick={() => chooseCampaign(campaign === row.key ? "" : row.key)}
-                        className={`cursor-pointer border-t border-line hover:bg-raised ${
-                          campaign === row.key ? "bg-accent-wash" : ""
-                        }`}
-                      >
-                        <td className="px-1 py-2.5">
-                          <p className="font-medium">{row.label}</p>
-                          <p className="text-xs text-muted">{row.detail}</p>
+                    {data.paths.map((p) => (
+                      <tr key={p.key} className="border-t border-line">
+                        <td className="px-1 py-2.5 font-medium" title={`Converts: ${p.converts}`}>
+                          {p.label}
                         </td>
-                        <td className="px-1 py-2.5 text-right font-semibold">{fmt.format(row.visits)}</td>
-                        <td className="px-1 py-2.5 text-right">{pct(row.engagedRate)}</td>
-                        <td className="px-1 py-2.5 text-right">{pct(row.calendarRate)}</td>
-                        <td className="px-1 py-2.5 text-right font-semibold">{fmt.format(row.booked)}</td>
+                        <td className="px-1 py-2.5 text-right">{fmt.format(p.opened)}</td>
+                        <td className="px-1 py-2.5 text-right">{fmt.format(p.started)}</td>
+                        <td className="px-1 py-2.5 text-right font-semibold">{fmt.format(p.converted)}</td>
                         <td className="px-1 py-2.5 text-right">
-                          <span className="inline-flex items-center gap-2">
-                            <Meter value={row.conversion} />
-                            {pct(row.conversion)}
-                          </span>
+                          {p.rate === null ? (
+                            <span className="text-muted">—</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-2">
+                              <Meter value={p.rate} />
+                              {pct(p.rate)}
+                            </span>
+                          )}
                         </td>
-                        <td className="px-1 py-2.5 text-right">{duration(row.medianEngagedSec)}</td>
                       </tr>
                     ))}
-                    {!data.campaigns.length ? (
-                      <tr>
-                        <td colSpan={7} className="py-6 text-center text-muted">
-                          No visits in this range.
-                        </td>
-                      </tr>
-                    ) : null}
                   </tbody>
-                </table>
-              </div>
-            </Card>
-
-            {/* Drop-off ------------------------------------------------ */}
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Card title="Where non-bookers stopped" subtitle="The furthest step reached by visits that didn't book.">
-                <BarList items={data.stoppedAt} empty="Everyone booked. Nice." />
+                </Table>
               </Card>
-              <Card title="What they were looking at last" subtitle="The block on screen when a non-booker left.">
-                <BarList items={data.leftFrom} empty="No exits recorded." />
-              </Card>
-              <Card title="Links they left by" subtitle="Clicked away from the page without booking.">
-                <BarList items={data.exits} empty="Nobody left by a link — they closed the tab." />
-              </Card>
-              <Card title="Devices" subtitle="All visits in range.">
-                <BarList items={data.devices} empty="No visits yet." />
+              <Card title="Opened from" hint="What opened each popup (flow_open from)">
+                <BarList items={data.openedFrom} empty={NONE} unit="open" />
               </Card>
             </div>
 
-            {/* Bookings --------------------------------------------------- */}
-            <Card
-              title="Bookings"
-              subtitle="Made on the page, newest first, with reschedules and cancellations. Until a Zoom link is set up, send each booker theirs before the call."
-            >
-              <div className="-mx-1 overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-muted">
-                      <th className="px-1 py-2 font-medium">Who</th>
-                      <th className="px-1 py-2 font-medium">Agency</th>
-                      <th className="px-1 py-2 font-medium">Clients</th>
-                      <th className="px-1 py-2 font-medium">Meeting</th>
-                      <th className="px-1 py-2 font-medium">Campaign</th>
-                      <th className="px-1 py-2 font-medium">Booked</th>
-                      <th className="px-1 py-2 font-medium">Status</th>
+            {/* Sources ------------------------------------------------- */}
+            <Card title="Sources" hint="utm_campaign, ?c= or ?tag=; else the source. Click a row to filter.">
+              <Table minWidth={560}>
+                <thead>
+                  <tr className="text-left text-xs text-muted">
+                    <Th>Source</Th>
+                    <Th right>Visits</Th>
+                    <Th right hint="Visits with an AI Bryan call or chat">Talked</Th>
+                    <Th right hint="Visits that opened any popup">Interested</Th>
+                    <Th right hint="Visits with a lead or booking">Converted</Th>
+                    <Th right hint="Converted ÷ Visits">Rate</Th>
+                  </tr>
+                </thead>
+                <tbody className="tabular">
+                  {data.sources.map((row) => (
+                    <tr
+                      key={row.key}
+                      onClick={() => chooseCampaign(campaign === row.key ? "" : row.key)}
+                      className={`cursor-pointer border-t border-line hover:bg-raised ${
+                        campaign === row.key ? "bg-accent-wash" : ""
+                      }`}
+                    >
+                      <td className="px-1 py-2.5">
+                        <p className="font-medium">{row.label}</p>
+                        {row.detail ? <p className="text-xs text-muted">{row.detail}</p> : null}
+                      </td>
+                      <td className="px-1 py-2.5 text-right font-semibold">{fmt.format(row.visits)}</td>
+                      <td className="px-1 py-2.5 text-right">{fmt.format(row.talked)}</td>
+                      <td className="px-1 py-2.5 text-right">{fmt.format(row.interested)}</td>
+                      <td className="px-1 py-2.5 text-right font-semibold">{fmt.format(row.converted)}</td>
+                      <td className="px-1 py-2.5 text-right">
+                        <span className="inline-flex items-center gap-2">
+                          <Meter value={row.rate} />
+                          {pct(row.rate)}
+                        </span>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {data.bookings.map((b) => (
-                      <tr key={b.uid} className="border-t border-line">
-                        <td className="px-1 py-2.5">
-                          <p className="font-medium">{b.name}</p>
-                          <p className="text-xs text-muted">{b.email}</p>
-                        </td>
-                        <td className="px-1 py-2.5">{b.agency ?? "—"}</td>
-                        <td className="px-1 py-2.5 tabular">{b.clients ?? "—"}</td>
-                        <td className="px-1 py-2.5 tabular">{when(b.startAt, tz)}</td>
-                        <td className="px-1 py-2.5">{b.campaign}</td>
-                        <td className="px-1 py-2.5 text-muted">{ago(b.createdAt, now)}</td>
-                        <td className="px-1 py-2.5">
-                          <Status value={b.status} />
-                        </td>
-                      </tr>
-                    ))}
-                    {!data.bookings.length ? (
-                      <tr>
-                        <td colSpan={7} className="py-6 text-center text-muted">
-                          No bookings in this range yet.
-                        </td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                  {!data.sources.length ? <EmptyRow span={6} /> : null}
+                </tbody>
+              </Table>
             </Card>
 
-            {/* Clicked but didn't book -------------------------------- */}
-            <Card
-              title="Clicked but didn't book"
-              subtitle={`${fmt.format(data.retargetTotal)} visits reached the calendar and left without booking — the retargeting audience. Anonymous until they book. ${
-                clarityId
-                  ? "To watch one, copy its visitor ID (hover it) into Clarity's Custom user ID filter."
-                  : "Once Clarity is set up you can watch their recordings."
-              }`}
-            >
-              <div className="-mx-1 overflow-x-auto">
-                <table className="w-full min-w-[680px] text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-muted">
-                      <th className="px-1 py-2 font-medium">Visitor</th>
-                      <th className="px-1 py-2 font-medium">Campaign</th>
-                      <th className="px-1 py-2 font-medium">Got as far as</th>
-                      <th className="px-1 py-2 text-right font-medium">Time on page</th>
-                      <th className="px-1 py-2 font-medium">Device</th>
-                      <th className="px-1 py-2 font-medium">Location</th>
-                      <th className="px-1 py-2 font-medium">Last seen</th>
+            {/* Leads ---------------------------------------------------- */}
+            <Card title="Leads" aside={<Count shown={data.leads.length} total={data.leadsTotal} />}>
+              <Table minWidth={620}>
+                <thead>
+                  <tr className="text-left text-xs text-muted">
+                    <Th>When</Th>
+                    <Th>Path</Th>
+                    <Th>Email</Th>
+                    <Th hint="Client's website (Build) or files uploaded (Rebuild)">Site / files</Th>
+                    <Th>Source</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.leads.map((l) => (
+                    <tr key={l.id} className="border-t border-line">
+                      <td className="px-1 py-2.5 whitespace-nowrap tabular text-ink-2">{when(l.at, tz)}</td>
+                      <td className="px-1 py-2.5">{l.path}</td>
+                      <td className="px-1 py-2.5">
+                        <a href={`mailto:${l.email}`} className="font-medium hover:underline">
+                          {l.email}
+                        </a>
+                      </td>
+                      <td className="max-w-56 truncate px-1 py-2.5">
+                        {l.href ? (
+                          <a href={l.href} target="_blank" rel="noreferrer" className="text-accent-text hover:underline">
+                            {l.detail}
+                          </a>
+                        ) : (
+                          (l.detail ?? <span className="text-muted">—</span>)
+                        )}
+                      </td>
+                      <td className="px-1 py-2.5">{l.source}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {data.retarget.map((r, i) => (
-                      <tr key={`${r.visitor}-${i}`} className="border-t border-line">
-                        <td className="px-1 py-2.5 font-mono text-xs" title={r.visitorId}>
-                          #{r.visitor}
-                          {r.returning ? <span className="ml-1.5 font-sans text-muted">returning</span> : null}
-                        </td>
-                        <td className="px-1 py-2.5">{r.campaign}</td>
-                        <td className="px-1 py-2.5 font-medium">{r.step}</td>
-                        <td className="px-1 py-2.5 text-right tabular">{duration(r.engagedSec)}</td>
-                        <td className="px-1 py-2.5 capitalize">{r.device}</td>
-                        <td className="px-1 py-2.5">{r.place}</td>
-                        <td className="px-1 py-2.5 text-muted">{ago(r.lastSeen, now)}</td>
-                      </tr>
-                    ))}
-                    {!data.retarget.length ? (
-                      <tr>
-                        <td colSpan={7} className="py-6 text-center text-muted">
-                          No one has reached the calendar and left yet.
-                        </td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                  {!data.leads.length ? <EmptyRow span={5} /> : null}
+                </tbody>
+              </Table>
             </Card>
+
+            {/* Bookings --------------------------------------------------- */}
+            <Card title="Bookings" aside={<Count shown={data.bookings.length} total={data.bookingsTotal} />}>
+              <Table minWidth={680}>
+                <thead>
+                  <tr className="text-left text-xs text-muted">
+                    <Th>Booked</Th>
+                    <Th>Who</Th>
+                    <Th>Agency</Th>
+                    <Th>Meeting</Th>
+                    <Th>Source</Th>
+                    <Th>Status</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.bookings.map((b) => (
+                    <tr key={b.uid} className="border-t border-line">
+                      <td className="px-1 py-2.5 whitespace-nowrap tabular text-ink-2">{when(b.createdAt, tz)}</td>
+                      <td className="px-1 py-2.5">
+                        <p className="font-medium">{b.name}</p>
+                        <p className="text-xs text-muted">{b.email}</p>
+                      </td>
+                      <td className="px-1 py-2.5" title={b.clients ? `${b.clients} clients` : undefined}>
+                        {b.agency ?? "—"}
+                      </td>
+                      <td className="px-1 py-2.5 whitespace-nowrap tabular">{when(b.startAt, tz)}</td>
+                      <td className="px-1 py-2.5">{b.source}</td>
+                      <td className="px-1 py-2.5">
+                        <Status value={b.status} />
+                      </td>
+                    </tr>
+                  ))}
+                  {!data.bookings.length ? <EmptyRow span={6} /> : null}
+                </tbody>
+              </Table>
+            </Card>
+
+            {/* Calls ------------------------------------------------------ */}
+            <Card
+              title="Calls"
+              hint="AI Bryan calls and chats. Click a row for the transcript."
+              aside={<Count shown={data.calls.length} total={data.callsTotal} />}
+            >
+              <Table minWidth={760}>
+                <thead>
+                  <tr className="text-left text-xs text-muted">
+                    <Th>When</Th>
+                    <Th>Type</Th>
+                    <Th right>Length</Th>
+                    <Th right hint="Things the visitor said or typed">Turns</Th>
+                    <Th hint="Popups opened during it, in order">Flows</Th>
+                    <Th>Ended</Th>
+                    <Th>Source</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.calls.map((c) => {
+                    const isOpen = openCall === c.id;
+                    return (
+                      <Fragment key={c.id}>
+                        <tr
+                          onClick={() => setOpenCall(isOpen ? null : c.id)}
+                          aria-expanded={isOpen}
+                          className={`cursor-pointer border-t border-line hover:bg-raised ${isOpen ? "bg-raised" : ""}`}
+                        >
+                          <td className="px-1 py-2.5 whitespace-nowrap tabular text-ink-2">
+                            <span aria-hidden className="mr-1.5 inline-block w-2 text-muted">
+                              {isOpen ? "▾" : "▸"}
+                            </span>
+                            {when(c.at, tz)}
+                          </td>
+                          <td className="px-1 py-2.5 capitalize">{c.mode}</td>
+                          <td className="px-1 py-2.5 text-right tabular">{duration(c.seconds)}</td>
+                          <td className="px-1 py-2.5 text-right tabular">{fmt.format(c.turns)}</td>
+                          <td className="max-w-64 px-1 py-2.5">
+                            {c.flows.length ? (
+                              <span className="line-clamp-2">{c.flows.join(" → ")}</span>
+                            ) : (
+                              <span className="text-muted">—</span>
+                            )}
+                          </td>
+                          <td className="px-1 py-2.5 whitespace-nowrap">
+                            {c.live ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-good-wash px-2 py-0.5 text-xs font-medium text-good-text">
+                                <span aria-hidden className="live-dot size-1.5 rounded-full bg-good" />
+                                Live
+                              </span>
+                            ) : (
+                              c.ended || <span className="text-muted">—</span>
+                            )}
+                          </td>
+                          <td className="px-1 py-2.5">{c.source}</td>
+                        </tr>
+                        {isOpen ? (
+                          <tr className="bg-raised">
+                            <td colSpan={7} className="px-3 pt-1 pb-3">
+                              <Transcript id={c.id} version={c.updatedAt} tz={tz} />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                  {!data.calls.length ? <EmptyRow span={7} /> : null}
+                </tbody>
+              </Table>
+            </Card>
+
+            {/* Over time, trailer, where they stopped -------------------- */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card
+                className="md:col-span-2"
+                title={data.seriesUnit === "hour" ? "Visits by hour" : "Visits by day"}
+              >
+                <VisitsOverTime series={data.series} unit={data.seriesUnit} />
+              </Card>
+              <Card title="Trailer" hint="Visits that played it, and how far they got">
+                {data.trailer.plays ? (
+                  <>
+                    <div className="mb-4 flex gap-6">
+                      <Stat label="Plays" value={fmt.format(data.trailer.plays)} />
+                      <Stat
+                        label="Finished"
+                        hint="Reached 100% ÷ plays"
+                        value={pct(finished / data.trailer.plays)}
+                      />
+                    </div>
+                    <ul className="space-y-1.5 text-sm">
+                      {data.trailer.reached.map((r) => (
+                        <li key={r.label} className="grid grid-cols-[2.75rem_1fr_2rem] items-center gap-2 tabular">
+                          <span className="text-ink-2">{r.label}</span>
+                          <span className="h-1.5 rounded-full bg-accent-wash">
+                            <span
+                              className="bar-grow block h-1.5 rounded-full bg-accent"
+                              style={{ width: `${Math.round((r.count / data.trailer.plays) * 100)}%` }}
+                            />
+                          </span>
+                          <span className="text-right font-semibold">{fmt.format(r.count)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <Empty />
+                )}
+              </Card>
+              <Card title="Stopped at" hint="Furthest step of visits that didn't convert">
+                <BarList items={data.stoppedAt} empty={NONE} />
+              </Card>
+            </div>
 
             {/* Link builder ------------------------------------------- */}
-            <Card
-              title="Campaign link builder"
-              subtitle="Every link you put out should carry its own tags; this is how the Campaigns table tells them apart."
-            >
-              <LinkBuilder siteUrl={siteUrl} />
-            </Card>
+            <details className="group rounded-xl border border-line bg-surface">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-4 text-[0.9375rem] font-semibold [&::-webkit-details-marker]:hidden">
+                <span aria-hidden className="text-muted transition-transform group-open:rotate-90">
+                  ▸
+                </span>
+                Link builder
+              </summary>
+              <div className="border-t border-line px-5 py-4">
+                <LinkBuilder siteUrl={siteUrl} />
+              </div>
+            </details>
           </div>
         )}
       </main>
@@ -606,24 +693,24 @@ export function Dashboard({
 
 function Card({
   title,
-  subtitle,
+  hint,
   aside,
   className = "",
   children,
 }: {
   title: string;
-  subtitle?: string;
+  /** The definition, as a tooltip on the title. */
+  hint?: string;
   aside?: ReactNode;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <section className={`rounded-xl border border-line bg-surface p-5 ${className}`}>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          <h2 className="text-[0.9375rem] font-semibold">{title}</h2>
-          {subtitle ? <p className="mt-0.5 text-xs text-muted">{subtitle}</p> : null}
-        </div>
+    <section className={`min-w-0 rounded-xl border border-line bg-surface p-5 ${className}`}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h2 className="text-[0.9375rem] font-semibold" title={hint}>
+          {title}
+        </h2>
         {aside}
       </div>
       {children}
@@ -631,24 +718,152 @@ function Card({
   );
 }
 
-function Tile({ label, value, children }: { label: string; value: string; children: ReactNode }) {
+function Tile({
+  label,
+  hint,
+  value,
+  sub,
+  strong = false,
+  wide = false,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  sub?: string;
+  strong?: boolean;
+  /** Takes the whole row on a phone, where the tiles are two across. */
+  wide?: boolean;
+}) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-5">
+    <div
+      className={`rounded-xl border bg-surface p-4 sm:p-5 ${strong ? "border-accent/40" : "border-line"} ${
+        wide ? "col-span-2 md:col-span-1" : ""
+      }`}
+      title={hint}
+    >
       <p className="text-sm text-ink-2">{label}</p>
-      <p className="mt-1 text-[1.75rem] leading-tight font-semibold tracking-tight">{value}</p>
-      <p className="mt-1.5 text-xs text-muted">{children}</p>
+      <p className="mt-1 text-[1.75rem] leading-tight font-semibold tracking-tight tabular">{value}</p>
+      {sub ? <p className="mt-1 text-xs text-muted tabular">{sub}</p> : null}
     </div>
   );
 }
 
-function LivePill({ link, beat, compact = false }: { link: Link; beat: number; compact?: boolean }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div title={hint}>
+      <p className="text-xs text-ink-2">{label}</p>
+      <p className="text-2xl leading-tight font-semibold tracking-tight tabular">{value}</p>
+    </div>
+  );
+}
+
+function Table({ minWidth, children }: { minWidth: number; children: ReactNode }) {
+  return (
+    <div className="-mx-1 overflow-x-auto">
+      <table className="w-full text-sm" style={{ minWidth }}>
+        {children}
+      </table>
+    </div>
+  );
+}
+
+function Th({ children, right = false, hint }: { children: ReactNode; right?: boolean; hint?: string }) {
+  return (
+    <th
+      title={hint}
+      className={`px-1 py-2 font-medium ${right ? "text-right" : ""} ${hint ? "cursor-help" : ""}`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Count({ shown, total }: { shown: number; total: number }) {
+  if (!total) return null;
+  return (
+    <span className="text-xs text-muted tabular">
+      {shown < total ? `${fmt.format(shown)} of ${fmt.format(total)}` : fmt.format(total)}
+    </span>
+  );
+}
+
+function Empty() {
+  return <p className="py-6 text-center text-sm text-muted">{NONE}</p>;
+}
+
+function EmptyRow({ span }: { span: number }) {
+  return (
+    <tr>
+      <td colSpan={span} className="py-6 text-center text-muted">
+        {NONE}
+      </td>
+    </tr>
+  );
+}
+
+type Line = { role: "visitor" | "bryan"; text: string; at: string };
+
+/** One call's transcript, re-read whenever the call itself changes. */
+function Transcript({ id, version, tz }: { id: string; version: string; tz: string }) {
+  const [lines, setLines] = useState<Line[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let stale = false;
+    fetch(`/api/transcript?id=${encodeURIComponent(id)}`, { cache: "no-store" })
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+        return body.lines as Line[];
+      })
+      .then((next) => {
+        if (stale) return;
+        setLines(next);
+        setError(null);
+      })
+      .catch((e: unknown) => {
+        if (!stale) setError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [id, version]);
+
+  const time = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  if (error) return <p className="py-3 text-sm text-critical">{error}</p>;
+  if (!lines) return <p className="py-3 text-sm text-muted">Loading…</p>;
+  if (!lines.length) return <p className="py-3 text-sm text-muted">—</p>;
+  return (
+    <ol className="max-h-96 space-y-1.5 overflow-y-auto pt-2 text-sm">
+      {lines.map((line, i) => (
+        <li key={i} className="grid grid-cols-[4.5rem_3.5rem_1fr] gap-2">
+          <span className="text-xs leading-5 text-muted tabular">
+            {line.at ? time.format(new Date(line.at)) : ""}
+          </span>
+          <span className={`text-xs leading-5 font-semibold ${line.role === "bryan" ? "text-accent-text" : "text-ink-2"}`}>
+            {line.role === "bryan" ? "Bryan" : "Visitor"}
+          </span>
+          <span className="min-w-0 whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">{line.text}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function LivePill({ link, beat }: { link: Link; beat: number }) {
   const label = link === "live" ? "Live" : link === "connecting" ? "Connecting" : "Reconnecting";
   return (
     <span
-      key={compact ? undefined : beat}
+      key={beat}
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
         link === "live" ? "bg-good-wash text-good-text" : "bg-warn-wash text-warn-text"
-      } ${!compact && beat ? "arrive" : ""}`}
+      } ${beat ? "arrive" : ""}`}
     >
       <span
         aria-hidden

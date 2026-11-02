@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const rows = await snapshot(rangeStart(range, tz));
     const summary = summarize(rows, { range, tz, campaign });
     return Response.json(
-      { ...summary, backend: backend() },
+      { ...summary, backend: await backend() },
       { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {

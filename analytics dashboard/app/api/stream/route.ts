@@ -21,7 +21,7 @@ const LIFETIME_MS = 270_000;
 const INTERVAL_MS = { supabase: 2000, file: 1000, none: 30_000 };
 
 export async function GET(request: NextRequest) {
-  const mode = backend();
+  const mode = await backend();
   if (!(await isSignedIn(request.cookies.get(COOKIE)?.value))) {
     return new Response("Sign in first.", { status: 401 });
   }

@@ -4,9 +4,12 @@ import type { AnamClient } from "@anam-ai/js-sdk";
 import { Microphone, MicrophoneSlash, PhoneCall, PhoneDisconnect } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { startConversation, type Conversation } from "@/lib/analytics/conversation";
+import type { EndedBy } from "@/lib/analytics/schema";
 import { pageContext, useFlows } from "./FlowProvider";
 import { flowWidgetRegistration, mightOpenFlow, parseFlow } from "./flows";
-import { RealBryanButton, useRealBryanShown } from "./RealBryanButton";
+import { CallCardActions, useCallCardActions } from "./CallCardActions";
+import { RealBryanButton } from "./RealBryanButton";
 import { createVoiceLevel, type VoiceLevel } from "./voiceLevel";
 
 const VIDEO_ID = "bryan-call-video";
@@ -145,6 +148,8 @@ export function BryanCall({
   const [status, setStatus] = useState<Status>("idle");
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
+  /** The visitor's own mute, which a mic hold (MicHold) never overrides. */
+  const mutedRef = useRef(false);
   const [caption, setCaption] = useState("");
 
   const clientRef = useRef<AnamClient | null>(null);
@@ -182,21 +187,28 @@ export function BryanCall({
   const overlayRef = useRef<HTMLDivElement>(null);
   /** His photo's circle, whose ring reads --voice and --pulse. */
   const avatarRef = useRef<HTMLDivElement>(null);
+  /** The call's history (lib/analytics/conversation.ts), from start() to finish(). */
+  const conversationRef = useRef<Conversation | null>(null);
 
   const flows = useFlows();
   const setSpeaker = flows?.setSpeaker;
-  const realBryanShown = useRealBryanShown();
+  const setMicHold = flows?.setMicHold;
+  const actions = useCallCardActions();
 
   useEffect(() => {
     const turn = turnRef;
     const client = clientRef;
+    const conversation = conversationRef;
     return () => {
+      // Gone mid-call, as when a booking moves the page on to its confirmation.
+      conversation.current?.end("left");
       setSpeaker?.(null);
+      setMicHold?.(null);
       turn.current?.controller.abort();
       void client.current?.stopStreaming().catch(() => {});
       client.current = null;
     };
-  }, [setSpeaker]);
+  }, [setSpeaker, setMicHold]);
 
   useEffect(() => {
     const meter = meterRef;
@@ -254,12 +266,16 @@ export function BryanCall({
     };
   }, [status, look]);
 
-  function finish(next: Status) {
+  /** `by` is for the call's history: the End call button is the visitor's. */
+  function finish(next: Status, by: EndedBy = "visitor") {
     if (endedRef.current) return;
     endedRef.current = true;
+    conversationRef.current?.end(by);
+    conversationRef.current = null;
     meterRef.current?.stop();
     meterRef.current = null;
     setSpeaker?.(null);
+    setMicHold?.(null);
     // Before the waiters are released, so a line still queued behind the one
     // he was on is dropped rather than sent to a session that has ended.
     cutOffRef.current += 1;
@@ -315,7 +331,11 @@ export function BryanCall({
     setStatus("connecting");
     setCaption("");
     setMuted(false);
+    mutedRef.current = false;
     onCallStart?.();
+    // The call's history: what each side says, the flows it opens, how it ends.
+    const conversation = startConversation("call");
+    conversationRef.current = conversation;
     // Made here, in the click, since browsers only run Web Audio after one.
     meterRef.current?.stop();
     meterRef.current = createVoiceLevel();
@@ -478,6 +498,13 @@ export function BryanCall({
           for (const waiter of [...speakingRef.current]) waiter.done();
           await speak(line);
         });
+        // While the trailer plays, its sound would reach the mic and be
+        // heard as the visitor talking.
+        setMicHold?.((held) => {
+          if (mutedRef.current) return;
+          if (held) client.muteInputAudio();
+          else client.unmuteInputAudio();
+        });
         void speak(copy.greeting);
       });
       client.addListener(AnamEvent.VIDEO_PLAY_STARTED, () => setPlaying(true));
@@ -485,13 +512,24 @@ export function BryanCall({
       client.addListener(AnamEvent.AUDIO_STREAM_STARTED, (stream) =>
         meterRef.current?.listen(stream),
       );
-      client.addListener(AnamEvent.MIC_PERMISSION_DENIED, () => finish("denied"));
+      client.addListener(AnamEvent.MIC_PERMISSION_DENIED, () => finish("denied", "denied"));
       client.addListener(AnamEvent.CONNECTION_CLOSED, (reason) =>
-        finish(reason === ConnectionClosedCode.MICROPHONE_PERMISSION_DENIED ? "denied" : "ended"),
+        reason === ConnectionClosedCode.MICROPHONE_PERMISSION_DENIED
+          ? finish("denied", "denied")
+          : finish("ended", "dropped"),
       );
 
       let handled = "";
       client.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, (messages) => {
+        // The history is what was actually said, both sides, whole at each
+        // end of speech; by id, so a line already noted is only updated.
+        for (const message of messages) {
+          conversation.said(
+            message.role === MessageRole.USER ? "visitor" : "bryan",
+            message.content,
+            message.id,
+          );
+        }
         const last = messages.at(-1);
         if (last?.role !== MessageRole.USER || last.id === handled || !last.content.trim()) return;
         handled = last.id;
@@ -529,7 +567,7 @@ export function BryanCall({
 
       await client.streamToVideoElement(VIDEO_ID);
     } catch {
-      if (!endedRef.current) finish("failed");
+      if (!endedRef.current) finish("failed", "error");
       else setStatus((current) => (current === "connecting" ? "failed" : current));
     }
   }
@@ -540,13 +578,19 @@ export function BryanCall({
     if (muted) client.unmuteInputAudio();
     else client.muteInputAudio();
     setMuted(!muted);
+    mutedRef.current = !muted;
   }
 
   const live = status === "live";
-  // Under his photo, the button to the real Bryan takes the place of his name
-  // while the call is live, which leaves the circle the room the button's row
-  // used to take at the bottom.
-  const nameReplaced = live && realBryanShown;
+  // Under his photo, the call card's buttons ("Talk to the real Bryan" and
+  // "Build a guide now", CallCardActions) take the place of his name while
+  // the call is live, which leaves the circle the room the buttons' row used
+  // to take at the bottom.
+  const nameReplaced = live && actions.any;
+  // Both showing where they stack (the corner window always; the box under
+  // 26rem across): the row is two buttons tall, and the circle gives up that
+  // much more height.
+  const stacked = nameReplaced && actions.both;
   // Only after a call: why it stopped, or what to do instead.
   const note =
     status === "ended"
@@ -599,8 +643,12 @@ export function BryanCall({
             ref={avatarRef}
             className={`relative shrink-0 rounded-full ${
               compact
-                ? "size-[clamp(2.25rem,min(100cqh_-_2.75rem,65cqw),9rem)]"
-                : "size-[clamp(3rem,min(100cqh_-_4.5rem,75cqw),20rem)]"
+                ? stacked
+                  ? "size-[clamp(2.25rem,min(100cqh_-_4.75rem,65cqw),9rem)]"
+                  : "size-[clamp(2.25rem,min(100cqh_-_2.75rem,65cqw),9rem)]"
+                : stacked
+                  ? "size-[clamp(3rem,min(100cqh_-_4.5rem,75cqw),20rem)] @max-[26rem]:size-[clamp(3rem,min(100cqh_-_7.75rem,75cqw),20rem)]"
+                  : "size-[clamp(3rem,min(100cqh_-_4.5rem,75cqw),20rem)]"
             }`}
           >
             {/* A glow that swells with his voice... */}
@@ -641,9 +689,12 @@ export function BryanCall({
               loading="eager"
             />
           </div>
-          {/* A fixed height, as tall as the button, so the circle doesn't move
-              when one becomes the other. His name stays for screen readers. */}
-          <div className={`flex shrink-0 items-center justify-center ${compact ? "h-7" : "h-[2.625rem]"}`}>
+          {/* At least as tall as a button, so the circle doesn't move when
+              his name becomes the buttons; taller when they stack. His name
+              stays for screen readers. */}
+          <div
+            className={`flex shrink-0 items-center justify-center ${compact ? "min-h-7" : "min-h-[2.625rem]"}`}
+          >
             <p
               className={
                 nameReplaced
@@ -655,7 +706,7 @@ export function BryanCall({
             >
               {copy.name}
             </p>
-            {nameReplaced && <RealBryanButton placement="circle" compact={compact} />}
+            {nameReplaced && <CallCardActions placement="circle" compact={compact} />}
           </div>
         </div>
       ) : (
@@ -697,7 +748,7 @@ export function BryanCall({
             )}
             {/* Under the caption, so it holds still as the caption grows. In the
                 call look it's under his photo instead. */}
-            {look === "video" && <RealBryanButton placement="overlay" compact={compact} />}
+            {look === "video" && <CallCardActions placement="overlay" compact={compact} />}
             <div className={`flex items-center justify-center ${compact ? "gap-2" : "gap-3"}`}>
               <button
                 type="button"

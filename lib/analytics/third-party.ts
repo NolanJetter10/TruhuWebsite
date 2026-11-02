@@ -9,8 +9,10 @@
  *
  * Both learn the visitor's campaign (the same attribution the funnel tracker
  * uses, so a click-through from the home page still counts), and both hear
- * about funnel steps and bookings, so recordings and reports can be filtered
- * by campaign and by how far a visit got.
+ * about funnel steps (`funnel_engaged`, `funnel_interested`, `funnel_started`)
+ * and conversions (`generate_lead` and `funnel_converted`, for a booking or a
+ * lead; see `converted` in tracker.ts), so recordings and reports can be
+ * filtered by campaign and by how far a visit got.
  *
  * Nothing typed into a form reaches either: Clarity masks inputs by default,
  * and the booking form and confirmation pages are additionally marked

@@ -18,6 +18,10 @@ What's being worked on. Keep it short; finished work moves to the log.
 
 Newest first. Each line says who decided and where it came from.
 
+- 2026-11-02 · /BryanKleppe offers Bryan's paths 1, 2, 3 and 5. General interest in a guide opens "How would you like to move forward?" (rebuild last year's guide, see samples, build a guide for a client) instead of Bryan asking which materials. Every way in (Bryan's call or chat, "Build a guide now" on the call card, the three options under the chat) opens the same popups: reuse, don't recreate. (Nolan; L-018)
+- 2026-11-02 · The analytics dashboard tracks /BryanKleppe with the funnel Landed → Engaged → Interested → Started → Converted, plus a table per path. `?tag=` marks where a link was shared. Calls and chats are kept with transcripts. The dashboard shows critical numbers only, with no subtitles. (Nolan; L-018)
+- 2026-11-02 · Defaults set by Claude, pending Nolan: the samples aren't gated (the email is optional), and the build form promises no turnaround time or watermark until the team confirms Bryan's "within 24 hours" and "Sample" watermark. (L-018)
+
 - 2026-10-29 · In the Call view, the button to the real Bryan replaces his name under the photo while a call is live, so the circle can stay big; before a call there are two choices side by side, "Talk to Bryan's AI" and "Book an appointment with the real deal". (Nolan; L-015)
 
 - 2026-10-29 · /BryanKleppe opens on Call, not Video: Bryan's own photo in a circle with a ring that moves with his voice, the Video and Chat views beside it. During a live call a "Talk to the real Bryan" button opens the calendar while he says "Let's get you scheduled with the real deal!" (Nolan; L-014, "Great!" dropped in L-016)

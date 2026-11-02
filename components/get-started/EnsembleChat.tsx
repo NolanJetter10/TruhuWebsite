@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { BryanCall, type CallCopy } from "@/components/get-started/BryanCall";
 import { pageContext, useFlows } from "@/components/get-started/FlowProvider";
 import { FLOW_SCHEMAS, FLOW_WIDGETS, parseFlow, type FlowWidget } from "@/components/get-started/flows";
+import { endChat, recordChatReply, type ChatFinish } from "@/lib/analytics/conversation";
 import { track } from "@/lib/analytics/tracker";
 import { KINDLERYE } from "@/lib/kindlerye";
 
@@ -215,6 +216,14 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
             const flow = parseFlow(part);
             if (flow) openFlow?.(flow, "chat");
           },
+          // The chat's history (lib/analytics/conversation.ts): each finished
+          // reply and the message it answers, a flow card as the line it shows.
+          // Like onData, never called for history reloaded after a call.
+          onFinish: (finish: ChatFinish) =>
+            recordChatReply(finish, (part) => {
+              const flow = parseFlow(part);
+              return flow && flowCopy ? flowCopy[flow].line : null;
+            }),
           onAuthError: async () => {
             try {
               return await chatToken(true);
@@ -250,6 +259,10 @@ export function EnsembleChat({ copy }: { copy: Copy }) {
       window.ChatWidget?.updateConfig({ dataContext: pageContext(events) });
     }
   }, [status, events]);
+
+  // The typed chat's history ends when the box goes, as when a booking moves
+  // the page on to its confirmation. Closing the tab ends it by itself.
+  useEffect(() => () => endChat("left"), []);
 
   const views: { id: View; label: string; Icon: typeof VideoCamera }[] = [
     { id: "call", label: copy.views.call, Icon: Phone },

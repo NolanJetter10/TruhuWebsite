@@ -13,7 +13,7 @@ export default async function Home({
   const { range, campaign } = await searchParams;
   return (
     <Dashboard
-      backend={backend()}
+      backend={await backend()}
       openAccess={authMode === "open"}
       initialRange={range && isRange(range) ? range : "7d"}
       initialCampaign={campaign ?? ""}

@@ -17,10 +17,10 @@ import {
   type FormEvent,
 } from "react";
 import { cx } from "@/components/ui/primitives";
-import { thirdPartyEvent } from "@/lib/analytics/third-party";
 import {
+  converted,
   flushNow,
-  reachStep,
+  startPath,
   track,
   trackingContext,
 } from "@/lib/analytics/tracker";
@@ -203,7 +203,8 @@ export function BookingWidget({
     setNotice(null);
     setFormError(null);
     track("time", iso, { day, index, of: times.length });
-    reachStep("time");
+    // Picking a time is the first real step of Bryan's booking path.
+    startPath("book", "calendar");
     requestAnimationFrame(() => nameInput.current?.focus({ preventScroll: true }));
   }
 
@@ -230,7 +231,6 @@ export function BookingWidget({
     if (touched.current.has(name)) return;
     touched.current.add(name);
     track("field", name);
-    reachStep("details");
   }
 
   async function move(uid: string, start: string) {
@@ -299,7 +299,6 @@ export function BookingWidget({
       return;
     }
 
-    reachStep("submitted");
     track("submit");
     // Send the steps so far before the booking exists, so they land first.
     flushNow();
@@ -337,10 +336,8 @@ export function BookingWidget({
 
     if (res.ok && body.ok) {
       flushNow();
-      // GA4's lead event (mark it as a key event there) and a Clarity tag
-      // that keeps this recording in full.
-      thirdPartyEvent("generate_lead", { method: "get_started_calendar" }, { upgrade: "booked" });
-      thirdPartyEvent("funnel_booked");
+      // GA4's lead event and a Clarity tag that keeps this recording in full.
+      converted("book");
       router.push(
         body.uid
           ? `/BryanKleppe/confirmed?b=${encodeURIComponent(body.uid)}`

@@ -1,16 +1,25 @@
 import { after } from "next/server";
+import { contextFields, recordLead } from "@/lib/analytics/store";
 import { clientIp, json, rateLimited, sameOrigin } from "@/lib/ensemble";
 import { MAX_FILES } from "@/lib/guide/files";
-import { sendGuideEmails } from "@/lib/guide/email";
+import { sendLeadEmails } from "@/lib/guide/email";
 import { isUploadId, listUpload, storageBackend, type StoredFile } from "@/lib/guide/storage";
 
 /**
- * Finishes a guide request: the visitor's email for files already uploaded
- * (see ./upload-url). This checks the files are really there, answers, and
- * then emails the team their links and the visitor a confirmation. In the
- * storage-less demo nothing was uploaded, so it takes the browser's list of
- * file names instead.
+ * Finishes a guide request, Bryan's "rebuild last year's guide" path: the
+ * visitor's email for files already uploaded (see ./upload-url). This checks
+ * the files are really there, answers, and then records the lead (which marks
+ * the visit converted) and emails the team their links and the visitor a
+ * confirmation. In the storage-less demo nothing was uploaded, so it takes the
+ * browser's list of file names instead.
+ *
+ * The lead's id is the upload id written as a UUID, so sending the same
+ * upload twice is one lead. The other two paths go through /api/leads.
  */
+
+/** A 32-hex upload id as a UUID: 8-4-4-4-12. */
+const leadIdOf = (uploadId: string) =>
+  uploadId.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, "$1-$2-$3-$4-$5");
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -68,15 +77,31 @@ export async function POST(request: Request) {
     return json({ error: "Add at least one file first.", code: "no_files" }, 422);
   }
 
-  const context = (body.context ?? {}) as Record<string, unknown>;
-  after(() =>
-    sendGuideEmails({
+  const tracked = contextFields(body.context);
+  const id = leadIdOf(uploadId);
+  after(async () => {
+    try {
+      await recordLead({
+        id,
+        ...tracked,
+        created_at: new Date().toISOString(),
+        path: "rebuild",
+        email,
+        upload_id: uploadId,
+        file_count: files.length,
+      });
+    } catch (error) {
+      console.error("[guide] recording the lead failed", error);
+    }
+    await sendLeadEmails({
+      id,
+      path: "rebuild",
       uploadId,
       email,
       files,
-      source: text(context.source, 120) || undefined,
-      campaign: text(context.campaign, 160) || undefined,
-    }),
-  );
+      source: tracked.source ?? undefined,
+      campaign: tracked.campaign ?? undefined,
+    });
+  });
   return json({ ok: true, files: files.length });
 }

@@ -6,6 +6,7 @@ import { BookingWidget } from "@/components/get-started/BookingWidget";
 import { CancelMeeting } from "@/components/get-started/CancelMeeting";
 import { FunnelTracker } from "@/components/get-started/FunnelTracker";
 import { Container, Section } from "@/components/ui/primitives";
+import { TRACKED_PAGE } from "@/lib/analytics/schema";
 import { bookingProvider, MEETING } from "@/lib/booking";
 import { formatLongDate, formatTime, zoneAbbreviation } from "@/lib/booking/time";
 import { GET_STARTED_PAGE } from "@/lib/content";
@@ -46,7 +47,7 @@ export default async function ManagePage({
 
   return (
     <>
-      <FunnelTracker page="/get-started" resumeOnly />
+      <FunnelTracker page={TRACKED_PAGE} resumeOnly />
       <Section tone="dark" ambient pointer pointerFade size="none" className="pt-12 pb-20 sm:pt-16 lg:pt-20 lg:pb-24">
         <Container>
           <div className="grid gap-x-14 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,35rem)] lg:items-start">

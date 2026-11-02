@@ -6,26 +6,35 @@ import { createPortal } from "react-dom";
 import { cx } from "@/components/ui/primitives";
 import type { GET_STARTED_PAGE } from "@/lib/content";
 import { BookingWidget } from "./BookingWidget";
+import { BuildGuideForm } from "./BuildGuideForm";
 import { DELIVERABLE_TITLE_ID, DeliverableViewer } from "./DeliverableViewer";
 import type { Flow } from "./flows";
 import { useFlows } from "./FlowProvider";
 import { GuideUpload } from "./GuideUpload";
 import { inBryanBox, stillPageAround } from "./inert";
 import { MicrositeCard } from "./MicrositeCard";
+import { OptionsChooser } from "./OptionsChooser";
+import { SamplePicker } from "./SamplePicker";
+import { TrailerFlow } from "./TrailerFlow";
 
 type Page = typeof GET_STARTED_PAGE;
 /** The flipbook has an overlay of its own (FlipbookOverlay). */
 type Shown = Exclude<Flow, "flipbook">;
 
 /**
- * Each flow's card, sized for what it holds: the calendar large, the upload
- * medium, the deliverables' pages the full height at a reading width, the
- * microsite wide. On a phone every card spans the screen bar a margin.
+ * Each flow's card, sized for what it holds: the calendar large, the forms
+ * and the chooser medium, the sample picker wide enough for four tiles, the
+ * deliverables' pages the full height at a reading width, the microsite and
+ * the trailer wide. On a phone every card spans the screen bar a margin.
  * Written out in full so Tailwind finds them.
  */
 const SIZE: Record<Shown, string> = {
   // Sized by the calendar inside, which growCalendar scales to the screen.
   calendar: "sm:w-fit",
+  options: "sm:max-w-[36rem]",
+  samples: "sm:max-w-[50rem]",
+  build: "sm:max-w-[34rem]",
+  trailer: "sm:max-w-[64rem]",
   guide: "sm:max-w-[36rem]",
   sampleGuide: "h-full sm:max-w-[54rem]",
   flyer: "h-full sm:max-w-[54rem]",
@@ -463,7 +472,15 @@ export function FlowPanel({
                       <p className="text-[0.6875rem] font-semibold tracking-wide text-blue-300 uppercase">
                         {flows.copy.speaker}
                       </p>
-                      <p id="flow-line" aria-live="polite" className="mt-0.5 text-[1rem] leading-snug text-white">
+                      <p
+                        id="flow-line"
+                        aria-live="polite"
+                        className={cx(
+                          "mt-0.5 leading-snug text-white",
+                          // The chooser's line is its title.
+                          shown === "options" ? "t-h4 text-[1.375rem] text-balance sm:text-[1.5rem]" : "text-[1rem]",
+                        )}
+                      >
                         {flows.line}
                       </p>
                     </div>
@@ -495,6 +512,14 @@ export function FlowPanel({
                         tall
                       />
                     </div>
+                  ) : shown === "options" ? (
+                    <OptionsChooser />
+                  ) : shown === "samples" ? (
+                    <SamplePicker />
+                  ) : shown === "build" ? (
+                    <BuildGuideForm />
+                  ) : shown === "trailer" ? (
+                    <TrailerFlow />
                   ) : shown === "guide" ? (
                     <GuideUpload />
                   ) : shown === "microsite" ? (

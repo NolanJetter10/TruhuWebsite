@@ -9,15 +9,16 @@ import {
   Warning,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
+import { useRef, useState, type DragEvent, type FormEvent } from "react";
 import { cx } from "@/components/ui/primitives";
-import { track, trackingContext } from "@/lib/analytics/tracker";
+import { converted, startPath, track, trackingContext } from "@/lib/analytics/tracker";
 import { GUIDE_ACCEPT, MAX_FILES, guideFileProblem } from "@/lib/guide/files";
 import { useFlows } from "./FlowProvider";
+import { DoneState, EMAIL, EmailRow, FORM_CARD, FormError, Honeypot, honeypotValue, useFinish } from "./LeadForm";
 
 /**
- * The guide popup's body: drop in plan documents or last year's guide, then
- * an email to send the finished guide to.
+ * "Rebuild last year's guide", the guide popup's body: drop in last year's
+ * guide and any plan documents, then an email to send the rebuilt guide to.
  *
  *   drop or choose files → each uploads with its own progress → Bryan says
  *   the email line → email → done → Bryan's closing line → the popup closes
@@ -25,7 +26,8 @@ import { useFlows } from "./FlowProvider";
  * Each file goes straight to storage on a signed link from
  * /api/guide/upload-url; /api/guide then takes the email and tells the team.
  * Every step is logged for the agent (see FlowProvider), so Bryan knows on
- * his next reply.
+ * his next reply. The email field, the done state and the closing line are
+ * shared with the other form popups (LeadForm).
  */
 
 type Item = {
@@ -41,13 +43,6 @@ type Item = {
 type Phase = "files" | "email" | "sending" | "done";
 /** `url` is null in the storage-less demo: there's nowhere to send the file. */
 type Target = { url: string | null; headers: Record<string, string> };
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-/** With no call to hear him, the closing line stays up long enough to read. */
-const readingMs = (line: string) => Math.max(4_000, line.split(/\s+/).length * 250);
-/** A beat after he stops talking before the popup goes. */
-const AFTER_SPEECH_MS = 600;
 
 const size = (bytes: number) =>
   bytes >= 1024 * 1024
@@ -103,18 +98,10 @@ export function GuideUpload() {
   const inflight = useRef(0);
   const reported = useRef(new Set<string>());
   const emailInput = useRef<HTMLInputElement>(null);
-  /** False once the popup has moved on, so a late close can't shut another flow. */
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const finish = useFinish();
 
   if (!flows) return null;
-  const { copy: all, say, log, close } = flows;
+  const { copy: all, say, log } = flows;
   const copy = all.guide;
 
   function setItems(next: (current: Item[]) => Item[]) {
@@ -146,7 +133,11 @@ export function GuideUpload() {
     }
     setItems((current) => [...current, ...fresh, ...refused]);
     if (refused.length) track("guide_refused", String(refused.length));
-    if (fresh.length) void upload(fresh);
+    if (fresh.length) {
+      // A file in is the rebuild path's first real step.
+      startPath("rebuild", "guide");
+      void upload(fresh);
+    }
   }
 
   async function upload(batch: Item[]) {
@@ -235,7 +226,7 @@ export function GuideUpload() {
     setEmailError(null);
     setFormError(null);
     setPhase("sending");
-    const honeypot = new FormData(event.currentTarget).get("website");
+    const honeypot = honeypotValue(event.currentTarget);
     try {
       const res = await fetch("/api/guide", {
         method: "POST",
@@ -256,12 +247,9 @@ export function GuideUpload() {
         setPhase("done");
         log("The visitor entered their email, so TruHu's team can send them the finished guide.");
         track("guide_sent");
+        converted("rebuild");
         // Bryan's closing line, then back to the page as it was.
-        const spoken = await say(copy.doneLine);
-        await new Promise((resolve) =>
-          setTimeout(resolve, spoken ? AFTER_SPEECH_MS : readingMs(copy.doneLine)),
-        );
-        if (mounted.current) close("done");
+        await finish(copy.doneLine);
         return;
       }
       setPhase("email");
@@ -279,18 +267,9 @@ export function GuideUpload() {
   const sent = items.filter((item) => item.state === "done");
 
   return (
-    <div
-      data-section="flow-guide"
-      data-track-ignore
-      className="card-shape-lg relative overflow-hidden border border-white/10 bg-white text-ink shadow-[0_40px_90px_-40px_rgba(2,8,18,0.85)]"
-    >
+    <div data-section="flow-guide" data-track-ignore className={FORM_CARD}>
       {phase === "done" ? (
-        <div className="bk-enter px-6 py-8 text-center">
-          <CheckCircle aria-hidden weight="fill" className="mx-auto size-11 text-green-500" />
-          <p className="t-h4 mt-3">{copy.doneTitle}</p>
-          <p className="mx-auto mt-2 max-w-sm text-[0.9375rem] text-slate-600">
-            {copy.done.replace("{email}", email.trim())}
-          </p>
+        <DoneState title={copy.doneTitle} body={copy.done.replace("{email}", email.trim())}>
           <ul className="mx-auto mt-5 max-w-sm space-y-1.5 text-left">
             {sent.map((item) => (
               <li key={item.key} className="flex items-center gap-2 text-[0.8125rem] text-slate-600">
@@ -299,7 +278,7 @@ export function GuideUpload() {
               </li>
             ))}
           </ul>
-        </div>
+        </DoneState>
       ) : (
         <div className="px-5 py-5 sm:px-6">
           <label
@@ -364,50 +343,23 @@ export function GuideUpload() {
               data-clarity-mask="true"
               className="bk-enter mt-5 border-t border-line pt-5"
             >
-              <label htmlFor="guide-email" className="text-[0.8125rem] font-semibold">
-                {copy.email}
-              </label>
-              <div className="mt-1.5 flex flex-col gap-2.5 sm:flex-row">
-                <input
-                  ref={emailInput}
-                  id="guide-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    if (emailError) setEmailError(null);
-                  }}
-                  aria-invalid={emailError ? true : undefined}
-                  aria-describedby={emailError ? "guide-email-error" : undefined}
-                  className={cx(
-                    "min-w-0 flex-1 rounded-xl border bg-white px-3.5 py-2.5 text-[0.9375rem] outline-none transition-colors focus:border-blue-500",
-                    emailError ? "border-red-600" : "border-line",
-                  )}
-                />
-                <button
-                  type="submit"
-                  disabled={phase === "sending" || uploading}
-                  className="sheen flex shrink-0 items-center justify-center gap-2 rounded-full bg-green-500 px-5 py-2.5 text-[0.9375rem] font-semibold text-ink-950 shadow-[0_10px_28px_-12px_rgba(56,176,0,0.75)] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-green-400 disabled:cursor-wait disabled:opacity-70"
-                >
-                  <span className="relative z-[2]">{phase === "sending" ? copy.pending : copy.submit}</span>
-                </button>
-              </div>
-              {emailError ? (
-                <p id="guide-email-error" className="t-caption mt-1 text-red-600">
-                  {emailError}
-                </p>
-              ) : null}
-              {formError ? (
-                <p role="alert" className="mt-3 text-[0.875rem] text-red-600">
-                  {formError}
-                </p>
-              ) : null}
-              {/* Honeypot. Hidden from people, irresistible to naive bots. */}
-              <div aria-hidden className="absolute -left-[9999px]">
-                <label htmlFor="guide-website">Website</label>
-                <input id="guide-website" name="website" tabIndex={-1} autoComplete="off" />
-              </div>
+              <EmailRow
+                id="guide-email"
+                label={copy.email}
+                value={email}
+                onChange={(value) => {
+                  setEmail(value);
+                  if (emailError) setEmailError(null);
+                }}
+                error={emailError}
+                inputRef={emailInput}
+                pending={phase === "sending"}
+                disabled={uploading}
+                submit={copy.submit}
+                pendingLabel={copy.pending}
+              />
+              <FormError error={formError} />
+              <Honeypot id="guide-website" />
             </form>
           ) : null}
         </div>

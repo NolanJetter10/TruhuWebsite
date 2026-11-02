@@ -1,17 +1,18 @@
-import { Check } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import { Avatar } from "@/components/get-started/Avatar";
 import { BookingWidget } from "@/components/get-started/BookingWidget";
 import { EnsembleChat } from "@/components/get-started/EnsembleChat";
 import { FlipbookOverlay } from "@/components/get-started/FlipbookOverlay";
+import { FlowLinks } from "@/components/get-started/FlowLinks";
 import { FlowPanel } from "@/components/get-started/FlowPanel";
 import { FlowProvider } from "@/components/get-started/FlowProvider";
 import { FunnelTracker } from "@/components/get-started/FunnelTracker";
 import { Words, wordCount } from "@/components/ui/Words";
 import { Container, Section } from "@/components/ui/primitives";
+import { TRACKED_PAGE } from "@/lib/analytics/schema";
 import { GET_STARTED_PAGE } from "@/lib/content";
 
-const { meta, hero, host, chat, outcomes, proof, booking } = GET_STARTED_PAGE;
+const { meta, hero, host, chat, proof, booking } = GET_STARTED_PAGE;
 
 export const metadata: Metadata = {
   title: meta.title,
@@ -21,15 +22,16 @@ export const metadata: Metadata = {
 
 /**
  * Written out in full so Tailwind finds it. On a desktop viewport under 820px
- * tall, the lines that matter least (the stat cards and the "not a hard sales
- * pitch" note) leave so the rest still fits without scrolling.
+ * tall, the lines that matter least (the stat cards) leave so the rest still
+ * fits without scrolling.
  */
 const SHORT_SCREEN_HIDDEN = "lg:[@media(max-height:820px)]:hidden";
 
 /**
  * The page campaigns point at, at /BryanKleppe. It is one screen with no site
- * header or footer (see HideOnBarePages): the headline, the chat and what the
- * visitor gets out of it on the left, the calendar and the proof on the right. The
+ * header or footer (see HideOnBarePages): the headline, the chat and three
+ * links into the same popups Bryan opens (FlowLinks) on the left, the
+ * calendar and the proof on the right. The
  * chat takes whatever height the viewport has left over (see EnsembleChat). If
  * the content is still taller than the viewport the page scrolls, and on a
  * phone the blocks stack with the calendar before the proof.
@@ -42,9 +44,7 @@ export default function BryanKleppePage() {
     // The chat can open a popup in the middle of the screen (FlowPanel), and
     // Bryan's box floats to the corner while it's open (EnsembleChat).
     <FlowProvider copy={chat.flows}>
-      {/* The tracker's page id stays "/get-started": the analytics dashboard
-          filters on it, so the history before the rename stays in the same funnel. */}
-      <FunnelTracker page="/get-started" />
+      <FunnelTracker page={TRACKED_PAGE} />
 
       <Section
         tone="dark"
@@ -75,32 +75,8 @@ export default function BryanKleppePage() {
               {/* The AI chat, which takes the height left over -------------- */}
               <EnsembleChat copy={chat} />
 
-              {/* What you'll get out of it ---------------------------------- */}
-              <section
-                data-section="outcomes"
-                aria-labelledby="outcomes-heading"
-                style={{ animation: "hero-in 800ms var(--ease-out-expo) 460ms both" }}
-              >
-                <h2
-                  id="outcomes-heading"
-                  className="text-[0.9375rem] font-semibold text-slate-300"
-                >
-                  {outcomes.label}
-                </h2>
-                <ul className="mt-2.5 space-y-2">
-                  {outcomes.items.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-green-500/15 text-green-400">
-                        <Check weight="bold" className="size-3" />
-                      </span>
-                      <span className="text-[0.9375rem] leading-snug text-white">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className={`mt-2.5 text-[0.875rem] text-slate-300 ${SHORT_SCREEN_HIDDEN}`}>
-                  {outcomes.notIt}
-                </p>
-              </section>
+              {/* Three ways straight into Bryan's popups -------------------- */}
+              <FlowLinks />
             </div>
 
             <FlowPanel booking={booking} host={host}>
